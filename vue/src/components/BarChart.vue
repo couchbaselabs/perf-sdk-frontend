@@ -5,15 +5,19 @@ export default {
   extends: Bar,
   mounted() {
     this.renderChart(this.chartdata, {
-        legend: {
-          display: false
-        },
-        title: {
-          display: false
-        },
+      legend: {
+        display: false
+      },
+      title: {
+        display: false
+      },
       scales: {
         yAxes: [
           {
+            title: {
+              display: true,
+              text: 'Per second'
+            },
             ticks: {
               beginAtZero: false
             }

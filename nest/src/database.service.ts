@@ -7,6 +7,7 @@ const semverParse = require('semver/functions/parse')
 const SemVer = require('semver/classes/semver')
 
 class Run {
+    params: Object
     cluster: string
     impl: string
     workload: string
@@ -14,13 +15,29 @@ class Run {
     other: string
     id: string
 
-    constructor(cluster: string, impl: string, workload: string, vars: string, other: string, id: string) {
+    constructor(params: Object, cluster: string, impl: string, workload: string, vars: string, other: string, id: string) {
+        this.params = params
         this.cluster = cluster;
         this.impl = impl;
         this.workload = workload;
         this.vars = vars;
         this.other = other;
         this.id = id;
+    }
+}
+
+export interface RunPlus extends Run {
+    groupedBy: string // "7.0.0-3756"
+    color: string // '#E2F0CB'
+}
+
+class ResultRaw {
+    time: number
+    value: number
+
+    constructor(time: number, value: number) {
+        this.time = time;
+        this.value = value;
     }
 }
 
@@ -101,6 +118,7 @@ export class DatabaseService {
 
     async get_runs(compared_json: Object, group_by: string): Promise<Array<Run>> {
         const st = `SELECT
+                        params as params,
                         params->'cluster' as cluster,
                         params->'impl' as impl,
                         params->'workload' as workload,
@@ -114,7 +132,7 @@ export class DatabaseService {
         const result = await this.client.query(st)
         const rows = result
         const ret = rows.map(x => {
-            return new Run(x.cluster, x.impl, x.workload, x.vars, x.other, x.run_id)
+            return new Run(x.params, x.cluster, x.impl, x.workload, x.vars, x.other, x.run_id)
         })
         return ret
     }
@@ -177,5 +195,18 @@ export class DatabaseService {
         console.info(st)
         const result = await this.client.query(st)
         return result.map(x => new Result(x.grouping, x.value))
+    }
+
+    async get_buckets_for_run(groupBy1: string, run_id: string, display: string): Promise<Array<ResultRaw>> {
+        // select buckets.time,buckets.run_id,buckets.latency_p95_us FROM buckets join runs on buckets.run_id = runs.id where runs.id = 'e4ffbd00-56f3-4c83-8939-49350f5e3e68';
+        const st = `SELECT
+                    extract(epoch from (buckets.time)) - extract(epoch from runs.datetime) as time,
+                    buckets.${display} as value
+                      FROM buckets join runs on buckets.run_id = runs.id
+                      WHERE run_id = '${run_id}' 
+                      ORDER BY time`
+        console.info(st)
+        const result = await this.client.query(st)
+        return result.map(x => new ResultRaw(x.time, x.value))
     }
 }

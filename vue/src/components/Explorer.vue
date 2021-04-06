@@ -6,13 +6,18 @@
           <div class="form-legend">Display</div>
 
           <b-form-select v-model="selected_group_by" v-on:change="handleGroupByChanged" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in group_by" :key="v">{{ v }}</option>
+            <option v-for="v in group_by" :key="JSON.stringify(v)">{{ v }}</option>
           </b-form-select>
 
-          <b-form-select v-model="selected_display" v-on:change="handleSubmit">
+          <b-form-select v-model="selected_display" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
             <option v-for="v in display" :key="v.id">
               {{ v.text }}
             </option>
+          </b-form-select>
+
+          <b-form-select v-model="selected_graph_type" v-on:change="handleSubmit">
+            <option>Simplified</option>
+            <option>Full</option>
           </b-form-select>
         </div>
       </b-form>
@@ -22,19 +27,19 @@
           <div class="form-legend">Filter</div>
 
           <b-form-select v-model="selected_cluster" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in clusters" :key="v">{{ v }}</option>
+            <option v-for="v in clusters" :key="JSON.stringify(v)">{{ v }}</option>
           </b-form-select>
 
           <b-form-select v-model="selected_impl" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in impls" :key="v">{{ v }}</option>
+            <option v-for="v in impls" :key="JSON.stringify(v)">{{ v }}</option>
           </b-form-select>
 
           <b-form-select v-model="selected_workload" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in workloads" :key="v">{{ v }}</option>
+            <option v-for="v in workloads" :key="JSON.stringify(v)">{{ v }}</option>
           </b-form-select>
 
           <b-form-select v-model="selected_vars" v-on:change="handleSubmit">
-            <option v-for="v in vars" :key="v">{{ v }}</option>
+            <option v-for="v in vars" :key="JSON.stringify(v)">{{ v }}</option>
           </b-form-select>
         </b-form-group>
 
@@ -51,10 +56,10 @@
     <!--    {:then results}-->
     <!--        {results}-->
     <div v-if="results">
-      <div v-for="panel in results.panels" :key="panel">
+      <div v-for="panel in results.panels" :key="JSON.stringify(panel)">
         <!--        <h2>{{ panel.title }}</h2>-->
 
-        <div class="graph" v-for="graph in panel.graphs" :key="graph">
+        <div class="graph" v-for="graph in panel.graphs" :key="JSON.stringify(graph)">
           <b-container>
 
             <!--                    <table>-->
@@ -78,20 +83,12 @@
 
             <!--              <Chart data={graph.data} type={graph.type}/>-->
 
-            <BarChart class="chart" :chartdata="graph.data" :options="graph.options"/>
+            <BarChart v-if="graph.type === 'bar'" class="chart" :chartdata="graph.data" :options="graph.options"  />
+            <LineChart v-if="graph.type === 'line'" class="chart" :chartdata="graph.data" :options="graph.options"  />
+
           </b-container>
-          <table>
-            <tr v-for="r in graph.runs" :key="r">
-              <td>{{ r.id }}</td>
-              <!--                                <td>{r.grouping}</td>-->
-              <td>{{ JSON.stringify(r.impl) }}</td>
-              <td>{{ JSON.stringify(r.cluster) }}</td>
-              <td>{{ JSON.stringify(r.workload) }}</td>
-              <td>{{ JSON.stringify(r.vars) }}</td>
-            </tr>
-            <!--            <p>{JSON.stringify(r)}</p>-->
-            <!--                <p>{r.id}</p>-->
-          </table>
+
+          <GraphRuns :graph="graph"/>
 
         </div>
       </div>
@@ -101,10 +98,12 @@
 
 <script>
 import BarChart from "@/components/BarChart";
+import LineChart from "@/components/LineChart";
+import GraphRuns from "@/components/GraphRuns";
 
 export default {
   name: "Explorer",
-  components: {BarChart},
+  components: {GraphRuns, BarChart,LineChart},
   data() {
     const display = [
       {id: 6, text: `latency_average_us`},
@@ -131,9 +130,10 @@ export default {
       selected_workload: undefined,
       selected_impl: undefined,
       selected_cluster: undefined,
-      selected_group_by: undefined,
+      selected_group_by: "impl.version",
       selected_vars: undefined,
       selected_display: display[0].text,
+      selected_graph_type: "Full",
       fetching: undefined,
       query_params: undefined
     }
@@ -141,6 +141,7 @@ export default {
 
   created() {
     this.fetch_group_by_options()
+        .then(() => this.handleGroupByChanged())
   },
 
   methods: {
@@ -189,7 +190,8 @@ export default {
         display: this.selected_display,
         impl: JSON.parse(this.selected_impl),
         workload: JSON.parse(this.selected_workload),
-        vars: JSON.parse(this.selected_vars)
+        vars: JSON.parse(this.selected_vars),
+        graph_type: this.selected_graph_type
       }
 
       console.info(input)

@@ -1,6 +1,6 @@
 import {Get} from "@nestjs/common";
 import {Injectable} from "@nestjs/common";
-import {DatabaseService} from "./database.service";
+import {DatabaseService, RunPlus} from "./database.service";
 import {Filtered} from "./app.controller";
 
 export class Panel {
@@ -21,6 +21,7 @@ export class Input {
     impl?: Object
     workload?: Object
     vars?: Object
+    graph_type: string
 
     // constructor(inputs: Array<string>, group_by: string = DashboardService.default_group_by, display: string = DashboardService.default_display) {
     //     this.inputs = inputs;
@@ -146,6 +147,61 @@ export class DashboardService {
         }
     }
 
+
+    private async add_graph_line(compared_json: Object, input: Input): Promise<any> {
+        let datasets = []
+        const runs = await this.database.get_runs(compared_json, input.group_by_2())
+        // const run_ids = runs.map(v => v.id)
+
+        const shades = ['#E2F0CB', '#B5EAD7', '#C7CEEA','#FF9AA2', '#FFB7B2', '#FFDAC1']
+        let shadeIdx = 0
+
+        const runsPlus: Array<RunPlus> = runs.map((run: RunPlus) => {
+            const groupedBy = input.group_by.split(".")
+            run.groupedBy = DashboardService.parse_from(run.params, groupedBy)
+            const shade = shades[shadeIdx % shades.length]
+            shadeIdx ++
+            run.color = shade
+            return run
+        })
+
+
+        for (const run of runsPlus) {
+            const buckets = await this.database.get_buckets_for_run(input.group_by_1(), run.id, input.display)
+            let data = []
+            buckets.forEach(b => {
+                data.push({
+                    x: b.time * 1000,
+                    y: b.value
+                })
+            })
+            datasets.push({
+                // label: run.id.substring(0, 6),
+                label: run.groupedBy,
+                data: data,
+                fill: false,
+                backgroundColor: run.color,
+                borderColor: run.color,
+            })
+        }
+
+        return {
+            "type": "line",
+            "runs": runs,
+            "chosen": compared_json,
+            // "chosen": {
+            //     "cluster": params.cluster,
+            //     "workload": params.workload,
+            //     "other": params.other,
+            //     "vars": params.vars,
+            //     "impl": params.impl.json
+            // },
+            "data": {
+                "datasets": datasets
+            }
+        }
+    }
+
     default_params(): Params {
         return new Params(this.default_impl, this.default_cluster, this.default_workload, this.default_vars, this.default_other)
     }
@@ -197,6 +253,21 @@ export class DashboardService {
             [...vars_all.values()],
             vars_by_workload)
 
+    }
+
+    static parse_from(input: Object, groupBy: Array<string>): string {
+        const looking_for = groupBy[0]
+        const keys = Object.keys(input)
+
+        if (keys.includes(looking_for)) {
+            if (groupBy.length == 1) {
+                return input[looking_for]
+            }
+            else {
+                const next = input[looking_for]
+                return this.parse_from(next, groupBy.splice(1))
+            }
+        }
     }
 
     static remove_display_by_if_needed(input: Object, display: Array<string>): void {
@@ -275,8 +346,14 @@ export class DashboardService {
                         break;
                 }
 
-                const graph = await this.add_graph(compared_json, input)
-                graphs.push(graph)
+                if (input.graph_type == "Simplified") {
+                    const graph = await this.add_graph(compared_json, input)
+                    graphs.push(graph)
+                }
+                else {
+                    const graph = await this.add_graph_line(compared_json, input)
+                    graphs.push(graph)
+                }
             } else {
                 sub_panels = await this.gen_panels(input, remaining[0], remaining.splice(1))
             }
