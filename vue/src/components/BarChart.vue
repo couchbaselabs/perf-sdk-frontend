@@ -5,15 +5,12 @@ export default {
   extends: Bar,
   mounted() {
     this.renderChart(this.chartdata, {
-      plugins: {
         legend: {
           display: false
         },
         title: {
           display: false
-        }
-
-      },
+        },
       scales: {
         yAxes: [
           {

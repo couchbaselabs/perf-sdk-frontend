@@ -1,46 +1,48 @@
 <template>
-  <div>
-    <form>
-      <fieldset>
-        <legend>Display</legend>
+  <div class="main">
+    <div>
+      <b-form inline class="vgap">
+        <div class="border p-2">
+          <div class="form-legend">Display</div>
 
-        <select v-model="selected_group_by" v-on:change="handleGroupByChanged">
-          <option v-for="v in group_by" :key="v">{{ v }}</option>
-        </select>
+          <b-form-select v-model="selected_group_by" v-on:change="handleGroupByChanged" class="mb-2 mr-sm-2 mb-sm-0">
+            <option v-for="v in group_by" :key="v">{{ v }}</option>
+          </b-form-select>
 
-        <select v-model="selected_display" v-on:change="handleSubmit">
-          <option v-for="v in display" :key="v.id">
-            {{ v.text }}
-          </option>
-        </select>
-      </fieldset>
+          <b-form-select v-model="selected_display" v-on:change="handleSubmit">
+            <option v-for="v in display" :key="v.id">
+              {{ v.text }}
+            </option>
+          </b-form-select>
+        </div>
+      </b-form>
 
-      <fieldset>
-        <legend>Filter</legend>
+      <b-form inline class="vgap-big">
+        <b-form-group  class="border p-2 w-auto">
+          <div class="form-legend">Filter</div>
 
-        <select v-model="selected_cluster" v-on:change="handleSubmit">
-          <option v-for="v in clusters" :key="v">{{ v }}</option>
-        </select>
+          <b-form-select v-model="selected_cluster" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
+            <option v-for="v in clusters" :key="v">{{ v }}</option>
+          </b-form-select>
 
-        <select v-model="selected_impl" v-on:change="handleSubmit">
-          <option v-for="v in impls" :key="v">{{ v }}</option>
-        </select>
+          <b-form-select v-model="selected_impl" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
+            <option v-for="v in impls" :key="v">{{ v }}</option>
+          </b-form-select>
 
-        <select v-model="selected_workload" v-on:change="handleSubmit">
-          <option v-for="v in workloads" :key="v">{{ v }}</option>
-        </select>
+          <b-form-select v-model="selected_workload" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
+            <option v-for="v in workloads" :key="v">{{ v }}</option>
+          </b-form-select>
 
-        <select v-model="selected_vars" v-on:change="handleSubmit">
-          <option v-for="v in vars" :key="v">{{ v }}</option>
-        </select>
-      </fieldset>
+          <b-form-select v-model="selected_vars" v-on:change="handleSubmit">
+            <option v-for="v in vars" :key="v">{{ v }}</option>
+          </b-form-select>
+        </b-form-group>
 
-
-      <!--        <button type=submit>-->
-      <!--            Submit-->
-      <!--        </button>-->
-    </form>
-
+        <!--        <button type=submit>-->
+        <!--            Submit-->
+        <!--        </button>-->
+      </b-form>
+    </div>
     <!--        {query_params}-->
 
 
@@ -50,33 +52,34 @@
     <!--        {results}-->
     <div v-if="results">
       <div v-for="panel in results.panels" :key="panel">
-<!--        <h2>{{ panel.title }}</h2>-->
+        <!--        <h2>{{ panel.title }}</h2>-->
 
         <div class="graph" v-for="graph in panel.graphs" :key="graph">
+          <b-container>
 
-          <!--                    <table>-->
-          <!--                        <tr>-->
-          <!--                            <td><strong>Cluster:</strong></td>-->
-          <!--                            <td>{JSON.stringify(graph.chosen.cluster)}</td>-->
-          <!--                        </tr>-->
-          <!--                        <tr>-->
-          <!--                            <td><strong>Workload:</strong></td>-->
-          <!--                            <td>{JSON.stringify(graph.chosen.workload)}</td>-->
-          <!--                        </tr>-->
-          <!--                        <tr>-->
-          <!--                            <td><strong>Vars:</strong></td>-->
-          <!--                            <td>{JSON.stringify(graph.chosen.vars)}</td>-->
-          <!--                        </tr>-->
-          <!--                        <tr>-->
-          <!--                            <td><strong>Impl:</strong></td>-->
-          <!--                            <td>{JSON.stringify(graph.chosen.impl)}</td>-->
-          <!--                        </tr>-->
-          <!--                    </table>-->
+            <!--                    <table>-->
+            <!--                        <tr>-->
+            <!--                            <td><strong>Cluster:</strong></td>-->
+            <!--                            <td>{JSON.stringify(graph.chosen.cluster)}</td>-->
+            <!--                        </tr>-->
+            <!--                        <tr>-->
+            <!--                            <td><strong>Workload:</strong></td>-->
+            <!--                            <td>{JSON.stringify(graph.chosen.workload)}</td>-->
+            <!--                        </tr>-->
+            <!--                        <tr>-->
+            <!--                            <td><strong>Vars:</strong></td>-->
+            <!--                            <td>{JSON.stringify(graph.chosen.vars)}</td>-->
+            <!--                        </tr>-->
+            <!--                        <tr>-->
+            <!--                            <td><strong>Impl:</strong></td>-->
+            <!--                            <td>{JSON.stringify(graph.chosen.impl)}</td>-->
+            <!--                        </tr>-->
+            <!--                    </table>-->
 
-<!--              <Chart data={graph.data} type={graph.type}/>-->
+            <!--              <Chart data={graph.data} type={graph.type}/>-->
 
-          <BarChart class="chart" :chartdata="graph.data" :options="graph.options"/>
-
+            <BarChart class="chart" :chartdata="graph.data" :options="graph.options"/>
+          </b-container>
           <table>
             <tr v-for="r in graph.runs" :key="r">
               <td>{{ r.id }}</td>
@@ -217,4 +220,28 @@ export default {
 .chart {
   height: 200px !important;
 }
+
+.form-legend {
+  text-align: left;
+  font-weight: bold;
+}
+
+.vgap {
+  margin-bottom: 1rem;
+}
+
+.vgap-big {
+  margin-bottom: 3rem;
+}
+
+.main {
+  padding: 1rem
+}
+
+/*fieldset {*/
+/*  display: flex;*/
+/*  flex-flow: row wrap;*/
+/*  align-items: center;*/
+
+/*}*/
 </style>

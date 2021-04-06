@@ -133,7 +133,9 @@ export class DashboardService {
             "data": {
                 "labels": labels,
                 "datasets": [
-                    // {"values": values}
+                    // For Frappe charts (Svelte)
+                    {"values": values},
+                    // For Charts.js (Vue)
                     {
                         // "color": "red",
                         "backgroundColor": "#D7ECD9",
