@@ -110,6 +110,7 @@ export class DatabaseService {
                       FROM runs
                       where (params) @>
                         ('${JSON.stringify(compared_json)}'::jsonb #- '${group_by}')`
+        console.info(st)
         const result = await this.client.query(st)
         const rows = result
         const ret = rows.map(x => {
@@ -159,6 +160,7 @@ export class DatabaseService {
                       FROM buckets join runs on buckets.run_id = runs.id
                       WHERE run_id in ('${run_ids.join('\',\'')}')
                       GROUP BY runs.${groupBy1}`
+        console.info(st)
         const result = await this.client.query(st)
         const rows = result;
         return rows.map(x => new Result(x.grouping, x.value))
@@ -172,6 +174,7 @@ export class DatabaseService {
                     buckets.${display}
                       FROM buckets join runs on buckets.run_id = runs.id
                       WHERE run_id in ('${run_ids.join('\',\'')}')`
+        console.info(st)
         const result = await this.client.query(st)
         return result.map(x => new Result(x.grouping, x.value))
     }

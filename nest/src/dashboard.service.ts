@@ -133,7 +133,12 @@ export class DashboardService {
             "data": {
                 "labels": labels,
                 "datasets": [
-                    {"values": values}
+                    // {"values": values}
+                    {
+                        // "color": "red",
+                        "backgroundColor": "#D7ECD9",
+                        "data": values
+                    }
                 ]
             }
         }
