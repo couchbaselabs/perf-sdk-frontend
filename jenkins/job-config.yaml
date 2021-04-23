@@ -1,0 +1,57 @@
+variables:
+  runtime: 10m
+
+matrix:
+  cluster:
+    from: cbdyncluster
+    version: 6.6.1-stable
+    nodes: 3
+    replicas: 1
+
+  implementations:
+    - language: java
+      version: 1.1.0
+    - language: java
+      version: 1.1.4
+    - language: java
+      version: 1.1.5-SNAPSHOT
+    - language: cxx
+      version: 1.0.0
+
+  workloads:
+    - description: "$number_of_inserts inserts, one replace with chance of contention" # maybe unnecessary, can auto-gen
+
+      transaction:
+        operations:
+          - repeat:
+              op:
+                type: insert
+                doc: uuid
+              count: $number_of_inserts
+          - op: replace
+            doc:
+              id: pool
+              dist: zipfian
+
+      variables:
+        - name: horizontal_scaling
+          values:
+            - 1
+            - 5
+            - 10
+        - name: number_of_inserts
+          values:
+            - 3
+            - 50
+            - 100
+        - name: doc_pool_size
+          values:
+            - 10
+            - 1000
+        - name: durability
+          values:
+            - MAJORITY
+            - PERSIST_TO_ACTIVE
+        - name: unstaging_mode
+          values:
+            - best_avail

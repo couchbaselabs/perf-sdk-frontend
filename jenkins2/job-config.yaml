@@ -1,0 +1,81 @@
+# This file declaratively says what performance tests should be run, and where they should be run.
+# The tools will work out all permutations of runs from this.
+# They will interrogate the database and see what runs already exist.
+# Any runs that need running, will be.
+
+servers:
+  # This is where the performers should run.  If not "localhost" they will be scp-ed to here, in the form of a tarred Docker image.
+  performer: localhost
+
+# Generally only CI should be talking to production database.  For local performance testing, spin up a localhost database.
+database:
+  hostname: localhost
+  port: 5432
+  username: postgres
+  password: postgres
+
+# Can override any executables here, to workaround environmental/path issues.
+executables:
+  curl:
+  cbdyncluster: d:\dev\Couchbase\cbdyncluster-windows.exe --config d:\dev\Couchbase\.cbdyncluster.toml
+  docker: C:\Program Files\Docker\Docker\resources\bin\docker.exe
+
+variables:
+  # How long each run will be
+  runtime: 10m
+
+matrix:
+  clusters:
+    # Supported types: cbdyncluster, localhost
+    - type: cbdyncluster
+      version: 6.6-stable
+      replicas: 1
+      nodes: 3
+
+    - type: localhost
+
+  implementations:
+    - language: java
+      version: 1.1.0
+    - language: java
+      version: 1.1.4
+    - language: java
+      version: 1.1.5-SNAPSHOT
+    - language: cxx
+      version: 1.0.0
+
+  workloads:
+    - transaction:
+        operations:
+          - repeat:
+              op: insert
+              doc:
+                from: uuid
+              count: $number_of_inserts
+          - op: replace
+            doc:
+              from: pool
+              distribution: uniform
+
+      variables:
+        custom:
+          - name: number_of_inserts
+            values:
+              - 3
+  #            - 50
+  #            - 100
+
+        predefined:
+          - name: horizontal_scaling
+            values:
+              - 1
+  #            - 5
+  #            - 10
+          - name: doc_pool_size
+            values:
+  #            - 10
+              - 1000
+          - name: durability
+            values:
+              - MAJORITY
+              - PERSIST_TO_ACTIVE

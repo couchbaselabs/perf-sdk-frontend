@@ -7,17 +7,17 @@ npm install
 
 ### Compiles and hot-reloads for development
 ```
-npm run serve
+npm main.run serve
 ```
 
 ### Compiles and minifies for production
 ```
-npm run build
+npm main.run build
 ```
 
 ### Lints and fixes files
 ```
-npm run lint
+npm main.run lint
 ```
 
 ### Customize configuration

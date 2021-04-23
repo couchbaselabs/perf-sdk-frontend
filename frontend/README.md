@@ -28,7 +28,7 @@ npm install
 ...then start [Rollup](https://rollupjs.org):
 
 ```bash
-npm run dev
+npm main.run dev
 ```
 
 Navigate to [localhost:5000](http://localhost:5000). You should see your app running. Edit a component file in `src`, save it, and reload the page to see your changes.
@@ -42,10 +42,10 @@ If you're using [Visual Studio Code](https://code.visualstudio.com/) we recommen
 To create an optimised version of the app:
 
 ```bash
-npm run build
+npm main.run build
 ```
 
-You can run the newly built app with `npm run start`. This uses [sirv](https://github.com/lukeed/sirv), which is included in your package.json's `dependencies` so that the app will work when you deploy to platforms like [Heroku](https://heroku.com).
+You can main.run the newly built app with `npm main.run start`. This uses [sirv](https://github.com/lukeed/sirv), which is included in your package.json's `dependencies` so that the app will work when you deploy to platforms like [Heroku](https://heroku.com).
 
 
 ## Single-page app mode
@@ -60,7 +60,7 @@ If you're building a single-page app (SPA) with multiple routes, sirv needs to b
 
 ## Using TypeScript
 
-This template comes with a script to set up a TypeScript development environment, you can run it immediately after cloning the template with:
+This template comes with a script to set up a TypeScript development environment, you can main.run it immediately after cloning the template with:
 
 ```bash
 node scripts/setupTypeScript.js
@@ -100,6 +100,6 @@ npm install -g surge
 Then, from within your project folder:
 
 ```bash
-npm run build
+npm main.run build
 surge public my-project.surge.sh
 ```

@@ -1,0 +1,93 @@
+# This will be output for each cluster-performer pair
+variables:
+  runtime: 10m
+
+connections:
+  cluster:
+    hostname: localhost
+    username: Administrator
+    password: password
+
+  performer:
+    hostname: localhost
+    port: 8060
+
+
+# For writing to db
+#cluster:
+#  type: cbdyncluster
+#  version: 6.6-stable
+#  replicas: 1
+#  nodes: 3
+#
+## For writing to db
+#implementation:
+#  language: java
+#  version: 1.1.0
+
+# Unrolled bunch of runs
+runs:
+  - uuid: XXXX
+    db: {cluster:{type:cbdyncluster}...
+    description: "$number_of_inserts inserts, one replace with chance of contention"
+
+    transaction:
+      operations:
+        - repeat:
+            op:
+              type: insert
+              doc: uuid
+            count: $number_of_inserts
+        - op: replace
+          doc:
+            id: pool
+            dist: zipfian
+
+    variables:
+      - name: horizontal_scaling
+        values:
+          - 1
+      - name: number_of_inserts
+        values:
+          - 3
+      - name: doc_pool_size
+        values:
+          - 10
+      - name: durability
+        values:
+          - MAJORITY
+      - name: unstaging_mode
+        values:
+          - best_avail
+
+  - uuid: YYY
+    description: "$number_of_inserts inserts, one replace with chance of contention"
+
+    transaction:
+      operations:
+        - repeat:
+            op:
+              type: insert
+              doc: uuid
+            count: $number_of_inserts
+        - op: replace
+          doc:
+            id: pool
+            dist: zipfian
+
+    variables:
+      - name: horizontal_scaling
+        values:
+          - 1
+      - name: number_of_inserts
+        values:
+          - 10
+      - name: doc_pool_size
+        values:
+          - 10
+      - name: durability
+        values:
+          - MAJORITY
+      - name: unstaging_mode
+        values:
+          - best_avail
