@@ -27,7 +27,7 @@ class ConfigParser {
         for (cluster in config.matrix.clusters) {
             for (impl in config.matrix.implementations) {
                 for (workload in config.matrix.workloads) {
-                    var setWorkloads = genSetWorkloads(workload);
+                    var setWorkloads = genSetWorkloadsUnrolledCustom(workload, [], workload.variables.custom);
 
                     for (setWorkload in setWorkloads) {
                         def run = new Run()
@@ -79,6 +79,7 @@ class ConfigParser {
                     sb.append("inserting ")
                     sb.append(op.doc.toString())
                 }
+                break
 //                return new OpInsert(docId, initial)
 //                builder.insert(docId, initial, EXPECT_ANYTHING);
             case PerfConfig.Workload.Transaction.Operation.Op.REPLACE:
@@ -86,16 +87,18 @@ class ConfigParser {
                     sb.append("replacing ")
                     sb.append(op.doc.toString())
                 }
+                break
 //                return new OpReplace(docId, updated)
 //                builder.replace(docId, updated, EXPECT_ANYTHING);
 
 //            case INSERT -> builder.insert(docId, null, EXPECT_ANYTHING);
 //            case REPLACE -> builder.replace(docId, null, EXPECT_ANYTHING);
-            case PerfConfig.Workload.Transaction.Operation.Op.REPLACE:
+            case PerfConfig.Workload.Transaction.Operation.Op.REMOVE:
                 if (sb != null) {
                     sb.append("removing ")
                     sb.append(op.doc.toString())
                 }
+                break
 //                return new OpRemove(docId)
 //                builder.remove(docId, EXPECT_ANYTHING);
             default:
@@ -149,15 +152,15 @@ class ConfigParser {
         workload.transaction.operations.forEach(op -> {
             if (op.repeat != null) {
 //                op.repeat.forEach(repeatedOp -> {
-                    int count = evaluateCount(workload, op.repeat.count);
-                    sb.append("Repeating ");
-                    sb.append(op.repeat.count);
-                    sb.append(' ');
-                    for (int i = 0; i < count; i++) {
-                        addOp(i == 0 ? sb : null, workload, op.repeat, i)
+                int count = evaluateCount(workload, op.repeat.count);
+                sb.append("Repeating ");
+                sb.append(op.repeat.count);
+                sb.append(' ');
+                for (int i = 0; i < count; i++) {
+                    addOp(i == 0 ? sb : null, workload, op.repeat, i)
 //                        ops.add();
-                    }
-                    sb.append("; ");
+                }
+                sb.append("; ");
 //                });
             }
 
@@ -183,7 +186,7 @@ class ConfigParser {
     }
 
     @CompileDynamic
-    static List<SetWorkload> genSetWorkloads(PerfConfig.Workload workload) {
+    static List<SetWorkload> genSetWorkloadsRolled(PerfConfig.Workload workload) {
         var customVars = new ArrayList<SetCustomVariable>()
         var predefinedVars = new ArrayList<SetPredefinedVariable>()
 
@@ -206,6 +209,71 @@ class ConfigParser {
                 .collect(Collectors.toList())
     }
 
+    /**
+     * Want
+     * 3 1 10 M
+     * 3 1 10 P
+     * 3 1 1000 M
+     * 3 1 1000 P
+     * 3 5 10 M
+     * 3 5 10 P
+     * 3 5 1000 M
+     * 3 5 1000 P
+     * 50 1 10 M
+     * 50 1 10 P
+     * 50 1 1000 M
+     * 50 1 1000 P
+     * 50 5 10 M
+     * 50 5 10 P
+     * 50 5 1000 M
+     * 50 5 1000 P
+     */
+
+    @CompileStatic
+    static List<SetWorkload> genSetWorkloadsUnrolledCustom(PerfConfig.Workload workload,
+                                                           List<SetCustomVariable> setSoFar,
+                                                           List<PerfConfig.Workload.CustomVariable> varsRest) {
+        if (varsRest.size() == 0) {
+            return genSetWorkloadsUnrolledPredefined(workload, setSoFar, new ArrayList<SetPredefinedVariable>(), workload.variables.predefined)
+        } else {
+            def head = varsRest.get(0)
+            def rest = varsRest.subList(1, varsRest.size())
+            def out = new ArrayList<SetWorkload>()
+
+            head.values.forEach(value -> {
+                def cloned = new ArrayList(setSoFar)
+                cloned.add(new SetCustomVariable(head.name, value))
+                out.addAll(genSetWorkloadsUnrolledCustom(workload, cloned, rest))
+            })
+
+            return out
+        }
+    }
+
+    @CompileStatic
+    static List<SetWorkload> genSetWorkloadsUnrolledPredefined(PerfConfig.Workload workload,
+                                                               List<SetCustomVariable> custom,
+                                                               List<SetPredefinedVariable> setSoFar,
+                                                               List<PerfConfig.Workload.PredefinedVariable> varsRest) {
+        if (varsRest.size() == 0) {
+            def sw = new SetWorkload(workload.transaction, new SetVariables(setSoFar, custom))
+            return [sw]
+        }
+        else {
+            def head = varsRest.get(0)
+            def rest = varsRest.subList(1, varsRest.size())
+            def out = new ArrayList<SetWorkload>()
+
+            head.values.forEach(value -> {
+                def cloned = new ArrayList(setSoFar)
+                cloned.add(new SetPredefinedVariable(head.name, value))
+                out.addAll(genSetWorkloadsUnrolledPredefined(workload, custom, cloned, rest))
+            })
+
+            return out
+        }
+    }
+
     private static <T extends HasName> List<List<T>> createVariablePerms(ArrayList<T> predefinedVars) {
         var grouped = predefinedVars.stream()
                 .collect(Collectors.groupingBy((HasName a) -> a.getName()))
@@ -215,8 +283,8 @@ class ConfigParser {
         return createVariablePerms(next) as List<List<T>>
     }
 
-    // In:  [[A1,A2],[B1,B2],[C1,C2]]
-    // Out: [[A1,B1,C1],[A1,B1,C2],[A1,B2,C1]...]
+// In:  [[A1,A2],[B1,B2],[C1,C2]]
+// Out: [[A1,B1,C1],[A1,B1,C2],[A1,B2,C1]...]
     @CompileDynamic
     private static <T> List<List<T>> createVariablePerms(List<List<T>> cons) {
         if (cons.size() == 1) {
@@ -240,4 +308,5 @@ class ConfigParser {
                     .collect(Collectors.toList())
         }
     }
+
 }

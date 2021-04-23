@@ -3,13 +3,17 @@ package main.fit.perf.config
 import com.fasterxml.jackson.annotation.JsonProperty
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 
 import java.time.Duration
+
+import static main.fit.perf.config.PerfConfig.Workload.PredefinedVariable.*
 
 @CompileStatic
 
 
 // Represents PerfConfig.yaml
+@ToString(includeNames = true, includePackage = false)
 class PerfConfig {
     Servers servers
     Variables variables
@@ -17,12 +21,14 @@ class PerfConfig {
     Map<String, String> executables
     Matrix matrix
 
+    @ToString(includeNames = true, includePackage = false)
     static class Matrix {
         List<Cluster> clusters
         List<Implementation> implementations
         List<Workload> workloads
     }
 
+    @ToString(includeNames = true, includePackage = false)
     static class Variables {
         String runtime
 
@@ -39,10 +45,12 @@ class PerfConfig {
         }
     }
 
+    @ToString(includeNames = true, includePackage = false)
     static class Servers {
         String performer
     }
 
+    @ToString(includeNames = true, includePackage = false)
     static class Database {
         String host
         int port
@@ -52,6 +60,7 @@ class PerfConfig {
     }
 
     // This is the superset of all supported cluster params.  Not all of them are used for each cluster type.
+    @ToString(includeNames = true, includePackage = false)
     static class Cluster {
         String version
         Integer nodes
@@ -59,26 +68,30 @@ class PerfConfig {
         String type
     }
 
+    @ToString(includeNames = true, includePackage = false)
     static class Implementation {
         String language
         String version
     }
 
+    @ToString(includeNames = true, includePackage = false)
     static class Workload {
 //        String description
         Transaction transaction
         Variables variables
 
+        @ToString(includeNames = true, includePackage = false)
         static class Variables {
             List<PredefinedVariable> predefined
             List<CustomVariable> custom
         }
 
+        @ToString(includeNames = true, includePackage = false)
         static class PredefinedVariable {
             PredefinedVariableName name
             List<Object> values
 
-
+            @ToString(includeNames = true, includePackage = false)
             enum PredefinedVariableName {
                 @JsonProperty("horizontal_scaling") HORIZONTAL_SCALING,
                 @JsonProperty("doc_pool_size") DOC_POOL_SIZE,
@@ -86,20 +99,24 @@ class PerfConfig {
             }
         }
 
+        @ToString(includeNames=true, includePackage = false)
         static class CustomVariable {
             String name
             List<Object> values
         }
 
+        @ToString(includeNames=true, includePackage = false)
         static class Transaction {
             List<Operation> operations
 
+            @ToString(includeNames=true, includePackage = false)
             static class Operation {
                 Op op
                 Doc doc
                 Operation repeat
                 String count
 
+                @ToString(includeNames=true, includePackage = false)
                 static enum Op {
                     @JsonProperty("insert") INSERT,
                     @JsonProperty("replace") REPLACE,
@@ -111,11 +128,13 @@ class PerfConfig {
                 From from
                 Distribution distribution
 
+                @ToString(includeNames=true, includePackage = false)
                 static enum From {
                     @JsonProperty("uuid") UUID,
                     @JsonProperty("pool") POOL
                 }
 
+                @ToString(includeNames=true, includePackage = false)
                 static enum Distribution {
                     @JsonProperty("uniform") UNIFORM
                 }
@@ -133,6 +152,7 @@ class PerfConfig {
 }
 
 @CompileStatic
+@ToString(includeNames = true, includePackage = false)
 class SetWorkload {
     PerfConfig.Workload.Transaction transaction
     SetVariables variables
@@ -143,6 +163,7 @@ class SetWorkload {
     }
 }
 
+@ToString(includeNames = true, includePackage = false)
 class SetVariables {
     List<SetPredefinedVariable> predefined
     List<SetCustomVariable> custom
@@ -164,19 +185,19 @@ class SetVariables {
     }
 
     Integer horizontalScaling() {
-        return (Integer) predefinedVar(PerfConfig.Workload.PredefinedVariable.PredefinedVariableName.HORIZONTAL_SCALING)
+        return (Integer) predefinedVar(PredefinedVariableName.HORIZONTAL_SCALING)
     }
 
     Integer docPoolSize() {
-        return (Integer) predefinedVar(PerfConfig.Workload.PredefinedVariable.PredefinedVariableName.DOC_POOL_SIZE)
+        return (Integer) predefinedVar(PredefinedVariableName.DOC_POOL_SIZE)
     }
 
     String durability() {
-        var raw = (String) predefinedVar(PerfConfig.Workload.PredefinedVariable.PredefinedVariableName.DURABILITY)
+        var raw = (String) predefinedVar(PredefinedVariableName.DURABILITY)
         return raw
     }
 
-    private Object predefinedVar(PerfConfig.Workload.PredefinedVariable.PredefinedVariableName name) {
+    private Object predefinedVar(PredefinedVariableName name) {
         return predefined.stream()
                 .filter(v -> v.name == name.name())
                 .findFirst()
@@ -190,11 +211,12 @@ interface HasName {
     String getName();
 }
 
+@ToString(includeNames = true, includePackage = false)
 class SetPredefinedVariable implements HasName {
-    PerfConfig.Workload.PredefinedVariable.PredefinedVariableName name
+    PredefinedVariableName name
     Object value
 
-    SetPredefinedVariable(PerfConfig.Workload.PredefinedVariable.PredefinedVariableName name, Object value) {
+    SetPredefinedVariable(PredefinedVariableName name, Object value) {
         this.name = name
         this.value = value
     }
@@ -205,7 +227,8 @@ class SetPredefinedVariable implements HasName {
     }
 }
 
-public class SetCustomVariable implements HasName {
+@ToString(includeNames = true, includePackage = false)
+class SetCustomVariable implements HasName {
     String name
     Object value
 
@@ -222,6 +245,7 @@ public class SetCustomVariable implements HasName {
 
 
 @CompileStatic
+@ToString(includeNames = true, includePackage = false)
 class Run {
     PerfConfig.Cluster cluster
     PerfConfig.Implementation impl

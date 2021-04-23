@@ -52,17 +52,17 @@ matrix:
               doc:
                 from: uuid
               count: $number_of_inserts
-          - op: replace
-            doc:
-              from: pool
-              distribution: uniform
+#          - op: replace
+#            doc:
+#              from: pool
+#              distribution: uniform
 
       variables:
         custom:
           - name: number_of_inserts
             values:
               - 3
-  #            - 50
+#              - 50
   #            - 100
 
         predefined:
