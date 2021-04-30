@@ -7,42 +7,75 @@ servers:
   # This is where the performers should run.  If not "localhost" they will be scp-ed to here, in the form of a tarred Docker image.
   performer: localhost
 
+  driver:
+    # Where the driver runs.  Currently only "localhost" is supported.
+    hostname: localhost
+
+    # Either the location of a checked-out transactions-fit-performer project, or "https://github.com/couchbaselabs/transactions-fit-performer"
+    source: d:\dev\Couchbase\transactions-fit-performer
+
+
 # Generally only CI should be talking to production database.  For local performance testing, spin up a localhost database.
 database:
   hostname: localhost
   port: 5432
   username: postgres
   password: postgres
+  database: perf
 
 # Can override any executables here, to workaround environmental/path issues.
-executables:
-  curl:
-  cbdyncluster: d:\dev\Couchbase\cbdyncluster-windows.exe --config d:\dev\Couchbase\.cbdyncluster.toml
-  docker: C:\Program Files\Docker\Docker\resources\bin\docker.exe
+environment:
+  executables:
+    curl:
+    cbdyncluster: d:\dev\Couchbase\cbdyncluster-windows.exe --config d:\dev\Couchbase\.cbdyncluster.toml
+    docker: C:\Program Files\Docker\Docker\resources\bin\docker.exe
+    mvn: c:\Users\graha\scoop\apps\maven\current\bin\mvn.cmd
 
+  envvar:
+    JAVA_HOME: C:\Program Files\Amazon Corretto\jdk15.0.2_7
+    PATH: C:\WINDOWS\SYSTEM32
+
+# These settings will be saved to the database
 variables:
   # How long each run will be
-  runtime: 10m
+  runtime: 10s
+
+# These settings will not be saved to the database
+settings:
+  # Outputs what would be performed, without actually performing it.  Config file still get written.
+  dryRun: false
+
+  # Whether to ignore whatever runs are already in the database
+  force: false
+
+  # If confident that all Docker images are built and up-to-date
+  skipDockerBuild: false
 
 matrix:
   clusters:
-    # Supported types: cbdyncluster, localhost
-    - type: cbdyncluster
-      version: 6.6-stable
-      replicas: 1
-      nodes: 3
+    # Supported types: cbdyncluster, unmanaged
+#    - type: cbdyncluster
+#      version: 6.6-stable
+#      replicas: 1
+#      nodes: 3
 
-    - type: localhost
+    - type: unmanaged
+      hostname: localhost
 
   implementations:
-    - language: java
-      version: 1.1.0
+    # If just port is specified: the performer is expected to be running already at location servers.performer.
+    # E.g. this is for localhost testing.
+    # Otherwise, specify language and version, and this tool will spinup a performer running at location servers.performer.
+#    - port: 8060
+
+#    - language: java
+#      version: 1.1.0
     - language: java
       version: 1.1.4
-    - language: java
-      version: 1.1.5-SNAPSHOT
-    - language: cxx
-      version: 1.0.0
+#    - language: java
+#      version: 1.1.5-SNAPSHOT
+#    - language: cxx
+#      version: 1.0.0
 
   workloads:
     - transaction:
@@ -78,4 +111,4 @@ matrix:
           - name: durability
             values:
               - MAJORITY
-              - PERSIST_TO_ACTIVE
+#              - PERSIST_TO_ACTIVE

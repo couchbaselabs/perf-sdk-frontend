@@ -66,12 +66,14 @@ class PerfConfig {
         Integer nodes
         Integer replicas
         String type
+        String hostname
     }
 
     @ToString(includeNames = true, includePackage = false)
     static class Implementation {
         String language
         String version
+        Integer port
     }
 
     @ToString(includeNames = true, includePackage = false)
@@ -91,11 +93,14 @@ class PerfConfig {
             PredefinedVariableName name
             List<Object> values
 
-            @ToString(includeNames = true, includePackage = false)
             enum PredefinedVariableName {
                 @JsonProperty("horizontal_scaling") HORIZONTAL_SCALING,
                 @JsonProperty("doc_pool_size") DOC_POOL_SIZE,
                 @JsonProperty("durability") DURABILITY
+
+                String toString() {
+                    return this.name().toLowerCase()
+                }
             }
         }
 
@@ -121,6 +126,11 @@ class PerfConfig {
                     @JsonProperty("insert") INSERT,
                     @JsonProperty("replace") REPLACE,
                     @JsonProperty("remove") REMOVE
+
+                    @Override
+                    String toString() {
+                        return this.name().toLowerCase()
+                    }
                 }
             }
 
@@ -132,11 +142,21 @@ class PerfConfig {
                 static enum From {
                     @JsonProperty("uuid") UUID,
                     @JsonProperty("pool") POOL
+
+                    @Override
+                    String toString() {
+                        return this.name().toLowerCase()
+                    }
                 }
 
                 @ToString(includeNames=true, includePackage = false)
                 static enum Distribution {
                     @JsonProperty("uniform") UNIFORM
+
+                    @Override
+                    String toString() {
+                        return this.name().toLowerCase()
+                    }
                 }
 
                 @Override

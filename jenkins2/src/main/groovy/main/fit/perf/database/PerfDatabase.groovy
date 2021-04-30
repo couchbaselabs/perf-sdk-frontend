@@ -31,7 +31,7 @@ class PerfDatabase {
         }
     }
 
-    static List<RunFromDb> compareRunsAgainstDb(StageContext ctx, List < Run > runs) {
+    static List<RunFromDb> compareRunsAgainstDb(StageContext ctx, List <Run> runs) {
         def sql = getConnection()
         return runs.stream()
                 .map(run -> {
@@ -39,7 +39,7 @@ class PerfDatabase {
                     def statement = "SELECT id FROM runs WHERE params <@ '$json'::jsonb"
                     def dbRunIds = new ArrayList<String>()
                     sql.eachRow(statement) {
-                        dbRunIds.add(it.getString(0))
+                        dbRunIds.add(it.getString("id"))
                     }
                     ctx.env.log("Found ${dbRunIds.size()} entries for run $statement")
                     def r = new RunFromDb()

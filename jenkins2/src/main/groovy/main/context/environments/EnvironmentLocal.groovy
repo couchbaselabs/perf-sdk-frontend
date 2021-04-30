@@ -1,6 +1,9 @@
 package main.context.environments
 
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
+
+import java.time.LocalDateTime
 
 // An Environment for running on a local development machine.  It can abstract over Windows, Linux & Mac, though
 // appropriate executable overrides may need to be set in the config.
@@ -8,9 +11,16 @@ import groovy.transform.CompileStatic
 class EnvironmentLocal extends Environment {
     Stack<File> workingDirectory = new Stack<>()
     String initialDir
+    List<String> envvarConverted = new ArrayList<>()
 
-    EnvironmentLocal(executableOverrides) {
-        super(executableOverrides)
+    @CompileDynamic
+    EnvironmentLocal(config) {
+        super(config)
+
+        envvar.forEach((k,v) -> {
+            envvarConverted.add(k + "=" + v)
+        })
+
         initialDir = System.getProperty("user.dir")
         log("Working directory: $initialDir")
     }
@@ -37,6 +47,12 @@ class EnvironmentLocal extends Environment {
         else {
             fullDirectory = workingDirectory.peek().getAbsolutePath() + File.separator + directory
         }
+        dirAbsolute(fullDirectory, closure)
+    }
+
+
+    @Override
+    void dirAbsolute(String fullDirectory, Closure closure) {
         workingDirectory.add(new File(fullDirectory))
         log("Moving to new working directory, stack now $workingDirectory")
         try {
@@ -54,7 +70,7 @@ class EnvironmentLocal extends Environment {
 
         if (executableOverrides.containsKey(exe) && executableOverrides.get(exe) != null) {
             def replaceWith = executableOverrides.get(exe)
-            log("Overriding command $exe to $replaceWith")
+            // log("Overriding command $exe to $replaceWith")
             command = command.replace(exe, replaceWith)
             exe = replaceWith
         }
@@ -67,16 +83,25 @@ class EnvironmentLocal extends Environment {
             wd = workingDirectory.peek()
         }
         File fullWd = wd != null ? wd : new File(initialDir)
-        log("Executing '$command' in directory ${fullWd.getAbsolutePath()}")
+        log("Executing '$command' in directory ${fullWd.getAbsolutePath()} with envvar ${envvarConverted}")
+
 
         def sout = new StringBuilder(), serr = new StringBuilder()
-        def proc = command.execute([], fullWd)
+        def proc = command.execute(envvarConverted, fullWd)
         proc.consumeProcessOutput(sout, serr)
         proc.waitForOrKill(120000)
+
+        if (!sout.toString().trim().isEmpty()) {
+            log("stdout:")
+            log(sout.toString())
+        }
+        if (!serr.toString().trim().isEmpty()) {
+            log("stderr:")
+            log(serr.toString())
+        }
+
         if (proc.exitValue() != 0) {
-            if (serr.size() > 0) {
-                throw new RuntimeException("Process '$command' failed with error '$serr'")
-            }
+            log("Process '$command' failed with error ${proc.exitValue()}")
             throw new RuntimeException("Process '$command' failed with error ${proc.exitValue()}")
         }
         return sout.toString().trim()
@@ -84,6 +109,10 @@ class EnvironmentLocal extends Environment {
 
     @Override
     void log(String toLog) {
-        println(toLog)
+        String bonusIndent = ""
+        if (!(toLog.startsWith("<") || toLog.startsWith(">"))) {
+            bonusIndent = "  "
+        }
+        println("${LocalDateTime.now().toString().padRight(30)} ${" " * logIndent}${bonusIndent}$toLog")
     }
 }

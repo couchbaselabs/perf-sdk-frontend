@@ -1,5 +1,6 @@
 package main.stages
 
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import main.context.StageContext
 import main.fit.perf.config.PerfConfig
@@ -12,9 +13,13 @@ import main.fit.stages.StartDockerImagePerformer
 @CompileStatic
 class InitialisePerformer extends Stage {
     private PerfConfig.Implementation impl
+    private int port = 8060
 
     InitialisePerformer(PerfConfig.Implementation impl) {
         this.impl = impl
+        if (impl.port != null) {
+            port = impl.port
+        }
     }
 
     @Override
@@ -22,25 +27,52 @@ class InitialisePerformer extends Stage {
         return "Init performer $impl"
     }
 
+    @CompileDynamic
+    boolean skipDockerBuild(StageContext ctx) {
+        return ctx.jc.settings.skipDockerBuild
+    }
+
     @Override
     List<Stage> stagesPre(StageContext ctx) {
-        if (impl.language == "java") {
-            def stage1 = new BuildDockerJavaFITPerformer(impl.version)
-            List<Stage> stages = []
-            stages.add(stage1)
+        if (impl.port != null) {
+            // Nothing to do
+            return []
+        }
+        else {
+            if (impl.language == "java") {
+                List<Stage> stages = []
+                def stage1 = new BuildDockerJavaFITPerformer(impl.version)
 
-            if (ctx.performerServer == "localhost") {
-                stages.add(new StartDockerImagePerformer(stage1.imageName, 8060))
-            } else {
-                throw new IllegalArgumentException("Cannot handle running on performer remote server")
+                if (!skipDockerBuild(ctx)) {
+                    stages.add(stage1)
+                }
+
+                if (ctx.performerServer == "localhost") {
+                    stages.add(new StartDockerImagePerformer(stage1.imageName, port, impl.version))
+                } else {
+                    throw new IllegalArgumentException("Cannot handle running on performer remote server")
+                }
+
+                return stages
             }
 
-            return stages
+            throw new IllegalArgumentException("Unknown performer ${impl.language}")
         }
-
-        throw new IllegalArgumentException("Unknown performer ${impl.language}")
     }
 
     @Override
     void executeImpl(StageContext ctx) {}
+
+    String hostname() {
+        // All we support currently
+        return "localhost"
+    }
+
+    int port() {
+        return port
+    }
+
+    boolean isDocker() {
+        return impl.port == null
+    }
 }

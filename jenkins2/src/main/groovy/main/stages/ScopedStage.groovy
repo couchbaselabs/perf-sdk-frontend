@@ -23,12 +23,32 @@ class ScopedStage extends Stage {
     }
 
     @Override
-    protected void executeImpl(StageContext ctx) {
-        parent.execute(ctx)
+    void execute(StageContext ctx) {
+        ctx.env.startStage(parent)
+        parent.stagesPre(ctx).forEach(stage -> stage.execute(ctx))
+        if (!ctx.dryRun) {
+            parent.executeImpl(ctx)
+        }
         children.forEach(child -> {
             child.execute(ctx)
             child.finish(ctx)
         })
-        // The runner will finish this stage
     }
+
+    @Override
+    void finish(StageContext ctx) {
+        parent.finish(ctx)
+//        parent.stagesPre(ctx).forEach(stage -> stage.finish(ctx))
+        ctx.env.stopStage(parent)
+//        def stages = stagesPre(ctx)
+//        if (!ctx.dryRun) {
+//            finishImpl(ctx)
+//        }
+//        stages.forEach(stage -> stage.finish(ctx))
+//        ctx.env.stopStage(this)
+    }
+
+
+    @Override
+    protected void executeImpl(StageContext ctx) {}
 }

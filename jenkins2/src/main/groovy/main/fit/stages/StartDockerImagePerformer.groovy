@@ -9,9 +9,12 @@ class StartDockerImagePerformer extends Stage {
 
     private String imageName
     private int port
+    private final String version
 
-    StartDockerImagePerformer(String imageName, int port) {
+    StartDockerImagePerformer(String imageName, int port, String version) {
+        this.version = version
         this.imageName = imageName
+        this.port = port
     }
 
     @Override
@@ -21,7 +24,7 @@ class StartDockerImagePerformer extends Stage {
 
     @Override
     void executeImpl(StageContext ctx) {
-        ctx.env.execute("docker run -rm -d -p $port:8060 $imageName")
+        ctx.env.execute("docker run --rm -d -p $port:8060 --name $imageName $imageName version=$version")
     }
 
     @Override

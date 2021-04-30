@@ -34,12 +34,13 @@ class BuildDockerJavaFITPerformer extends Stage {
     void executeImpl(StageContext ctx) {
         def imp = ctx.env
         imp.tempDir() {
-            imp.checkout("https://github.com/couchbaselabs/transactions-fit-performer")
-
-            imp.dir('transactions-fit-performer/performers/java') {
-                writePomFile(imp)
+            // Build context needs to be transactions-fit-performer as we need the .proto files
+            ctx.inSourceDir {
+                imp.dir('performers/java') {
+                    writePomFile(imp)
+                }
 //                updatePomFile(imp)
-                imp.execute("docker build -t $imageName .")
+                imp.execute("docker build -f performers/java/Dockerfile -t $imageName .")
                 //imp.log("Starting Java performer on port :$port")
                 //imp.execute("mvn clean package -DskipTests=true")
                 //imp.execute("java -cp target/txn-performer-java-1.0-SNAPSHOT.jar com.couchbase.PerformerTransactionService port=$port loglevel=all:Info version=$transactionVersion & ")
@@ -70,13 +71,13 @@ class BuildDockerJavaFITPerformer extends Stage {
 
                 if (replaceVersion) {
                     assert (line.contains("<version>"))
-                    pom.append("<version>${transactionVersion}</version>")
+                    pom.append("<version>${transactionVersion}</version>\n")
                     replaceVersion = false
                 } else if (line.contains("<artifactId>couchbase-transactions</artifactId>")) {
                     replaceVersion = true
-                    pom.append(line)
+                    pom.append(line + "\n")
                 } else {
-                    pom.append(line)
+                    pom.append(line + "\n")
                 }
             }
         }

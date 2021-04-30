@@ -24,7 +24,13 @@ abstract class Stage {
 //            imp.log("Skipping cbdeps as not supported by this env")
 //        }
 
-        executeImpl(ctx)
+        ctx.env.startStage(this)
+        stagesPre(ctx).forEach(stage -> stage.execute(ctx))
+        if (ctx.allowedToExecute(this)) {
+            executeImpl(ctx)
+        }
+//        finish(ctx)
+//        ctx.env.stopStage(this)
     }
 
     /**
@@ -44,9 +50,17 @@ abstract class Stage {
 
     void finish(StageContext ctx) {
         def stages = stagesPre(ctx)
+        if (!ctx.dryRun) {
+            finishImpl(ctx)
+        }
         stages.forEach(stage -> stage.finish(ctx))
-        finishImpl(ctx)
+        ctx.env.stopStage(this)
     }
+
+//    @Override
+//    String toString() {
+//        return name()
+//    }
 }
 
 @CompileStatic

@@ -9,7 +9,7 @@ import main.context.StageContext
 @CompileStatic
 class StartCbdyncluster extends Stage {
     private String clusterId
-    private String clusterIp
+    private String clusterIp = "needs cbdyncluster to be setup first"
     private final int numNodes
     private final String clusterVersion
     private final int numReplicas
@@ -59,5 +59,9 @@ class StartCbdyncluster extends Stage {
         // Easy to run out of resources during iterating, so cleanup even
         // though cluster will be auto-removed after a time
         ctx.env.execute("cbdyncluster rm $clusterId")
+    }
+
+    String clusterIp() {
+        return clusterIp
     }
 }

@@ -9,6 +9,7 @@ import main.fit.perf.config.ConfigParser
 import main.fit.perf.config.PerfConfig
 import main.fit.perf.config.Run
 import main.fit.perf.database.PerfDatabase
+import main.fit.perf.database.RunFromDb
 import main.fit.stages.BuildDockerJavaFITPerformer
 import main.fit.stages.StartDockerImagePerformer
 import main.stages.InitialiseCluster
@@ -25,8 +26,7 @@ import static java.util.stream.Collectors.groupingBy
 
 @Field def ys = new YamlSlurper()
 @Field def jc = ys.parse(new File("job-config.yaml"))
-@Field def config = ys.parse(new File("config.yaml"))
-@Field def env = new EnvironmentLocal(config.executables)
+@Field def env = new EnvironmentLocal(jc.environment)
 
 //PerfDatabase.getRuns()
 //void cbdyncluster() {
@@ -87,7 +87,8 @@ import static java.util.stream.Collectors.groupingBy
 
 
 
-def parseConfig(StageContext ctx) {
+@CompileStatic
+static List<Run> parseConfig(StageContext ctx) {
     def config = ConfigParser.readPerfConfig("job-config.yaml")
     def allPerms = ConfigParser.allPerms(config)
     return allPerms
@@ -95,7 +96,7 @@ def parseConfig(StageContext ctx) {
 
 
 //@CompileStatic
-Map<PerfConfig.Cluster, List<Run>> parseConfig2(StageContext ctx) {
+static Map<PerfConfig.Cluster, List<Run>> parseConfig2(StageContext ctx, List<RunFromDb> fromDb) {
     /**
      * Config file declaratively says what runs should exist.  Our job is to comapre to runs that do exist, and run any required.
      *
@@ -110,11 +111,10 @@ Map<PerfConfig.Cluster, List<Run>> parseConfig2(StageContext ctx) {
      * Bring down cluster
      */
 
-    def allPerms = parseConfig(ctx)
-    def db = PerfDatabase.compareRunsAgainstDb(ctx, allPerms)
+//    def allPerms = parseConfig(ctx)
 
-    def toRun = db.stream()
-            .filter(run -> run.dbRunIds.isEmpty())
+    def toRun = fromDb.stream()
+            .filter(run -> run.dbRunIds.isEmpty() || ctx.force)
             .map(run -> run.run)
             .collect(Collectors.toList())
 
@@ -126,7 +126,6 @@ Map<PerfConfig.Cluster, List<Run>> parseConfig2(StageContext ctx) {
     return groupedByCluster
 }
 
-//@CompileStatic
 List<Stage> plan(StageContext ctx, Map<PerfConfig.Cluster, List<Run>> input) {
     def stages = new ArrayList<Stage>()
 
@@ -145,8 +144,16 @@ List<Stage> plan(StageContext ctx, Map<PerfConfig.Cluster, List<Run>> input) {
             def configFilename = runId + ".yaml"
             def performerRuns = []
 
-            performerRuns.add(new OutputPerformerConfig(cluster, performer, runsForClusterAndPerformer, configFilename))
-            performerRuns.add(new RunRunner(configFilename))
+            def output = new OutputPerformerConfig(
+                                clusterStage,
+                                performerStage,
+                                jc,
+                                cluster,
+                                performer,
+                                runsForClusterAndPerformer,
+                                configFilename)
+            performerRuns.add(output)
+            performerRuns.add(new RunRunner(clusterStage, performerStage, output))
 
             clusterChildren.add(new ScopedStage(performerStage, performerRuns))
         })
@@ -157,17 +164,39 @@ List<Stage> plan(StageContext ctx, Map<PerfConfig.Cluster, List<Run>> input) {
     return stages
 }
 
-void run(List<Stage> stages, StageContext ctx) {
-    stages.forEach(stage -> {
-        ctx.env.log("> ${stage.name()}")
-        stage.execute(ctx)
-        stage.finish(ctx)
-    })
-}
+//@CompileStatic
+//void run(StageContext ctx, List<Stage> stages) {
+//    stages.forEach(stage -> {
+//        ctx.env.log("> ${stage.name()}")
+//        stage.execute(ctx)
+//        stage.finish(ctx)
+//    })
+//}
 
 def ctx = new StageContext()
+ctx.jc = jc
 ctx.env = env
 ctx.performerServer = jc.servers.performer
-def parsed = parseConfig(ctx)
-print(parsed)
-//print(plan(ctx, parsed))
+ctx.dryRun = jc.settings.dryRun
+ctx.force = jc.settings.force
+def allPerms = parseConfig(ctx)
+def db = PerfDatabase.compareRunsAgainstDb(ctx, allPerms)
+def parsed2 = parseConfig2(ctx, db)
+def planned = plan(ctx, parsed2)
+def root = new Stage() {
+    @Override
+    String name() {
+        return "Root"
+    }
+
+    protected List<Stage> stagesPre(StageContext _) {
+        return planned
+    }
+
+    @Override
+    protected void executeImpl(StageContext _) {}
+}
+root.execute(ctx)
+root.finish(ctx)
+//run(ctx, planned)
+//print(planned)
