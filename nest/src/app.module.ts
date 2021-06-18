@@ -16,12 +16,13 @@ const pgp = require('pg-promise')(initOptions);
   controllers: [AppController],
   providers: [{
     provide: DatabaseService,
+    // TODO get database config properly
     useFactory: async () => {
       const client = pgp({
         user: 'postgres',
-        host: 'localhost',
+        host: '3.101.74.156',
         database: 'perf',
-        password: 'postgres',
+        password: 'rSKkN4MTKmRe89Rw',
         port: 5432,
       })
       await client.connect()
