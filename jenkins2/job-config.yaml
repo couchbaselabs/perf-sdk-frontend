@@ -42,7 +42,7 @@ variables:
 
 # These settings will not be saved to the database
 settings:
-  # Outputs what would be performed, without actually performing it.  Config file still get written.
+  # Outputs what would be performed, without actually performing it.  Config files still get written.
   dryRun: false
 
   # Whether to ignore whatever runs are already in the database
@@ -70,8 +70,16 @@ matrix:
 
 #    - language: java
 #      version: 1.1.0
+#    - language: java
+#      version: 1.1.3
+#    - language: java
+#      version: 1.1.4
     - language: java
-      version: 1.1.4
+      version: 1.1.5
+    - language: java
+      version: 1.1.6
+    - language: java
+      version: 1.1.7
 #    - language: java
 #      version: 1.1.5-SNAPSHOT
 #    - language: cxx
@@ -111,4 +119,4 @@ matrix:
           - name: durability
             values:
               - MAJORITY
-#              - PERSIST_TO_ACTIVE
+              - PERSIST_TO_ACTIVE
