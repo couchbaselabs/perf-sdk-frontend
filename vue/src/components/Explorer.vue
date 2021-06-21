@@ -150,7 +150,7 @@ export default {
     },
 
     handleGroupByChanged: async function () {
-      const url = new URL(`http://localhost:3002/dashboard/filtered`);
+      const url = new URL(`http://${document.location.hostname}:3002/dashboard/filtered`);
       url.searchParams.append("group_by", this.selected_group_by);
       const res = await fetch(url);
       const json = await res.json();
@@ -166,7 +166,7 @@ export default {
     },
 
     fetch_group_by_options: async function () {
-      const url = new URL(`http://localhost:3002/dashboard/group_by_options`);
+      const url = new URL(`http://${document.location.hostname}:3002/dashboard/group_by_options`);
       const res = await fetch(url);
       this.group_by = await res.json();
     },
@@ -196,8 +196,7 @@ export default {
 
       console.info(input)
 
-      // const url = new URL(`http://localhost:3002/dashboard/query`);
-      const res = await fetch(`http://localhost:3002/dashboard/query`,
+      const res = await fetch(`http://${document.location.hostname}:3002/dashboard/query`,
           {
             headers: {
               'Accept': 'application/json',
