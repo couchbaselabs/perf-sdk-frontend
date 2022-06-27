@@ -14,6 +14,7 @@ class Run {
   vars: string;
   other: string;
   id: string;
+  datetime: string;
 
   constructor(
     params: Object,
@@ -23,6 +24,7 @@ class Run {
     vars: string,
     other: string,
     id: string,
+    datetime: string
   ) {
     this.params = params;
     this.cluster = cluster;
@@ -31,6 +33,7 @@ class Run {
     this.vars = vars;
     this.other = other;
     this.id = id;
+    this.datetime = datetime;
   }
 }
 
@@ -145,7 +148,8 @@ export class DatabaseService {
                         params->'workload' as workload,
                         params->'vars' as vars,
                         params->'other' as other,
-                        id as run_id
+                        id as run_id,
+                        datetime
                       FROM runs
                       where (params) @>
                         ('${JSON.stringify(
@@ -163,6 +167,7 @@ export class DatabaseService {
         x.vars,
         x.other,
         x.run_id,
+        x.datetime
       );
     });
     return ret;

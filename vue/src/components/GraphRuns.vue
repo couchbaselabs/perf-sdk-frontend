@@ -8,6 +8,7 @@
       <thead>
       <tr>
         <td>Run</td>
+        <td>Date</td>
         <td>Display</td>
         <td>Impl</td>
         <td>Cluster</td>
@@ -17,7 +18,8 @@
       </thead>
 
       <tr v-for="r in graph.runs" :key="r.id">
-        <td v-bind:style="{color: r.color}">{{ r.id.substring(0, 6) }}</td>
+        <td v-bind:style="{color: r.color}">{{ r.id }}</td>
+        <td v-bind:style="{color: r.color}">{{ r.datetime }}</td>
         <td>{{ r.groupedBy }}</td>
         <td><pre>{{ JSON.stringify(r.impl, null, 2) }}</pre></td>
         <td><pre>{{ JSON.stringify(r.cluster, null, 2) }}</pre></td>
