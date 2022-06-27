@@ -132,7 +132,7 @@ export default {
       selected_group_by: "impl.version",
       selected_vars: undefined,
       selected_display: display[0].text,
-      selected_graph_type: "Full",
+      selected_graph_type: "Simplified",
       fetching: undefined,
       query_params: undefined
     }
