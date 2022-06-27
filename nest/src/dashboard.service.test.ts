@@ -1,14 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { DatabaseService } from './database.service';
-import {DashboardService, Input, Panel} from "./dashboard.service";
+import { DashboardService, Input, Panel } from './dashboard.service';
 const Promise = require('bluebird');
 Promise.config({
-    longStackTraces: true,
+  longStackTraces: true,
 });
 
 const initOptions = {
-    promiseLib: Promise
+  promiseLib: Promise,
 };
 const pgp = require('pg-promise')(initOptions);
 
@@ -17,49 +17,60 @@ describe('AppController', () => {
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
-      providers: [{
-        provide: DatabaseService,
-        useFactory: async () => {
-          const client = pgp({
-            user: 'postgres',
-            host: 'localhost',
-            database: 'perf',
-            password: 'postgres',
-            port: 5432,
-          })
-          await client.connect()
-          return new DatabaseService(client);
+      providers: [
+        {
+          provide: DatabaseService,
+          useFactory: async () => {
+            const client = pgp({
+              user: 'postgres',
+              host: 'localhost',
+              database: 'perf',
+              password: 'postgres',
+              port: 5432,
+            });
+            await client.connect();
+            return new DatabaseService(client);
+          },
         },
-      }, DashboardService],
+        DashboardService,
+      ],
     }).compile();
 
     service = app.get(DashboardService);
   });
 
   function make_input(): Input {
-    const input = new Input()
+    const input = new Input();
 
-    input.group_by = 'cluster.version'
-    input.display = 'latency_average_us'
-    input.impl =  {"version": "1.0.0", "language": "cxx"}
-    input.vars = {"durability": "MAJORITY", "doc_pool_size": 1000, "number_of_inserts": 3, "horizontal_scaling": 5}
+    input.group_by = 'cluster.version';
+    input.display = 'latency_average_us';
+    input.impl = { version: '1.0.0', language: 'cxx' };
+    input.vars = {
+      durability: 'MAJORITY',
+      doc_pool_size: 1000,
+      number_of_inserts: 3,
+      horizontal_scaling: 5,
+    };
     // input.fixed =  {"fit_driver_vers": "1", "fit_performer_vers": "1"}
     // input.other = {"runtime": 10}
     // input.cluster = {"env": "AWS", "disk": "ssd", "nodes": 3, "version": "7.0.0-4545", "node_size": "m4"}
-    input.workload = {"description": "$number_of_inserts inserts, one replace with chance of contention"}
-    return input
+    input.workload = {
+      description:
+        '$number_of_inserts inserts, one replace with chance of contention',
+    };
+    return input;
   }
 
   describe('dashboard', () => {
     it('by lang"', async () => {
-      const input = make_input()
-      const i = new Input()
-      const panel = new Panel()
-      panel.viewing = "cluster"
-      panel.params = [{"env": "AWS", "disk": "ssd", "nodes": 3, "node_size": "m4"}]
-      input.inputs = [panel]
-      const res = await service.gen_dashboard_wrapper(input)
-      console.info(res)
+      const input = make_input();
+      const i = new Input();
+      const panel = new Panel();
+      panel.viewing = 'cluster';
+      panel.params = [{ env: 'AWS', disk: 'ssd', nodes: 3, node_size: 'm4' }];
+      input.inputs = [panel];
+      const res = await service.gen_dashboard_wrapper(input);
+      console.info(res);
     });
     // it('impl.language"', async () => {
     //   const res = await service.gen_dashboard_wrapper(new Input(["impl.language (latest)"], "impl.language"))
