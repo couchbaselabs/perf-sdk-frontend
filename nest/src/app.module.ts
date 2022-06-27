@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { DatabaseService } from './database.service';
 import { DashboardService } from './dashboard.service';
+require('dotenv').config();
 const Promise = require('bluebird');
 Promise.config({
     longStackTraces: true,
@@ -20,9 +21,9 @@ const pgp = require('pg-promise')(initOptions);
     useFactory: async () => {
       const client = pgp({
         user: 'postgres',
-        host: '3.101.74.156',
+        host: process.env.CB_DATABASE ? process.env.CB_DATABASE : 'localhost',
         database: 'perf',
-        password: 'rSKkN4MTKmRe89Rw',
+        password: process.env.CB_DATABASE_PASSWORD,
         port: 5432,
       })
       await client.connect()

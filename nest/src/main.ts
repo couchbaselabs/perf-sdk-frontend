@@ -1,9 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+require('dotenv').config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors()
   await app.listen(3002);
 }
-bootstrap();
+
+if (!process.env.CB_DATABASE_PASSWORD) {
+  console.info("Must provide CB_DATABASE_PASSWORD.  Can edit nest/.env")
+}
+else {
+  bootstrap();
+}
