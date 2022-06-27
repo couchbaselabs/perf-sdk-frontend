@@ -58,7 +58,7 @@ export class Params {
 export class DashboardService {
   public static LANG_LATEST = 'impl.language (latest)';
 
-  default_impl = { version: '1.1.5-SNAPSHOT', language: 'java' };
+  default_impl = { version: '3.3.0', language: 'java' };
   default_cluster = {
     env: 'AWS',
     disk: 'ssd',
@@ -324,7 +324,7 @@ export class DashboardService {
         delete input[to_remove];
       } else {
         const next = input[to_remove];
-        this.remove_display_by_if_needed(next, display.splice(1));
+        this.remove_display_by_if_needed(next, display.slice(1));
       }
     }
   }
