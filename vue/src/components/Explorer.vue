@@ -106,16 +106,15 @@ export default {
   components: {GraphRuns, BarChart,LineChart},
   data() {
     const display = [
-      {id: 6, text: `latency_average_us`},
-      {id: 4, text: `latency_min_us`},
-      {id: 5, text: `latency_max_us`},
-      {id: 7, text: `latency_p50_us`},
-      {id: 8, text: `latency_p95_us`},
-      {id: 9, text: `latency_p99_us`},
-      {id: 0, text: `transactions_total`},
-      {id: 1, text: `transactions_success`},
-      {id: 2, text: `transactions_failed`},
-      {id: 3, text: `transactions_unstaging_incomplete`}
+      {id: 6, text: `duration_average_us`},
+      {id: 4, text: `duration_min_us`},
+      {id: 5, text: `duration_max_us`},
+      {id: 7, text: `duration_p50_us`},
+      {id: 8, text: `duration_p95_us`},
+      {id: 9, text: `duration_p99_us`},
+      {id: 0, text: `operations_total`},
+      {id: 1, text: `operations_success`},
+      {id: 2, text: `operations_failed`}
     ];
 
     return {
