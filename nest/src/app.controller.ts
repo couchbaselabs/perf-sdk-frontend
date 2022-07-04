@@ -67,7 +67,6 @@ export class AppController {
     console.info(JSON.stringify(query));
     const input = Object.assign(new Input(), query);
     const out = await this.dashboard.gen_dashboard_wrapper(input);
-    console.info(JSON.stringify(out));
     return out;
   }
 }

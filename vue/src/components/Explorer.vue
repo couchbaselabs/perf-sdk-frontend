@@ -19,6 +19,11 @@
             <option>Simplified</option>
             <option>Full</option>
           </b-form-select>
+
+          <b-form-select v-model="selected_grouping_type" v-on:change="handleSubmit">
+            <option>Side-by-side</option>
+            <option>Average</option>
+          </b-form-select>
         </div>
       </b-form>
 
@@ -133,6 +138,7 @@ export default {
       selected_vars: undefined,
       selected_display: display[0].text,
       selected_graph_type: "Simplified",
+      selected_grouping_type: "Side-by-side",
       fetching: undefined,
       query_params: undefined
     }
@@ -190,7 +196,8 @@ export default {
         impl: JSON.parse(this.selected_impl),
         workload: JSON.parse(this.selected_workload),
         vars: JSON.parse(this.selected_vars),
-        graph_type: this.selected_graph_type
+        graph_type: this.selected_graph_type,
+        grouping_type: this.selected_grouping_type
       }
 
       console.info(input)

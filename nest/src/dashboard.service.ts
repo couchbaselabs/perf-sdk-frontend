@@ -22,6 +22,10 @@ export class Input {
   vars?: Object;
   graph_type: string;
 
+  // If we have reruns, how to display name - e.g. side-by-side, or averaging the results
+  grouping_type: string;
+
+
   // constructor(inputs: Array<string>, group_by: string = DashboardService.default_group_by, display: string = DashboardService.default_display) {
   //     this.inputs = inputs;
   //     this.group_by = group_by;
@@ -130,6 +134,7 @@ export class DashboardService {
         input.group_by_1(),
         run_ids,
         input.display,
+        input.grouping_type
       );
       buckets.sort((a, b) => a.grouping.localeCompare(b.grouping));
       buckets.forEach((b) => {

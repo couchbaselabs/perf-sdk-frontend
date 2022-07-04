@@ -205,17 +205,44 @@ export class DatabaseService {
     return await this.client.query(st);
   }
 
+  /**
+   * The Simplified display.
+   */
   async get_groupings(
     groupBy1: string,
     run_ids: Array<string>,
     display: string,
-  ): Promise<Array<Result>> {
-    const st = `SELECT
-                        ${groupBy1} as grouping,
-                        avg(buckets.${display}) as value
-                      FROM buckets join runs on buckets.run_id = runs.id
-                      WHERE run_id in ('${run_ids.join("','")}')
-                      GROUP BY runs.${groupBy1}`;
+    grouping_type: string): Promise<Array<Result>> {
+    let st;
+    if (grouping_type == 'Side-by-side') {
+      st = `SELECT runs.id,
+                   sub.value,
+                   ${groupBy1} as grouping
+            FROM (SELECT run_id,
+                         avg(buckets.${display}) as value
+                  FROM buckets join runs
+                  on buckets.run_id = runs.id
+                  WHERE run_id in ('${run_ids.join("','")}')
+                  GROUP BY run_id) as sub
+                   JOIN runs ON sub.run_id = runs.id
+            ORDER BY grouping`;
+    }
+    else if (grouping_type == 'Average') {
+      st = `SELECT avg(sub.value) as value,
+                   ${groupBy1} as grouping
+            FROM (SELECT run_id,
+                         avg(buckets.${display}) as value
+                  FROM buckets join runs
+                  on buckets.run_id = runs.id
+                  WHERE run_id in ('${run_ids.join("','")}')
+                  GROUP BY run_id) as sub
+                   JOIN runs ON sub.run_id = runs.id
+            GROUP BY grouping
+            ORDER BY grouping`;
+    }
+    else {
+      throw new Error("Unknown grouping_type " + grouping_type);
+    }
     console.info(st);
     const result = await this.client.query(st);
     const rows = result;
