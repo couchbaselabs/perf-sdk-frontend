@@ -1,41 +1,47 @@
+<template>
+  <Bar :chart-data="chartData" :chart-options="chartOptions" />
+</template>
+
+
 <script>
 import {Bar} from 'vue-chartjs'
 
 export default {
-  extends: Bar,
-  mounted() {
-    this.renderChart(this.chartdata, {
-      legend: {
-        display: false
-      },
-      title: {
-        display: false
-      },
-      scales: {
-        yAxes: [
-          {
+  name: 'MyBarChart',
+  components: { Bar },
+  data() {
+    return {
+      chartOptions: {
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        title: {
+          display: false
+        },
+        scales: {
+          y: {
             title: {
               display: true,
-              text: 'Per second'
+              text: 'Per 1 second bucket'
             },
             ticks: {
-              beginAtZero: false
+              // CBD-4962: showfast-style seems better as otherwise tiny perf differences get overly magnified.
+              beginAtZero: true
             }
-          }]
-      },
-      responsive: true,
-      maintainAspectRatio: false
-    })
+          }
+        },
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    }
   },
   props: {
-    chartdata: {
+    chartData: {
       type: Object,
-      default: null
-    },
-    // options: {
-    //   type: Object,
-    //   // default:
-    // }
+      required: true
+    }
   }
 }
 </script>

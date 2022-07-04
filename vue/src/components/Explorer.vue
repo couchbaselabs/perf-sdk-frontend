@@ -1,114 +1,124 @@
 <template>
   <div class="main">
     <div>
-      <b-form inline class="vgap">
-        <div class="border p-2">
-          <div class="form-legend">Display</div>
-
-          <b-form-select v-model="selected_group_by" v-on:change="handleGroupByChanged" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in group_by" :key="JSON.stringify(v)">{{ v }}</option>
-          </b-form-select>
-
-          <b-form-select v-model="selected_display" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in display" :key="v.id">
-              {{ v.text }}
-            </option>
-          </b-form-select>
-
-          <b-form-select v-model="selected_graph_type" v-on:change="handleSubmit">
-            <option>Simplified</option>
-            <option>Full</option>
-          </b-form-select>
-
-          <b-form-select v-model="selected_grouping_type" v-on:change="handleSubmit">
-            <option>Side-by-side</option>
-            <option>Average</option>
-          </b-form-select>
-        </div>
-      </b-form>
-
-      <b-form inline class="vgap-big">
-        <b-form-group  class="border p-2 w-auto">
-          <div class="form-legend">Filter</div>
-
-          <b-form-select v-model="selected_cluster" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in clusters" :key="JSON.stringify(v)">{{ v }}</option>
-          </b-form-select>
-
-          <b-form-select v-model="selected_impl" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in impls" :key="JSON.stringify(v)">{{ v }}</option>
-          </b-form-select>
-
-          <b-form-select v-model="selected_workload" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in workloads" :key="JSON.stringify(v)">{{ v }}</option>
-          </b-form-select>
-
-          <b-form-select v-model="selected_vars" v-on:change="handleSubmit">
-            <option v-for="v in vars" :key="JSON.stringify(v)">{{ v }}</option>
-          </b-form-select>
-        </b-form-group>
-
-        <!--        <button type=submit>-->
-        <!--            Submit-->
-        <!--        </button>-->
-      </b-form>
+      graph start
+      <MyLineChart class="chart" />
+      graph end
     </div>
-    <!--        {query_params}-->
 
 
-    <!--    {#await fetching}-->
-    <!--        <p>Loading...</p>-->
-    <!--    {:then results}-->
-    <!--        {results}-->
-    <div v-if="results">
-      <div v-for="panel in results.panels" :key="JSON.stringify(panel)">
-        <!--        <h2>{{ panel.title }}</h2>-->
+<!--    <div>-->
+<!--      <b-form inline class="vgap">-->
+<!--        <div class="border p-2">-->
+<!--          <div class="form-legend">Display</div>-->
 
-        <div class="graph" v-for="graph in panel.graphs" :key="JSON.stringify(graph)">
-          <b-container>
+<!--          <b-form-select v-model="selected_group_by" v-on:change="handleGroupByChanged" class="mb-2 mr-sm-2 mb-sm-0">-->
+<!--            <option v-for="v in group_by" :key="JSON.stringify(v)">{{ v }}</option>-->
+<!--          </b-form-select>-->
 
-            <!--                    <table>-->
-            <!--                        <tr>-->
-            <!--                            <td><strong>Cluster:</strong></td>-->
-            <!--                            <td>{JSON.stringify(graph.chosen.cluster)}</td>-->
-            <!--                        </tr>-->
-            <!--                        <tr>-->
-            <!--                            <td><strong>Workload:</strong></td>-->
-            <!--                            <td>{JSON.stringify(graph.chosen.workload)}</td>-->
-            <!--                        </tr>-->
-            <!--                        <tr>-->
-            <!--                            <td><strong>Vars:</strong></td>-->
-            <!--                            <td>{JSON.stringify(graph.chosen.vars)}</td>-->
-            <!--                        </tr>-->
-            <!--                        <tr>-->
-            <!--                            <td><strong>Impl:</strong></td>-->
-            <!--                            <td>{JSON.stringify(graph.chosen.impl)}</td>-->
-            <!--                        </tr>-->
-            <!--                    </table>-->
+<!--          <b-form-select v-model="selected_display" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">-->
+<!--            <option v-for="v in display" :key="v.id">-->
+<!--              {{ v.text }}-->
+<!--            </option>-->
+<!--          </b-form-select>-->
 
-            <!--              <Chart data={graph.data} type={graph.type}/>-->
+<!--          <b-form-select v-model="selected_graph_type" v-on:change="handleSubmit">-->
+<!--            <option>Simplified</option>-->
+<!--            <option>Full</option>-->
+<!--          </b-form-select>-->
 
-            <BarChart v-if="graph.type === 'bar'" class="chart" :chartdata="graph.data" :options="graph.options"  />
-            <LineChart v-if="graph.type === 'line'" class="chart" :chartdata="graph.data" :options="graph.options"  />
+<!--          <b-form-select v-model="selected_grouping_type" v-on:change="handleSubmit">-->
+<!--            <option>Side-by-side</option>-->
+<!--            <option>Average</option>-->
+<!--          </b-form-select>-->
+<!--        </div>-->
+<!--      </b-form>-->
 
-          </b-container>
+<!--      <b-form inline class="vgap-big">-->
+<!--        <b-form-group  class="border p-2 w-auto">-->
+<!--          <div class="form-legend">Filter</div>-->
 
-          <GraphRuns :graph="graph"/>
+<!--          <b-form-select v-model="selected_cluster" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">-->
+<!--            <option v-for="v in clusters" :key="JSON.stringify(v)">{{ v }}</option>-->
+<!--          </b-form-select>-->
 
-        </div>
-      </div>
-    </div>
+<!--          <b-form-select v-model="selected_impl" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">-->
+<!--            <option v-for="v in impls" :key="JSON.stringify(v)">{{ v }}</option>-->
+<!--          </b-form-select>-->
+
+<!--          <b-form-select v-model="selected_workload" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">-->
+<!--            <option v-for="v in workloads" :key="JSON.stringify(v)">{{ v }}</option>-->
+<!--          </b-form-select>-->
+
+<!--          <b-form-select v-model="selected_vars" v-on:change="handleSubmit">-->
+<!--            <option v-for="v in vars" :key="JSON.stringify(v)">{{ v }}</option>-->
+<!--          </b-form-select>-->
+<!--        </b-form-group>-->
+
+<!--        &lt;!&ndash;        <button type=submit>&ndash;&gt;-->
+<!--        &lt;!&ndash;            Submit&ndash;&gt;-->
+<!--        &lt;!&ndash;        </button>&ndash;&gt;-->
+<!--      </b-form>-->
+<!--    </div>-->
+<!--    &lt;!&ndash;        {query_params}&ndash;&gt;-->
+
+
+<!--    &lt;!&ndash;    {#await fetching}&ndash;&gt;-->
+<!--    &lt;!&ndash;        <p>Loading...</p>&ndash;&gt;-->
+<!--    &lt;!&ndash;    {:then results}&ndash;&gt;-->
+<!--    &lt;!&ndash;        {results}&ndash;&gt;-->
+<!--    <div v-if="results">-->
+<!--      <div v-for="panel in results.panels" :key="JSON.stringify(panel)">-->
+<!--        &lt;!&ndash;        <h2>{{ panel.title }}</h2>&ndash;&gt;-->
+
+<!--        <div class="graph" v-for="graph in panel.graphs" :key="JSON.stringify(graph)">-->
+<!--          <b-container>-->
+
+<!--            &lt;!&ndash;                    <table>&ndash;&gt;-->
+<!--            &lt;!&ndash;                        <tr>&ndash;&gt;-->
+<!--            &lt;!&ndash;                            <td><strong>Cluster:</strong></td>&ndash;&gt;-->
+<!--            &lt;!&ndash;                            <td>{JSON.stringify(graph.chosen.cluster)}</td>&ndash;&gt;-->
+<!--            &lt;!&ndash;                        </tr>&ndash;&gt;-->
+<!--            &lt;!&ndash;                        <tr>&ndash;&gt;-->
+<!--            &lt;!&ndash;                            <td><strong>Workload:</strong></td>&ndash;&gt;-->
+<!--            &lt;!&ndash;                            <td>{JSON.stringify(graph.chosen.workload)}</td>&ndash;&gt;-->
+<!--            &lt;!&ndash;                        </tr>&ndash;&gt;-->
+<!--            &lt;!&ndash;                        <tr>&ndash;&gt;-->
+<!--            &lt;!&ndash;                            <td><strong>Vars:</strong></td>&ndash;&gt;-->
+<!--            &lt;!&ndash;                            <td>{JSON.stringify(graph.chosen.vars)}</td>&ndash;&gt;-->
+<!--            &lt;!&ndash;                        </tr>&ndash;&gt;-->
+<!--            &lt;!&ndash;                        <tr>&ndash;&gt;-->
+<!--            &lt;!&ndash;                            <td><strong>Impl:</strong></td>&ndash;&gt;-->
+<!--            &lt;!&ndash;                            <td>{JSON.stringify(graph.chosen.impl)}</td>&ndash;&gt;-->
+<!--            &lt;!&ndash;                        </tr>&ndash;&gt;-->
+<!--            &lt;!&ndash;                    </table>&ndash;&gt;-->
+
+<!--            &lt;!&ndash;              <Chart data={graph.data} type={graph.type}/>&ndash;&gt;-->
+
+<!--            <BarChart v-if="graph.type === 'barGraph'" class="chart" :chartData="graph.data" :options="graph.options"  />-->
+<!--&lt;!&ndash;            <LineChart v-if="graph.type === 'lineGraph'" class="chart" :chartData="graph.data" :options="graph.options"  />&ndash;&gt;-->
+<!--&lt;!&ndash;            <MyLineChart v-if="graph.type === 'lineGraph'" class="chart"  :options="graph.options"  />&ndash;&gt;-->
+
+
+<!--          </b-container>-->
+
+<!--          <GraphRuns :graph="graph"/>-->
+
+<!--        </div>-->
+<!--      </div>-->
+<!--    </div>-->
   </div>
 </template>
 
 <script>
-import BarChart from "@/components/BarChart";
-import LineChart from "@/components/LineChart";
-import GraphRuns from "@/components/GraphRuns";
+// import BarChart from "@/components/BarChart";
+import MyLineChart from "@/components/MyLineChart";
+// import GraphRuns from "@/components/GraphRuns";
 
 export default {
   name: "Explorer",
-  components: {GraphRuns, BarChart,LineChart},
+  // components: {GraphRuns, BarChart, MyLineChart},
+  components: {MyLineChart},
   data() {
     const display = [
       {id: 6, text: `duration_average_us`},
@@ -137,17 +147,17 @@ export default {
       selected_group_by: "impl.version",
       selected_vars: undefined,
       selected_display: display[0].text,
-      selected_graph_type: "Simplified",
+      selected_graph_type: "Full",
       selected_grouping_type: "Side-by-side",
       fetching: undefined,
       query_params: undefined
     }
   },
 
-  created() {
-    this.fetch_group_by_options()
-        .then(() => this.handleGroupByChanged())
-  },
+  // created() {
+  //   this.fetch_group_by_options()
+  //       .then(() => this.handleGroupByChanged())
+  // },
 
   methods: {
     handleSubmit: function () {

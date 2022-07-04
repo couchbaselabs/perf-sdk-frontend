@@ -5,6 +5,13 @@ import App from './App.vue'
 // import 'vue-material/dist/theme/default.css'
 import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
+
+import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
+
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
 
