@@ -351,7 +351,9 @@ export class DashboardService {
 
     keys.forEach((key) => {
       const v = input[key];
-      if (typeof v === 'object') {
+      if (v == null) {
+        console.warn(`Found null value ${key} in ${JSON.stringify(input)}`);
+      } else if (typeof v === 'object') {
         const next = this.gen_strings(next_key + key, v);
         out = out.concat(next);
       } else {
