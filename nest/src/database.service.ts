@@ -225,7 +225,7 @@ export class DatabaseService {
                   WHERE run_id in ('${run_ids.join("','")}')
                   GROUP BY run_id) as sub
                    JOIN runs ON sub.run_id = runs.id
-            ORDER BY grouping`;
+            ORDER BY grouping, datetime asc`;
     }
     else if (grouping_type == 'Average') {
       st = `SELECT avg(sub.value) as value,
