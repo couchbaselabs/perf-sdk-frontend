@@ -55,60 +55,24 @@
     </div>
     <!--        {query_params}-->
 
+    {{JSON.stringify(input)}}
+
+    <Results :input="input"></Results>
 
     <!--    {#await fetching}-->
     <!--        <p>Loading...</p>-->
     <!--    {:then results}-->
     <!--        {results}-->
-    <div v-if="results">
-      <div v-for="panel in results.panels" :key="JSON.stringify(panel)">
-        <!--        <h2>{{ panel.title }}</h2>-->
-
-        <div class="graph" v-for="graph in panel.graphs" :key="JSON.stringify(graph)">
-          <b-container>
-
-            <!--                    <table>-->
-            <!--                        <tr>-->
-            <!--                            <td><strong>Cluster:</strong></td>-->
-            <!--                            <td>{JSON.stringify(graph.chosen.cluster)}</td>-->
-            <!--                        </tr>-->
-            <!--                        <tr>-->
-            <!--                            <td><strong>Workload:</strong></td>-->
-            <!--                            <td>{JSON.stringify(graph.chosen.workload)}</td>-->
-            <!--                        </tr>-->
-            <!--                        <tr>-->
-            <!--                            <td><strong>Vars:</strong></td>-->
-            <!--                            <td>{JSON.stringify(graph.chosen.vars)}</td>-->
-            <!--                        </tr>-->
-            <!--                        <tr>-->
-            <!--                            <td><strong>Impl:</strong></td>-->
-            <!--                            <td>{JSON.stringify(graph.chosen.impl)}</td>-->
-            <!--                        </tr>-->
-            <!--                    </table>-->
-
-            <!--              <Chart data={graph.data} type={graph.type}/>-->
-
-            <BarChart v-if="graph.type === 'bar'" class="chart" :chartdata="graph.data" :options="graph.options"  />
-            <LineChart v-if="graph.type === 'line'" class="chart" :chartdata="graph.data" :options="graph.options"  />
-
-          </b-container>
-
-          <GraphRuns :graph="graph"/>
-
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script>
-import BarChart from "@/components/BarChart";
-import LineChart from "@/components/LineChart";
-import GraphRuns from "@/components/GraphRuns";
 
+
+import Results from "@/components/Results";
 export default {
   name: "Explorer",
-  components: {GraphRuns, BarChart,LineChart},
+  components: {Results},
   data() {
     const display = [
       {id: 6, text: `duration_average_us`},
@@ -140,7 +104,8 @@ export default {
       selected_graph_type: "Simplified",
       selected_grouping_type: "Side-by-side",
       fetching: undefined,
-      query_params: undefined
+      query_params: undefined,
+      input: {}
     }
   },
 
@@ -151,7 +116,21 @@ export default {
 
   methods: {
     handleSubmit: function () {
-      this.fetching = this.fetchQuery()
+      console.info("handle submit");
+
+      this.input = {
+        inputs: [{
+          viewing: 'cluster',
+          params: [JSON.parse(this.selected_cluster)]
+        }],
+        group_by: this.selected_group_by,
+        display: this.selected_display,
+        impl: JSON.parse(this.selected_impl),
+        workload: JSON.parse(this.selected_workload),
+        vars: JSON.parse(this.selected_vars),
+        graph_type: this.selected_graph_type,
+        grouping_type: this.selected_grouping_type
+      }
     },
 
     handleGroupByChanged: async function () {
@@ -167,66 +146,19 @@ export default {
       this.selected_workload = this.workloads[0]
       this.selected_impl = this.impls[0]
       this.selected_vars = this.vars[0]
-      this.handleSubmit()
+      await this.handleSubmit()
     },
 
     fetch_group_by_options: async function () {
       const url = new URL(`http://${document.location.hostname}:3002/dashboard/group_by_options`);
       const res = await fetch(url);
       this.group_by = await res.json();
-    },
-
-    fetchQuery: async function () {
-      console.info(this.selected_cluster)
-      console.info(this.selected_workload)
-      console.info(this.selected_impl)
-      console.info(this.selected_vars)
-      console.info(JSON.parse(this.selected_cluster))
-      console.info(JSON.parse(this.selected_workload))
-      console.info(JSON.parse(this.selected_impl))
-      console.info(JSON.parse(this.selected_vars))
-
-      const input = {
-        inputs: [{
-          viewing: 'cluster',
-          params: [JSON.parse(this.selected_cluster)]
-        }],
-        group_by: this.selected_group_by,
-        display: this.selected_display,
-        impl: JSON.parse(this.selected_impl),
-        workload: JSON.parse(this.selected_workload),
-        vars: JSON.parse(this.selected_vars),
-        graph_type: this.selected_graph_type,
-        grouping_type: this.selected_grouping_type
-      }
-
-      console.info(input)
-
-      const res = await fetch(`http://${document.location.hostname}:3002/dashboard/query`,
-          {
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            },
-            method: "POST",
-            body: JSON.stringify(input)
-          })
-
-      // url.searchParams.append("query", input);
-      // url.searchParams.append("group_by", group_by);
-      // url.searchParams.append("display", display);
-      // const res = await fetch(url);
-      // const text: Array<Out> = await res.json();
-      this.results = await res.json();
     }
   }
 }
 </script>
 
 <style scoped>
-.chart {
-  height: 200px !important;
-}
 
 .form-legend {
   text-align: left;
@@ -244,11 +176,4 @@ export default {
 .main {
   padding: 1rem
 }
-
-/*fieldset {*/
-/*  display: flex;*/
-/*  flex-flow: row wrap;*/
-/*  align-items: center;*/
-
-/*}*/
 </style>

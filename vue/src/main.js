@@ -17,6 +17,17 @@ Vue.config.productionTip = false
 Vue.use(BootstrapVue)
 Vue.use(IconsPlugin)
 
+// new Vue({
+//   render: h => h(App),
+// }).$mount('#app')
+
+
+import router from './router.ts'
+
+
 new Vue({
-  render: h => h(App),
-}).$mount('#app')
+    router,
+    render: h => h(App)
+}).$mount('#app');
+
+// createApp(App).use(router).mount('#app')

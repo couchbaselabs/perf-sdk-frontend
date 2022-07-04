@@ -19,7 +19,7 @@ export default {
               text: 'Per second'
             },
             ticks: {
-              beginAtZero: false
+              beginAtZero: true
             }
           }]
       },
