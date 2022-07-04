@@ -144,7 +144,7 @@ export class DashboardService {
     }
 
     return {
-      type: 'barGraph',
+      type: 'bar',
       runs: runs,
       chosen: compared_json,
       // "chosen": {
@@ -157,8 +157,11 @@ export class DashboardService {
       data: {
         labels: labels,
         datasets: [
+          // For Frappe charts (Svelte)
+          { values: values },
           // For Charts.js (Vue)
           {
+            // "color": "red",
             backgroundColor: '#D7ECD9',
             data: values,
           },
@@ -221,7 +224,7 @@ export class DashboardService {
     }
 
     return {
-      type: 'lineGraph',
+      type: 'line',
       runs: runs,
       chosen: compared_json,
       // "chosen": {
