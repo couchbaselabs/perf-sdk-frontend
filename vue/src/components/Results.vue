@@ -1,5 +1,6 @@
 <template>
   <div>
+    <!-- Hack to force this to redisplay when input changes.  Not sure if better way to achieve. -->
     <div style="display: none">
       {{ JSON.stringify(input) }}
     </div>

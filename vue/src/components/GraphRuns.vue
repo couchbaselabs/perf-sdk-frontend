@@ -1,7 +1,11 @@
 <template>
   <div>
     <a href="#" v-if="!display" v-on:click="display = true">
-      Tests
+      Show runs
+    </a>
+
+    <a href="#" v-if="display" v-on:click="display = false">
+      Hide runs
     </a>
 
     <table v-if="display">
