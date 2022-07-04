@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 require('dotenv').config();
+import * as sourceMapSupport from 'source-map-support';
+sourceMapSupport.install();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
