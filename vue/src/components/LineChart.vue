@@ -14,7 +14,7 @@ export default {
       },
       scaleLabel: {
         display: true,
-        labelString: 'Time (seconds)',
+        labelString: 'Time',
 
       },
       ticks: {
@@ -48,7 +48,7 @@ export default {
         callbacks: {
           label: function(tooltipItem, data) {
             const x = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
-            return `runid=${x.nested.runid} ${x.nested.datetime} timeOffsetSecs=${x.x} value=${x.y}`;
+            return `${x.nested.datetime} timeOffsetSecs=${x.x} value=${x.y} runid=${x.nested.runid}`;
           }
         }
       },

@@ -32,6 +32,18 @@
                 </b-form-group>
               </b-col>
 
+              <b-col>
+                <b-form-group label="Merging"
+                              description="How to merge bucket results in Simplified view.">
+                  <b-form-select v-model="selected_merging_type" v-on:change="handleSubmit">
+                    <option>Average</option>
+                    <option>Maximum</option>
+                    <option>Minimum</option>
+                    <option>Sum</option>
+                  </b-form-select>
+                </b-form-group>
+              </b-col>
+
               <b-col class="pr-0">
                 <b-form-group label="Duplicate handling"
                               description="When duplicate runs exist, how to display them.">
@@ -131,6 +143,7 @@ export default {
       selected_display: display[0].text,
       selected_graph_type: "Simplified",
       selected_grouping_type: "Side-by-side",
+      selected_merging_type: "Average",
       fetching: undefined,
       query_params: undefined,
       input: this.initialInput
@@ -147,6 +160,7 @@ export default {
       this.selected_group_by = this.initialInput.group_by;
       this.selected_graph_type = this.initialInput.graph_type;
       this.selected_grouping_type = this.initialInput.grouping_type;
+      this.selected_merging_type = this.initialInput.merging_type;
     }
 
     this.fetch_group_by_options()
@@ -171,7 +185,8 @@ export default {
         workload: JSON.parse(this.selected_workload),
         vars: JSON.parse(this.selected_vars),
         graph_type: this.selected_graph_type,
-        grouping_type: this.selected_grouping_type
+        grouping_type: this.selected_grouping_type,
+        merging_type: this.selected_merging_type
       }
     },
 

@@ -248,14 +248,27 @@ export class DatabaseService {
     run_ids: Array<string>,
     display: string,
     grouping_type: string,
-  ): Promise<Array<Result>> {
+    merging: string): Promise<Array<Result>> {
+    let mergingOp;
+    if (merging == 'Average') {
+      mergingOp = 'avg';
+    } else if (merging == 'Maximum') {
+      mergingOp = 'max';
+    } else if (merging == 'Minimum') {
+      mergingOp = 'min';
+    } else if (merging == 'Sum') {
+      mergingOp = 'sum';
+    } else {
+      throw new Error('Unknown merging type ' + merging);
+    }
+
     let st;
     if (grouping_type == 'Side-by-side') {
       st = `SELECT runs.id,
                    sub.value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
-                         avg(buckets.${display}) as value
+                         ${mergingOp}(buckets.${display}) as value
                   FROM buckets join runs
                   on buckets.run_id = runs.id
                   WHERE run_id in ('${run_ids.join("','")}')
@@ -266,7 +279,7 @@ export class DatabaseService {
       st = `SELECT avg(sub.value) as value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
-                         avg(buckets.${display}) as value
+                        ${mergingOp}(buckets.${display}) as value
                   FROM buckets join runs
                   on buckets.run_id = runs.id
                   WHERE run_id in ('${run_ids.join("','")}')

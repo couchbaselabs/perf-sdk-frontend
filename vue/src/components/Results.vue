@@ -37,7 +37,7 @@
             <div v-if="graph.type === 'line'">
               <LineChart class="chartLine" :chartdata="graph.data" :options="graph.options"/>
               <div>
-                Time: All runs are shown starting from time '0' to allow them to be displayed together.  Tooltips show the wallclock time for each run.
+                Time: All runs are shown starting from time '0' to allow them to be displayed together.  Tooltips show the wallclock time for each run.  The first 15 seconds of data have been previously discarded to reduce warmup issues.
               </div>
             </div>
 
