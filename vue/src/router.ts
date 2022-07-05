@@ -16,6 +16,7 @@ const routes = [
         path: "/explorer",
         name: "Explorer",
         component: Explorer,
+        props: true
     },
     {
         path: "/java",

@@ -55,7 +55,6 @@
     </div>
     <!--        {query_params}-->
 
-
     <div v-if="input">
       <div class="jumbotron">
       {{JSON.stringify(input)}}
@@ -78,6 +77,7 @@ import Results from "@/components/Results";
 export default {
   name: "Explorer",
   components: {Results},
+  props: ['initialInput'],
   data() {
     const display = [
       {id: 6, text: `duration_average_us`},
@@ -110,16 +110,30 @@ export default {
       selected_grouping_type: "Side-by-side",
       fetching: undefined,
       query_params: undefined,
-      input: undefined
+      input: this.initialInput
     }
   },
 
   created() {
+    if (this.initialInput) {
+      this.selected_cluster = JSON.stringify(this.initialInput.inputs[0].params[0]);
+      this.selected_workload = JSON.stringify(this.initialInput.workload);
+      this.selected_impl = JSON.stringify(this.initialInput.impl);
+      this.selected_vars = JSON.stringify(this.initialInput.vars);
+      this.selected_display = this.initialInput.display;
+      this.selected_group_by = this.initialInput.group_by;
+      this.selected_graph_type = this.initialInput.graph_type;
+      this.selected_grouping_type = this.initialInput.grouping_type;
+    }
+
     this.fetch_group_by_options()
-        .then(() => this.handleGroupByChanged())
+        .then(() => {
+            this.handleGroupByChanged()
+        })
   },
 
   methods: {
+
     handleSubmit: function () {
       console.info("handle submit");
 
@@ -147,10 +161,12 @@ export default {
       this.workloads = json.workloads;
       this.impls = json.impls;
       this.vars = json.vars;
-      this.selected_cluster = this.clusters[0]
-      this.selected_workload = this.workloads[0]
-      this.selected_impl = this.impls[0]
-      this.selected_vars = this.vars[0]
+      if (!this.initialInput) {
+        this.selected_cluster = this.clusters[0]
+        this.selected_workload = this.workloads[0]
+        this.selected_impl = this.impls[0]
+        this.selected_vars = this.vars[0]
+      }
       await this.handleSubmit()
     },
 

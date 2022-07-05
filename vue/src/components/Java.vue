@@ -37,7 +37,7 @@ export default {
         },
         "vars": {"doc_num": 1000000, "pool_size": 10000, "driverVersion": 2, "horizontal_scaling": 20},
         "graph_type": "Simplified",
-        "grouping_type": "Side-by-side"
+        "grouping_type": "Average"
       },
 
       kvGets: {
@@ -63,7 +63,7 @@ export default {
         },
         "vars": {"doc_num": 1000000, "pool_size": 10000, "driverVersion": 2, "horizontal_scaling": 20},
         "graph_type": "Simplified",
-        "grouping_type": "Side-by-side"
+        "grouping_type": "Average"
       }
     }
   }

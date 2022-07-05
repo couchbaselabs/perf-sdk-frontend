@@ -20,7 +20,7 @@ export default {
         "workload": {"description": "inserting"},
         "vars": {"doc_num": 1000000, "horizontal_scaling": 1},
         "graph_type": "Simplified",
-        "grouping_type": "Side-by-side"
+        "grouping_type": "Average"
       }
     }
   }

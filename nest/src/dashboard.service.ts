@@ -1,7 +1,7 @@
-import { Get } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import { DatabaseService, RunPlus } from './database.service';
 import { Filtered } from './app.controller';
+import {v4 as uuidv4} from 'uuid';
 
 export class Panel {
   // cluster
@@ -149,6 +149,7 @@ export class DashboardService {
     }
 
     return {
+      uuid: uuidv4(),
       type: 'bar',
       runs: runs,
       chosen: compared_json,
@@ -240,6 +241,7 @@ export class DashboardService {
     }
 
     return {
+      uuid: uuidv4(),
       type: 'line',
       runs: runs,
       chosen: compared_json,
@@ -431,6 +433,7 @@ export class DashboardService {
       }
 
       panels.push({
+        uuid: uuidv4(),
         title: `${panel.viewing} ${JSON.stringify(param)}`,
         graphs: graphs,
         panels: sub_panels,

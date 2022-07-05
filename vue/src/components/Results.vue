@@ -1,16 +1,16 @@
 <template>
-  <div>
+  <div class="mb-5">
     <!-- Hack to force this to update when input changes.  Not sure if better way to achieve. -->
     <div style="display: none">
       {{ JSON.stringify(input) }}
     </div>
 
     <div v-if="results">
-      <div v-for="panel in results.panels" :key="JSON.stringify(panel)">
+      <div v-for="panel in results.panels" :key="panel.uuid">
         <!--        <h2>{{ panel.title }}</h2>-->
 
-        <div class="graph" v-for="graph in panel.graphs" :key="JSON.stringify(graph)">
-          <b-container>
+        <div class="graph" v-for="graph in panel.graphs" :key="graph.uuid">
+          <b-container class="mb-3">
 
             <!--                    <table>-->
             <!--                        <tr>-->
@@ -43,7 +43,53 @@
 
           </b-container>
 
-          <GraphRuns :graph="graph"/>
+          <div>
+            <b-button class="mr-2" v-on:click="showInExplorer" variant="outline-primary">
+              Show in Explorer
+            </b-button>
+
+            <b-button v-if="!display" v-on:click="display = true" variant="outline-primary">
+              Show runs
+            </b-button>
+
+            <b-button v-if="display" v-on:click="display = false" variant="outline-primary">
+              Hide runs
+            </b-button>
+          </div>
+
+          <table v-if="display">
+            <thead>
+            <tr>
+              <td>Run</td>
+              <td>Date</td>
+              <td>Display</td>
+              <td>Impl</td>
+              <td>Cluster</td>
+              <td>Workload</td>
+              <td>Vars</td>
+            </tr>
+            </thead>
+
+            <tr v-for="r in graph.runs" :key="r.id">
+              <td v-bind:style="{color: r.color}">{{ r.id }}</td>
+              <td v-bind:style="{color: r.color}">{{ r.datetime }}</td>
+              <td>{{ r.groupedBy }}</td>
+              <td>
+                <pre>{{ JSON.stringify(r.impl, null, 2) }}</pre>
+              </td>
+              <td>
+                <pre>{{ JSON.stringify(r.cluster, null, 2) }}</pre>
+              </td>
+              <td>
+                <pre>{{ JSON.stringify(r.workload, null, 2) }}</pre>
+              </td>
+              <td>
+                <pre>{{ JSON.stringify(r.vars, null, 2) }}</pre>
+              </td>
+            </tr>
+            <!--            <p>{JSON.stringify(r)}</p>-->
+            <!--                <p>{r.id}</p>-->
+          </table>
 
         </div>
       </div>
@@ -54,15 +100,16 @@
 <script>
 import BarChart from "./BarChart";
 import LineChart from "./LineChart";
-import GraphRuns from "./GraphRuns";
+import router from '../router.ts'
 
 export default {
   name: "Results",
-  components: {GraphRuns, BarChart,LineChart},
+  components: {BarChart,LineChart},
   data() {
     return {
       lastInput: undefined,
-      results: undefined
+      results: undefined,
+      display: false
     }
   },
   mounted() {
@@ -97,6 +144,15 @@ export default {
         console.info("Skipping fetch")
       }
     },
+
+    showInExplorer: function () {
+      router.push({
+        name: 'Explorer',
+        params: {
+          initialInput: this.lastInput
+        }
+      })
+    }
   },
   props: ['input']
 }
