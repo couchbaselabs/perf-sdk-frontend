@@ -1,8 +1,8 @@
 <template>
-  <div>
+  <b-container>
     <h1>KV Insert</h1>
     <Results :input="input"></Results>
-  </div>
+  </b-container>
 </template>
 
 <script>

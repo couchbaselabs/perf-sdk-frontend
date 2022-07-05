@@ -1,79 +1,102 @@
 <template>
-  <div class="main">
-    <div>
-      <b-form inline class="vgap">
-        <div class="border p-2">
-          <div class="form-legend">Display</div>
+  <b-container>
+    <b-row>
+      <b-col>
+        <b-form>
+          <div class="form-legend">Display configuration:</div>
 
-          <b-form-select v-model="selected_group_by" v-on:change="handleGroupByChanged" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in group_by" :key="JSON.stringify(v)">{{ v }}</option>
-          </b-form-select>
+          <b-form-group label="Display" id="input-group-1" label-for="input-1"
+                        description="What field to categorise the data into (e.g. the x-axis on the Simplified graph).  The backend introspects the database JSON and displays all options - not all will be valid.">
+            <b-form-select id="input-1" v-model="selected_group_by" v-on:change="handleGroupByChanged">
+              <option v-for="v in group_by" :key="JSON.stringify(v)">{{ v }}</option>
+            </b-form-select>
+          </b-form-group>
 
-          <b-form-select v-model="selected_display" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in display" :key="v.id">
-              {{ v.text }}
-            </option>
-          </b-form-select>
+          <b-form-group label="Field"
+                        description="What value to display on the y-axis.">
+            <b-form-select v-model="selected_display" v-on:change="handleSubmit">
+              <option v-for="v in display" :key="v.id">
+                {{ v.text }}
+              </option>
+            </b-form-select>
+          </b-form-group>
 
-          <b-form-select v-model="selected_graph_type" v-on:change="handleSubmit">
-            <option>Simplified</option>
-            <option>Full</option>
-          </b-form-select>
+          <b-container>
+            <b-row>
+              <b-col class="pl-0">
+                <b-form-group label="Graph type" description="Showfast-style bar graphs, or over-time line graphs.">
+                  <b-form-select v-model="selected_graph_type" v-on:change="handleSubmit">
+                    <option>Simplified</option>
+                    <option>Full</option>
+                  </b-form-select>
+                </b-form-group>
+              </b-col>
 
-          <b-form-select v-model="selected_grouping_type" v-on:change="handleSubmit">
-            <option>Side-by-side</option>
-            <option>Average</option>
-          </b-form-select>
-        </div>
-      </b-form>
+              <b-col class="pr-0">
+                <b-form-group label="Duplicate handling"
+                              description="When duplicate runs exist, how to display them.">
+                  <b-form-select v-model="selected_grouping_type" v-on:change="handleSubmit">
+                    <option>Side-by-side</option>
+                    <option>Average</option>
+                  </b-form-select>
+                </b-form-group>
+              </b-col>
+            </b-row>
+          </b-container>
+        </b-form>
+      </b-col>
 
-      <b-form inline class="vgap-big">
-        <b-form-group  class="border p-2 w-auto">
-          <div class="form-legend">Filter</div>
+      <b-col>
+        <b-form>
+          <div class="form-legend">Show runs matching all of these:</div>
 
-          <b-form-select v-model="selected_cluster" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in clusters" :key="JSON.stringify(v)">{{ v }}</option>
-          </b-form-select>
+          <b-form-group label="Cluster">
+            <b-form-select v-model="selected_cluster" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
+              <option v-for="v in clusters" :key="JSON.stringify(v)">{{ v }}</option>
+            </b-form-select>
+          </b-form-group>
 
-          <b-form-select v-model="selected_impl" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in impls" :key="JSON.stringify(v)">{{ v }}</option>
-          </b-form-select>
+          <b-form-group label="Implementation">
+            <b-form-select v-model="selected_impl" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
+              <option v-for="v in impls" :key="JSON.stringify(v)">{{ v }}</option>
+            </b-form-select>
+          </b-form-group>
 
-          <b-form-select v-model="selected_workload" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
-            <option v-for="v in workloads" :key="JSON.stringify(v)">{{ v }}</option>
-          </b-form-select>
+          <b-form-group label="Workload">
+            <b-form-select v-model="selected_workload" v-on:change="handleSubmit" class="mb-2 mr-sm-2 mb-sm-0">
+              <option v-for="v in workloads" :key="JSON.stringify(v)">{{ v }}</option>
+            </b-form-select>
+          </b-form-group>
 
-          <b-form-select v-model="selected_vars" v-on:change="handleSubmit">
-            <option v-for="v in vars" :key="JSON.stringify(v)">{{ v }}</option>
-          </b-form-select>
-        </b-form-group>
+          <b-form-group label="Variables">
+            <b-form-select v-model="selected_vars" v-on:change="handleSubmit">
+              <option v-for="v in vars" :key="JSON.stringify(v)">{{ v }}</option>
+            </b-form-select>
+          </b-form-group>
 
-        <!--        <button type=submit>-->
-        <!--            Submit-->
-        <!--        </button>-->
-      </b-form>
-    </div>
-    <!--        {query_params}-->
+          <!--        <button type=submit>-->
+          <!--            Submit-->
+          <!--        </button>-->
+        </b-form>
+      </b-col>
+    </b-row>
 
     <div v-if="input">
-      <div class="jumbotron">
-      {{JSON.stringify(input)}}
-      </div>
-
       <Results :input="input"/>
+
+      <div class="jumbotron">
+        {{ JSON.stringify(input) }}
+      </div>
     </div>
 
-    <!--    {#await fetching}-->
-    <!--        <p>Loading...</p>-->
-    <!--    {:then results}-->
-    <!--        {results}-->
-  </div>
+  </b-container>
 </template>
 
 <script>
 
 
 import Results from "@/components/Results";
+
 export default {
   name: "Explorer",
   components: {Results},
@@ -128,7 +151,7 @@ export default {
 
     this.fetch_group_by_options()
         .then(() => {
-            this.handleGroupByChanged()
+          this.handleGroupByChanged()
         })
   },
 
@@ -184,14 +207,7 @@ export default {
 .form-legend {
   text-align: left;
   font-weight: bold;
-}
-
-.vgap {
   margin-bottom: 1rem;
-}
-
-.vgap-big {
-  margin-bottom: 3rem;
 }
 
 </style>

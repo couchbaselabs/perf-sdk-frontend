@@ -1,10 +1,10 @@
 <template>
-  <div>
+  <b-container>
     <h1>KV Get</h1>
     <Results :input="kvGets"></Results>
     <h1>KV Replace</h1>
     <Results :input="kvReplaces"></Results>
-  </div>
+  </b-container>
 </template>
 
 <script>

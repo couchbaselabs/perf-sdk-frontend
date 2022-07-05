@@ -57,8 +57,8 @@
             </b-button>
           </div>
 
-          <table v-if="display">
-            <thead>
+          <table v-if="display" class="text-left table-striped table-bordered table-sm table-responsive mt-5">
+            <thead  class="font-weight-bold">
             <tr>
               <td>Run</td>
               <td>Date</td>
