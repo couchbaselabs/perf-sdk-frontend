@@ -25,7 +25,6 @@ export class Input {
   // If we have reruns, how to display name - e.g. side-by-side, or averaging the results
   grouping_type: string;
 
-
   // constructor(inputs: Array<string>, group_by: string = DashboardService.default_group_by, display: string = DashboardService.default_display) {
   //     this.inputs = inputs;
   //     this.group_by = group_by;
