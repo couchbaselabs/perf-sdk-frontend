@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { Client } from 'pg';
-import { not } from 'rxjs/internal-compatibility';
 
 const semver = require('semver');
 const semverParse = require('semver/functions/parse');
@@ -24,7 +23,7 @@ class Run {
     vars: string,
     other: string,
     id: string,
-    datetime: string
+    datetime: string,
   ) {
     this.params = params;
     this.cluster = cluster;
@@ -34,6 +33,28 @@ class Run {
     this.other = other;
     this.id = id;
     this.datetime = datetime;
+  }
+}
+
+/**
+ * For when the database output is multiple buckets for each run.
+ */
+class RunBucketPair {
+  run_id: string;
+  datetime: string;
+  time_offset_secs: number;
+  value: number;
+
+  constructor(
+    run_id: string,
+    datetime: string,
+    time_offset_secs: number,
+    value: number,
+  ) {
+    this.run_id = run_id;
+    this.datetime = datetime;
+    this.time_offset_secs = time_offset_secs;
+    this.value = value;
   }
 }
 
@@ -167,38 +188,52 @@ export class DatabaseService {
         x.vars,
         x.other,
         x.run_id,
-        x.datetime
+        x.datetime,
       );
     });
     return ret;
   }
 
-  // async get_runs(cluster, impl, vars, other, group_by: string): Promise<Array<Run>> {
-  //
-  //     const compared_json = {
-  //         "cluster": cluster,
-  //         "impl": impl,
-  //         "vars": vars,
-  //         "other": other
-  //     }
-  //
-  //     const st = `SELECT
-  //                     params->'cluster' as cluster,
-  //                     params->'impl' as impl,
-  //                     params->'workload' as workload,
-  //                     params->'vars' as vars,
-  //                     params->'other' as other,
-  //                     id as run_id
-  //                   FROM runs
-  //                   where (params) @>
-  //                     ('${JSON.stringify(compared_json)}'::jsonb #- '${group_by}')`
-  //     const result = await this.client.query(st)
-  //     const rows = result
-  //     const ret = rows.map(x => {
-  //         return new Run(x.cluster, x.impl, x.workload, x.vars, x.other, x.run_id)
-  //     })
-  //     return ret
-  // }
+  /**
+   * Returns all runs that match, together with the bucket data for each.
+   * Used for building the Full line graph.
+   */
+  async get_runs_with_buckets(
+    compared_json: Object,
+    group_by: string,
+    display: string): Promise<Array<RunBucketPair>> {
+    const st = `SELECT
+        matched_runs.run_id,
+        buckets.time as datetime,
+        buckets.time_offset_secs,
+        buckets.${display} as value
+    FROM
+    (SELECT
+    params as params,
+        params->'cluster' as cluster,
+        params->'impl' as impl,
+        params->'workload' as workload,
+        params->'vars' as vars,
+        params->'other' as other,
+        id as run_id,
+        datetime
+    FROM runs
+     WHERE (params) @> ('${JSON.stringify(compared_json)}'::jsonb #- '${group_by}')
+  ) as matched_runs
+    JOIN buckets ON matched_runs.run_id = buckets.run_id;`
+
+    console.info(st);
+    const result = await this.client.query(st);
+    return result.map((x) => {
+      return new RunBucketPair(
+        x.run_id,
+        x.datetime,
+        parseInt(x.time_offset_secs),
+        x.value,
+      );
+    });
+  }
+
   async get_runs_raw(): Promise<Array<Object>> {
     const st = `SELECT params::json
                     FROM runs`;
@@ -212,7 +247,8 @@ export class DatabaseService {
     groupBy1: string,
     run_ids: Array<string>,
     display: string,
-    grouping_type: string): Promise<Array<Result>> {
+    grouping_type: string,
+  ): Promise<Array<Result>> {
     let st;
     if (grouping_type == 'Side-by-side') {
       st = `SELECT runs.id,
@@ -226,8 +262,7 @@ export class DatabaseService {
                   GROUP BY run_id) as sub
                    JOIN runs ON sub.run_id = runs.id
             ORDER BY grouping, datetime asc`;
-    }
-    else if (grouping_type == 'Average') {
+    } else if (grouping_type == 'Average') {
       st = `SELECT avg(sub.value) as value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
@@ -239,47 +274,12 @@ export class DatabaseService {
                    JOIN runs ON sub.run_id = runs.id
             GROUP BY grouping
             ORDER BY grouping`;
-    }
-    else {
-      throw new Error("Unknown grouping_type " + grouping_type);
+    } else {
+      throw new Error('Unknown grouping_type ' + grouping_type);
     }
     console.info(st);
     const result = await this.client.query(st);
     const rows = result;
     return rows.map((x) => new Result(x.grouping, x.value));
-  }
-
-  async get_buckets(
-    groupBy1: string,
-    run_ids: Array<string>,
-    display: string,
-  ): Promise<Array<Result>> {
-    // select buckets.time,buckets.run_id,buckets.latency_p95_us FROM buckets join runs on buckets.run_id = runs.id where runs.id = 'e4ffbd00-56f3-4c83-8939-49350f5e3e68';
-    const st = `SELECT
-                    buckets.time,
-                    buckets.run_id,
-                    buckets.${display}
-                      FROM buckets join runs on buckets.run_id = runs.id
-                      WHERE run_id in ('${run_ids.join("','")}')`;
-    console.info(st);
-    const result = await this.client.query(st);
-    return result.map((x) => new Result(x.grouping, x.value));
-  }
-
-  async get_buckets_for_run(
-    groupBy1: string,
-    run_id: string,
-    display: string,
-  ): Promise<Array<ResultRaw>> {
-    // select buckets.time,buckets.run_id,buckets.latency_p95_us FROM buckets join runs on buckets.run_id = runs.id where runs.id = 'e4ffbd00-56f3-4c83-8939-49350f5e3e68';
-    const st = `SELECT
-                    extract(epoch from (buckets.time)) - extract(epoch from runs.datetime) as time,
-                    buckets.${display} as value
-                      FROM buckets join runs on buckets.run_id = runs.id
-                      WHERE run_id = '${run_id}' 
-                      ORDER BY time`;
-    console.info(st);
-    const result = await this.client.query(st);
-    return result.map((x) => new ResultRaw(x.time, x.value));
   }
 }

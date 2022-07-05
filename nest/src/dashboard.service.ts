@@ -119,7 +119,13 @@ export class DashboardService {
   //     }
   // }
 
-  private async add_graph(compared_json: Object, input: Input): Promise<any> {
+  /**
+   * Builds the Simplified bar graph
+   */
+  private async add_graph_bar(
+    compared_json: Object,
+    input: Input,
+  ): Promise<any> {
     const labels = [];
     const values = [];
     const runs = await this.database.get_runs(
@@ -133,7 +139,7 @@ export class DashboardService {
         input.group_by_1(),
         run_ids,
         input.display,
-        input.grouping_type
+        input.grouping_type,
       );
       buckets.sort((a, b) => a.grouping.localeCompare(b.grouping));
       buckets.forEach((b) => {
@@ -169,6 +175,9 @@ export class DashboardService {
     };
   }
 
+  /**
+   * Builds the Full line graph.
+   */
   private async add_graph_line(
     compared_json: Object,
     input: Input,
@@ -178,7 +187,12 @@ export class DashboardService {
       compared_json,
       input.group_by_2(),
     );
-    // const run_ids = runs.map(v => v.id)
+
+    const runsWithBuckets = await this.database.get_runs_with_buckets(
+      compared_json,
+      input.group_by_2(),
+      input.display,
+    );
 
     const shades = [
       '#E2F0CB',
@@ -200,16 +214,19 @@ export class DashboardService {
     });
 
     for (const run of runsPlus) {
-      const buckets = await this.database.get_buckets_for_run(
-        input.group_by_1(),
-        run.id,
-        input.display,
-      );
+      const bucketsForRun = runsWithBuckets.filter((v) => v.run_id == run.id);
+
+      console.info(`For run ${run.id} buckets ${bucketsForRun.length}`);
+
       const data = [];
-      buckets.forEach((b) => {
+      bucketsForRun.forEach((b) => {
         data.push({
-          x: b.time * 1000,
+          x: b.time_offset_secs,
           y: b.value,
+          nested: {
+            datetime: b.datetime,
+            runid: b.run_id,
+          },
         });
       });
       datasets.push({
@@ -399,7 +416,7 @@ export class DashboardService {
         }
 
         if (input.graph_type == 'Simplified') {
-          const graph = await this.add_graph(compared_json, input);
+          const graph = await this.add_graph_bar(compared_json, input);
           graphs.push(graph);
         } else {
           const graph = await this.add_graph_line(compared_json, input);
