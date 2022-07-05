@@ -34,7 +34,12 @@
             <!--              <Chart data={graph.data} type={graph.type}/>-->
 
             <BarChart v-if="graph.type === 'bar'" class="chart" :chartdata="graph.data" :options="graph.options"/>
-            <LineChart v-if="graph.type === 'line'" class="chart" :chartdata="graph.data" :options="graph.options"/>
+            <div v-if="graph.type === 'line'">
+              <LineChart class="chartLine" :chartdata="graph.data" :options="graph.options"/>
+              <div>
+                Time: All runs are shown starting from time '0' to allow them to be displayed together.  Tooltips show the wallclock time for each run.
+              </div>
+            </div>
 
           </b-container>
 
@@ -100,5 +105,9 @@ export default {
 <style scoped>
 .chart {
   height: 200px !important;
+}
+
+.chartLine {
+  height: 600px !important;
 }
 </style>

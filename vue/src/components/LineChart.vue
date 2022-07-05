@@ -7,16 +7,22 @@ export default {
   mounted() {
     const x = {
       display: true,
-      type: 'time',
+      type: 'linear',
       title: {
         display: true,
         text: 'Time'
       },
-      time: {
-        unit: 'second',
-        // https://moment.github.io/luxon/docs/manual/formatting.html#table-of-tokens
-        displayFormats: {
-          second: 'mm:ss'
+      scaleLabel: {
+        display: true,
+        labelString: 'Time (seconds)',
+
+      },
+      ticks: {
+        callback: function(value) {
+          const minutes = Math.floor(value / 60);
+          const seconds = Math.floor(value - (minutes * 60));
+          console.info(`${value} ${minutes} ${seconds} ${toString(minutes)}`);
+          return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
       }
     }
@@ -24,8 +30,7 @@ export default {
     const y =
         {
           title: {
-            display: true,
-            text: 'Time'
+            display: true
           },
           ticks: {
             beginAtZero: true
@@ -38,6 +43,14 @@ export default {
       },
       title: {
         display: false
+      },
+      tooltips: {
+        callbacks: {
+          label: function(tooltipItem, data) {
+            const x = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+            return `runid=${x.nested.runid} ${x.nested.datetime} timeOffsetSecs=${x.x} value=${x.y}`;
+          }
+        }
       },
       scales: {
         xAxes: [x],
@@ -54,10 +67,6 @@ export default {
       type: Object,
       default: null
     },
-    // options: {
-    //   type: Object,
-    //   // default:
-    // }
   }
 }
 </script>
