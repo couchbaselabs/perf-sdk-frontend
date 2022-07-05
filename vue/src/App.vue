@@ -10,11 +10,14 @@
           <li class="nav-item"><router-link to="/explorer" class="nav-link">Explorer</router-link></li>
           <li class="nav-item"><router-link to="/java" class="nav-link">Java</router-link></li>
           <li class="nav-item"><router-link to="/python" class="nav-link">Python</router-link></li>
+          <li class="nav-item"><router-link to="/test" class="nav-link">Test</router-link></li>
         </b-navbar-nav>
       </b-collapse>
     </b-navbar>
 
-    <router-view class="view"></router-view>
+    <b-container fluid class="main">
+      <router-view class="view"></router-view>
+    </b-container>
   </div>
 </template>
 
@@ -34,5 +37,9 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+}
+
+.main {
+  padding: 1rem
 }
 </style>

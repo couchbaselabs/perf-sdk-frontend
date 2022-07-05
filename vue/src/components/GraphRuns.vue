@@ -1,12 +1,12 @@
 <template>
   <div>
-    <a href="#" v-if="!display" v-on:click="display = true">
+    <b-button v-if="!display" v-on:click="display = true" variant="outline-primary">
       Show runs
-    </a>
+    </b-button>
 
-    <a href="#" v-if="display" v-on:click="display = false">
+    <b-button v-if="display" v-on:click="display = false" variant="outline-primary">
       Hide runs
-    </a>
+    </b-button>
 
     <table v-if="display">
       <thead>

@@ -1,6 +1,9 @@
 <template>
-  <div class="main">
-    <Results :input="input"></Results>
+  <div>
+    <h1>KV Get</h1>
+    <Results :input="kvGets"></Results>
+    <h1>KV Replace</h1>
+    <Results :input="kvReplaces"></Results>
   </div>
 </template>
 
@@ -11,7 +14,7 @@ export default {
   components: {Results},
   data() {
     return {
-      input: {
+      kvReplaces: {
         "inputs": [{
           "viewing": "cluster",
           "params": [{
@@ -25,10 +28,42 @@ export default {
         "group_by": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": "java"},
-        "workload": {"description": null},
-        "vars": {"doc_num": 100000, "driverVersion": 2, "horizontal_scaling": 20},
+        "workload": {
+          "operations": [{
+            "op": "replace",
+            "count": "$doc_num",
+            "docLocation": {"method": "pool", "poolSize": "$pool_size", "poolSelectionStrategy": "counter"}
+          }]
+        },
+        "vars": {"doc_num": 1000000, "pool_size": 10000, "driverVersion": 2, "horizontal_scaling": 20},
         "graph_type": "Simplified",
-        "grouping_type": "Average"
+        "grouping_type": "Side-by-side"
+      },
+
+      kvGets: {
+        "inputs": [{
+          "viewing": "cluster",
+          "params": [{
+            "type": "unmanaged",
+            "memory": 12000,
+            "version": "7.1.0-2556-enterprise",
+            "cpuCount": 4,
+            "nodeCount": 1
+          }]
+        }],
+        "group_by": "impl.version",
+        "display": "duration_average_us",
+        "impl": {"language": "java"},
+        "workload": {
+          "operations": [{
+            "op": "get",
+            "count": "$doc_num",
+            "docLocation": {"method": "pool", "poolSize": "$pool_size", "poolSelectionStrategy": "random_uniform"}
+          }]
+        },
+        "vars": {"doc_num": 1000000, "pool_size": 10000, "driverVersion": 2, "horizontal_scaling": 20},
+        "graph_type": "Simplified",
+        "grouping_type": "Side-by-side"
       }
     }
   }

@@ -55,9 +55,14 @@
     </div>
     <!--        {query_params}-->
 
-    {{JSON.stringify(input)}}
 
-    <Results :input="input"></Results>
+    <div v-if="input">
+      <div class="jumbotron">
+      {{JSON.stringify(input)}}
+      </div>
+
+      <Results :input="input"/>
+    </div>
 
     <!--    {#await fetching}-->
     <!--        <p>Loading...</p>-->
@@ -105,7 +110,7 @@ export default {
       selected_grouping_type: "Side-by-side",
       fetching: undefined,
       query_params: undefined,
-      input: {}
+      input: undefined
     }
   },
 
@@ -173,7 +178,4 @@ export default {
   margin-bottom: 3rem;
 }
 
-.main {
-  padding: 1rem
-}
 </style>

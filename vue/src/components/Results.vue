@@ -1,6 +1,6 @@
 <template>
   <div>
-    <!-- Hack to force this to redisplay when input changes.  Not sure if better way to achieve. -->
+    <!-- Hack to force this to update when input changes.  Not sure if better way to achieve. -->
     <div style="display: none">
       {{ JSON.stringify(input) }}
     </div>
@@ -50,31 +50,32 @@
 import BarChart from "./BarChart";
 import LineChart from "./LineChart";
 import GraphRuns from "./GraphRuns";
-//import {Input} from "../input";
 
 export default {
   name: "Results",
   components: {GraphRuns, BarChart,LineChart},
   data() {
     return {
+      lastInput: undefined,
       results: undefined
     }
   },
-  mounted() { console.log(`Results mounted`) },
-  beforeUpdate() { console.log(`Results beforeUpdate`) },
-  updated() {
-    console.log(`Results updated`)
+  mounted() {
     this.fetchQuery(this.input)
   },
-  created() {
-    console.log(`Results created`);
-    this.fetchQuery(this.input);
+  updated() {
+    // Need this component to refetch data when the `input` prop changes.  The approach used here doesn't seem slick
+    // but is the only solution that worked.
+    if (this.lastInput !== this.input) {
+      this.fetchQuery(this.input)
+    }
   },
   methods: {
     fetchQuery: async function (input) {
       if (input !== undefined) {
-        console.info("Fetching...")
-        console.info(input)
+        this.lastInput = input
+        console.info("Results fetching...")
+        console.info(JSON.stringify(input))
 
         const res = await fetch(`http://${document.location.hostname}:3002/dashboard/query`,
             {
