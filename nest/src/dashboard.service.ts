@@ -27,6 +27,8 @@ export class Input {
 
   merging_type: string;
 
+  trimming_seconds: number;
+
   group_by_1(): string {
     return `params->'${this.group_by.replace('.', "'->>'")}'`;
   }
@@ -136,8 +138,8 @@ export class DashboardService {
         run_ids,
         input.display,
         input.grouping_type,
-        input.merging_type
-      );
+        input.merging_type,
+        input.trimming_seconds);
       buckets.sort((a, b) => a.grouping.localeCompare(b.grouping));
       buckets.forEach((b) => {
         labels.push(b.grouping);
@@ -190,6 +192,7 @@ export class DashboardService {
       compared_json,
       input.group_by_2(),
       input.display,
+      input.trimming_seconds
     );
 
     const shades = [
@@ -214,7 +217,7 @@ export class DashboardService {
     for (const run of runsPlus) {
       const bucketsForRun = runsWithBuckets.filter((v) => v.run_id == run.id);
 
-      console.info(`For run ${run.id} buckets ${bucketsForRun.length}`);
+      // console.info(`For run ${run.id} buckets ${bucketsForRun.length}`);
 
       const data = [];
       bucketsForRun.forEach((b) => {

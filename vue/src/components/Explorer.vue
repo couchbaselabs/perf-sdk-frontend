@@ -32,7 +32,21 @@
                 </b-form-group>
               </b-col>
 
-              <b-col>
+              <b-col class="pr-0">
+                <b-form-group label="Duplicate handling"
+                              description="When duplicate runs exist, how to display them.">
+                  <b-form-select v-model="selected_grouping_type" v-on:change="handleSubmit">
+                    <option>Side-by-side</option>
+                    <option>Average</option>
+                  </b-form-select>
+                </b-form-group>
+              </b-col>
+            </b-row>
+          </b-container>
+
+          <b-container>
+            <b-row>
+              <b-col class="pl-0">
                 <b-form-group label="Merging"
                               description="How to merge bucket results in Simplified view.">
                   <b-form-select v-model="selected_merging_type" v-on:change="handleSubmit">
@@ -45,16 +59,14 @@
               </b-col>
 
               <b-col class="pr-0">
-                <b-form-group label="Duplicate handling"
-                              description="When duplicate runs exist, how to display them.">
-                  <b-form-select v-model="selected_grouping_type" v-on:change="handleSubmit">
-                    <option>Side-by-side</option>
-                    <option>Average</option>
-                  </b-form-select>
+                <b-form-group label="Trim from start"
+                              description="How much data to trim from the start to account for warmup, in seconds.">
+                  <b-form-input v-model="selected_trimming_seconds" v-on:blur="handleSubmit"/>
                 </b-form-group>
               </b-col>
             </b-row>
           </b-container>
+
         </b-form>
       </b-col>
 
@@ -144,6 +156,7 @@ export default {
       selected_graph_type: "Simplified",
       selected_grouping_type: "Side-by-side",
       selected_merging_type: "Average",
+      selected_trimming_seconds: 15,
       fetching: undefined,
       query_params: undefined,
       input: this.initialInput
@@ -161,6 +174,7 @@ export default {
       this.selected_graph_type = this.initialInput.graph_type;
       this.selected_grouping_type = this.initialInput.grouping_type;
       this.selected_merging_type = this.initialInput.merging_type;
+      this.selected_trimming_seconds = this.initialInput.trimming_seconds | 0;
     }
 
     this.fetch_group_by_options()
@@ -186,7 +200,8 @@ export default {
         vars: JSON.parse(this.selected_vars),
         graph_type: this.selected_graph_type,
         grouping_type: this.selected_grouping_type,
-        merging_type: this.selected_merging_type
+        merging_type: this.selected_merging_type,
+        trimming_seconds: this.selected_trimming_seconds
       }
     },
 

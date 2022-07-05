@@ -63,16 +63,6 @@ export interface RunPlus extends Run {
   color: string; // '#E2F0CB'
 }
 
-class ResultRaw {
-  time: number;
-  value: number;
-
-  constructor(time: number, value: number) {
-    this.time = time;
-    this.value = value;
-  }
-}
-
 class Result {
   grouping: string;
   value: number;
@@ -201,7 +191,8 @@ export class DatabaseService {
   async get_runs_with_buckets(
     compared_json: Object,
     group_by: string,
-    display: string): Promise<Array<RunBucketPair>> {
+    display: string,
+    trimming_seconds: number): Promise<Array<RunBucketPair>> {
     const st = `SELECT
         matched_runs.run_id,
         buckets.time as datetime,
@@ -220,7 +211,8 @@ export class DatabaseService {
     FROM runs
      WHERE (params) @> ('${JSON.stringify(compared_json)}'::jsonb #- '${group_by}')
   ) as matched_runs
-    JOIN buckets ON matched_runs.run_id = buckets.run_id;`
+    JOIN buckets ON matched_runs.run_id = buckets.run_id
+    WHERE buckets.time_offset_secs >= ${trimming_seconds};`;
 
     console.info(st);
     const result = await this.client.query(st);
@@ -248,7 +240,8 @@ export class DatabaseService {
     run_ids: Array<string>,
     display: string,
     grouping_type: string,
-    merging: string): Promise<Array<Result>> {
+    merging: string,
+    trimming_seconds: number): Promise<Array<Result>> {
     let mergingOp;
     if (merging == 'Average') {
       mergingOp = 'avg';
@@ -272,6 +265,7 @@ export class DatabaseService {
                   FROM buckets join runs
                   on buckets.run_id = runs.id
                   WHERE run_id in ('${run_ids.join("','")}')
+                    AND buckets.time_offset_secs >= ${trimming_seconds}
                   GROUP BY run_id) as sub
                    JOIN runs ON sub.run_id = runs.id
             ORDER BY grouping, datetime asc`;
@@ -283,6 +277,7 @@ export class DatabaseService {
                   FROM buckets join runs
                   on buckets.run_id = runs.id
                   WHERE run_id in ('${run_ids.join("','")}')
+                    AND buckets.time_offset_secs >= ${trimming_seconds}
                   GROUP BY run_id) as sub
                    JOIN runs ON sub.run_id = runs.id
             GROUP BY grouping
