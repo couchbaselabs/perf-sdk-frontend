@@ -9,7 +9,6 @@
         <b-navbar-nav>
           <li class="nav-item"><router-link to="/explorer" class="nav-link">Explorer</router-link></li>
           <li class="nav-item"><router-link to="/java" class="nav-link">Java</router-link></li>
-          <li class="nav-item"><router-link to="/python" class="nav-link">Python</router-link></li>
         </b-navbar-nav>
       </b-collapse>
     </b-navbar>
