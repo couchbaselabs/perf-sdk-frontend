@@ -35,11 +35,12 @@ export default {
             "docLocation": {"method": "pool", "poolSize": "$pool_size", "poolSelectionStrategy": "counter"}
           }]
         },
-        "vars": {"doc_num": 1000000, "pool_size": 10000, "driverVersion": 2, "horizontal_scaling": 20},
-        "graph_type": "Simplified",
+        "vars": {"doc_num": 10000000, "pool_size": 10000, "driverVersion": 2, "horizontal_scaling": 20},
+        "graph_type": "Full",
         "grouping_type": "Average",
         "merging_type": "Average",
-        "trimming_seconds": 0
+        "trimming_seconds": "0",
+        "include_metrics": false
       },
 
       kvGets: {
@@ -63,11 +64,12 @@ export default {
             "docLocation": {"method": "pool", "poolSize": "$pool_size", "poolSelectionStrategy": "random_uniform"}
           }]
         },
-        "vars": {"doc_num": 1000000, "pool_size": 10000, "driverVersion": 2, "horizontal_scaling": 20},
-        "graph_type": "Simplified",
+        "vars": {"doc_num": 10000000, "pool_size": 10000, "driverVersion": 2, "horizontal_scaling": 20},
+        "graph_type": "Full",
         "grouping_type": "Average",
         "merging_type": "Average",
-        "trimming_seconds": 0
+        "trimming_seconds": "0",
+        "include_metrics": false
       }
     }
   }
