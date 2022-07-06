@@ -3,6 +3,7 @@ import VueRouter from 'vue-router';
 import Explorer from './components/Explorer.vue'
 import Java from './components/Java.vue'
 import Python from './components/Python.vue'
+import Single from './components/Single.vue'
 
 Vue.use(VueRouter)
 
@@ -27,6 +28,12 @@ const routes = [
         path: "/python",
         name: "Python",
         component: Python,
+    },
+    {
+        path: "/single",
+        name: "Single",
+        component: Single,
+        props: true
     },
 ]
 

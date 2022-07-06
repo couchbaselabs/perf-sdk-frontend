@@ -5,7 +5,7 @@ const semver = require('semver');
 const semverParse = require('semver/functions/parse');
 const SemVer = require('semver/classes/semver');
 
-class Run {
+export class Run {
   params: Object;
   cluster: string;
   impl: string;
@@ -44,17 +44,20 @@ class RunBucketPair {
   datetime: string;
   time_offset_secs: number;
   value: number;
+  metrics?: string;
 
   constructor(
     run_id: string,
     datetime: string,
     time_offset_secs: number,
     value: number,
+    metrics?: string
   ) {
     this.run_id = run_id;
     this.datetime = datetime;
     this.time_offset_secs = time_offset_secs;
     this.value = value;
+    this.metrics = metrics;
   }
 }
 
@@ -184,20 +187,51 @@ export class DatabaseService {
     return ret;
   }
 
+  async get_runs_by_id(runIds: Array<string>): Promise<Array<Run>> {
+    const st = `SELECT
+                        params as params,
+                        params->'cluster' as cluster,
+                        params->'impl' as impl,
+                        params->'workload' as workload,
+                        params->'vars' as vars,
+                        params->'other' as other,
+                        id as run_id,
+                        datetime
+                      FROM runs
+                WHERE id in ('${runIds.join("','")}')`;
+    console.info(st);
+    const result = await this.client.query(st);
+    const rows = result;
+    const ret = rows.map((x) => {
+      return new Run(
+          x.params,
+          x.cluster,
+          x.impl,
+          x.workload,
+          x.vars,
+          x.other,
+          x.run_id,
+          x.datetime,
+      );
+    });
+    return ret;
+  }
+
   /**
    * Returns all runs that match, together with the bucket data for each.
    * Used for building the Full line graph.
    */
   async get_runs_with_buckets(
-    compared_json: Object,
-    group_by: string,
+    run_ids: string[],
     display: string,
-    trimming_seconds: number): Promise<Array<RunBucketPair>> {
+    trimming_seconds: number,
+    include_metrics: boolean): Promise<Array<RunBucketPair>> {
     const st = `SELECT
         matched_runs.run_id,
         buckets.time as datetime,
         buckets.time_offset_secs,
         buckets.${display} as value
+        ${include_metrics ? ", metrics.metrics" : ""}
     FROM
     (SELECT
     params as params,
@@ -209,10 +243,12 @@ export class DatabaseService {
         id as run_id,
         datetime
     FROM runs
-     WHERE (params) @> ('${JSON.stringify(compared_json)}'::jsonb #- '${group_by}')
+      WHERE id in ('${run_ids.join("','")}')
   ) as matched_runs
     JOIN buckets ON matched_runs.run_id = buckets.run_id
-    WHERE buckets.time_offset_secs >= ${trimming_seconds};`;
+    ${include_metrics ? "LEFT OUTER JOIN metrics ON matched_runs.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}             
+    WHERE buckets.time_offset_secs >= ${trimming_seconds}
+    ORDER BY buckets.time_offset_secs ASC;`;
 
     console.info(st);
     const result = await this.client.query(st);
@@ -222,6 +258,7 @@ export class DatabaseService {
         x.datetime,
         parseInt(x.time_offset_secs),
         x.value,
+        x.metrics
       );
     });
   }

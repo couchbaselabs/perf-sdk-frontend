@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { DatabaseService } from './database.service';
-import { DashboardService, Input, Params } from './dashboard.service';
+import {DashboardService, Input, Params, Single} from './dashboard.service';
 import { Query } from '@nestjs/common';
 
 // export class QueryInput {
@@ -59,14 +59,17 @@ export class AppController {
 
   @Post('/query')
   async query(@Body() query: Input) {
-    // const inputs = []
-    // if (query.input1) inputs.push(query.input1)
-    // if (query.input2) inputs.push(query.input2)
-    // if (query.input3) inputs.push(query.input3)
-    // const input = new Input(inputs, query.group_by, query.display)
     console.info(JSON.stringify(query));
     const input = Object.assign(new Input(), query);
     const out = await this.dashboard.gen_dashboard_wrapper(input);
+    return out;
+  }
+
+  @Post('/single')
+  async single(@Body() query: Single) {
+    console.info(JSON.stringify(query));
+    const input = Object.assign(new Single(), query);
+    const out = await this.dashboard.gen_single(input);
     return out;
   }
 }

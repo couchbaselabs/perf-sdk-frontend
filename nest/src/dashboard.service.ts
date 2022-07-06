@@ -1,13 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService, RunPlus } from './database.service';
+import {DatabaseService, Run, RunPlus} from './database.service';
 import { Filtered } from './app.controller';
 import {v4 as uuidv4} from 'uuid';
+import {run} from "jest";
+import Any = jasmine.Any;
 
 export class Panel {
   // cluster
   viewing: string;
   // [{"env":"AWS","disk":"ssd","nodes":3,"node_size":"m4"},{"env":"GCP","disk":"ssd","nodes":4,"node_size":"x2"}]
   params: Array<Object>;
+}
+
+export class Single {
+  runid: string;
+  display: string; // latency_average_us
+  trimming_seconds: number;
+  include_metrics: boolean;
 }
 
 export class Input {
@@ -28,6 +37,8 @@ export class Input {
   merging_type: string;
 
   trimming_seconds: number;
+
+  include_metrics: boolean;
 
   group_by_1(): string {
     return `params->'${this.group_by.replace('.', "'->>'")}'`;
@@ -175,24 +186,54 @@ export class DashboardService {
     };
   }
 
+
   /**
-   * Builds the Full line graph.
+   * Builds the Full line graph for multiple runs.
    */
   private async add_graph_line(
-    compared_json: Object,
-    input: Input,
+      compared_json: Object,
+      input: Input,
   ): Promise<any> {
-    const datasets = [];
     const runs = await this.database.get_runs(
-      compared_json,
-      input.group_by_2(),
+        compared_json,
+        input.group_by_2(),
     );
 
+    return this.add_graph_line_shared(runs, input.display, input.trimming_seconds, input.group_by, input.include_metrics);
+  }
+
+  /**
+   * Builds the Full line graph for a single run.
+   */
+  private async add_graph_line_single(
+      input: Single,
+  ): Promise<any> {
+    const runs = await this.database.get_runs_by_id([input.runid]);
+
+    // TODO fix this hardcoding
+    return this.add_graph_line_shared(runs, input.display, input.trimming_seconds, "impl.version", input.include_metrics);
+  }
+
+
+  /**
+   * Builds the Full line graph for both multiple runs, and single.
+   */
+  private async add_graph_line_shared(
+    runs: Array<Run>,
+    display: string,
+    trimming_seconds: number,
+    groupBy: string,
+    includeMetrics: boolean
+  ): Promise<any> {
+    const datasets = [];
+    const runIds = runs.map((v) => v.id);
+
+
     const runsWithBuckets = await this.database.get_runs_with_buckets(
-      compared_json,
-      input.group_by_2(),
-      input.display,
-      input.trimming_seconds
+      runIds,
+      display,
+      trimming_seconds,
+      includeMetrics
     );
 
     const shades = [
@@ -206,7 +247,7 @@ export class DashboardService {
     let shadeIdx = 0;
 
     const runsPlus: Array<RunPlus> = runs.map((run: RunPlus) => {
-      const groupedBy = input.group_by.split('.');
+      const groupedBy = groupBy.split('.');
       run.groupedBy = DashboardService.parse_from(run.params, groupedBy);
       const shade = shades[shadeIdx % shades.length];
       shadeIdx++;
@@ -220,6 +261,8 @@ export class DashboardService {
       // console.info(`For run ${run.id} buckets ${bucketsForRun.length}`);
 
       const data = [];
+      const dataMetrics = {};
+
       bucketsForRun.forEach((b) => {
         data.push({
           x: b.time_offset_secs,
@@ -229,22 +272,56 @@ export class DashboardService {
             runid: b.run_id,
           },
         });
+
+        if (b.metrics) {
+          // console.info(b.metrics)
+          // console.info(typeof b.metrics)
+          const metricsJson = b.metrics;
+          const keys = Object.keys(metricsJson);
+          keys.forEach(key => {
+            // const x = b.run_id + "_" + key;
+            // It's not useful to have multiple runs with metrics on same screen
+            const x = key;
+            const data = {
+              x: b.time_offset_secs,
+              y: metricsJson[key]
+            }
+            if (x in dataMetrics) {
+              dataMetrics[x].push(data);
+            }
+            else {
+              dataMetrics[x] = [data];
+            }
+          })
+        }
       });
+      // console.info(dataMetrics)
+
       datasets.push({
-        // label: run.id.substring(0, 6),
         label: run.groupedBy,
         data: data,
         fill: false,
         backgroundColor: run.color,
         borderColor: run.color,
       });
+
+      for (const [k, v] of Object.entries(dataMetrics)) {
+        datasets.push({
+          label: k,
+          data: v,
+          hidden: true,
+          fill: false
+        });
+      }
     }
+
+    console.info(datasets)
 
     return {
       uuid: uuidv4(),
       type: 'line',
-      runs: runs,
-      chosen: compared_json,
+      runs: runsPlus,
+      //chosen: compared_json,
       // "chosen": {
       //     "cluster": params.cluster,
       //     "workload": params.workload,
@@ -256,16 +333,6 @@ export class DashboardService {
         datasets: datasets,
       },
     };
-  }
-
-  default_params(): Params {
-    return new Params(
-      this.default_impl,
-      this.default_cluster,
-      this.default_workload,
-      this.default_vars,
-      this.default_other,
-    );
   }
 
   async gen_dashboard_wrapper(inputs: Input): Promise<any> {
@@ -441,6 +508,17 @@ export class DashboardService {
     }
 
     return panels;
+  }
+
+  public async gen_single(
+      input: Single
+  ) {
+    return {
+      panels: [{
+        uuid: uuidv4(),
+        graphs: [await this.add_graph_line_single(input)],
+      }]
+    };
   }
 
   // private async gen_dashboard(input: Input): Promise<Array<any>> {

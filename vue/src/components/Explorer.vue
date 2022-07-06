@@ -201,7 +201,8 @@ export default {
         graph_type: this.selected_graph_type,
         grouping_type: this.selected_grouping_type,
         merging_type: this.selected_merging_type,
-        trimming_seconds: this.selected_trimming_seconds
+        trimming_seconds: this.selected_trimming_seconds,
+        include_metrics: false
       }
     },
 

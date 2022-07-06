@@ -71,7 +71,11 @@
             </thead>
 
             <tr v-for="r in graph.runs" :key="r.id">
-              <td v-bind:style="{color: r.color}">{{ r.id }}</td>
+              <td v-bind:style="{color: r.color}">
+                <a href="#" v-on:click="runClicked(r.id)">
+                  {{ r.id }}
+                </a>
+              </td>
               <td v-bind:style="{color: r.color}">{{ r.datetime }}</td>
               <td>{{ r.groupedBy }}</td>
               <td>
@@ -113,12 +117,17 @@ export default {
     }
   },
   mounted() {
-    this.fetchQuery(this.input)
+    if (this.input) {
+      this.fetchQuery(this.input)
+    }
+    else if (this.single) {
+      this.fetchSingleQuery(this.single)
+    }
   },
   updated() {
     // Need this component to refetch data when the `input` prop changes.  The approach used here doesn't seem slick
     // but is the only solution that worked.
-    if (this.lastInput !== this.input) {
+    if (!this.single && this.lastInput !== this.input) {
       this.fetchQuery(this.input)
     }
   },
@@ -145,6 +154,20 @@ export default {
       }
     },
 
+    fetchSingleQuery: async function (input) {
+      const res = await fetch(`http://${document.location.hostname}:3002/dashboard/single`,
+          {
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            method: "POST",
+            body: JSON.stringify(input)
+          })
+
+      this.results = await res.json();
+    },
+
     showInExplorer: function () {
       router.push({
         name: 'Explorer',
@@ -152,9 +175,19 @@ export default {
           initialInput: this.lastInput
         }
       })
+    },
+
+    runClicked: function(runId) {
+      router.push({
+        name: 'Single',
+        params: {
+          runId: runId,
+          display: this.input.display
+        }
+      })
     }
   },
-  props: ['input']
+  props: ['input', 'single']
 }
 </script>
 
