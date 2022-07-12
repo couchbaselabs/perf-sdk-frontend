@@ -68,65 +68,7 @@ export class Params {
 
 @Injectable()
 export class DashboardService {
-  public static LANG_LATEST = 'impl.language (latest)';
-
-  default_impl = { version: '3.3.0', language: 'java' };
-  default_cluster = {
-    env: 'AWS',
-    disk: 'ssd',
-    nodes: 3,
-    node_size: 'm4',
-    version: '6.6.1-stable',
-  };
-  default_workload = {
-    description:
-      '$number_of_inserts inserts, one replace with chance of contention',
-  };
-  default_other = { runtime: 10 };
-  default_vars = {
-    durability: 'MAJORITY',
-    doc_pool_size: 10,
-    number_of_inserts: 3,
-    horizontal_scaling: 1,
-  };
-  public static default_display = 'latency_average_us';
-  public static default_group_by = 'cluster.version';
-
   constructor(private readonly database: DatabaseService) {}
-
-  // private async add_graph(input: Input, params: Params): Promise<any> {
-  //     let labels = []
-  //     let values = []
-  //     const runs = await this.database.get_runs(params.cluster, params.impl.json, params.vars, params.other, input.group_by_2())
-  //     const run_ids = runs.map(v => v.id)
-  //
-  //     if (run_ids.length != 0) {
-  //         const buckets = await this.database.get_groupings(input.group_by_1(), run_ids, input.display)
-  //         buckets.sort((a, b) => a.grouping.localeCompare(b.grouping))
-  //         buckets.forEach(b => {
-  //             labels.push(b.grouping)
-  //             values.push(b.value)
-  //         })
-  //     }
-  //
-  //     return {
-  //         "type": "bar",
-  //         "runs": runs,
-  //         "chosen": {
-  //             "cluster": params.cluster,
-  //             "workload": params.workload,
-  //             "other": params.other,
-  //             "vars": params.vars,
-  //             "impl": params.impl.json
-  //         },
-  //         "data": {
-  //             "labels": labels,
-  //             "datasets": [
-  //                 {"values": values}
-  //             ]
-  //         }
-  //     }
-  // }
 
   /**
    * Builds the Simplified bar graph
@@ -310,7 +252,8 @@ export class DashboardService {
           label: k,
           data: v,
           hidden: true,
-          fill: false
+          fill: false,
+          borderColor: shades[(shadeIdx++) % shades.length]
         });
       }
     }

@@ -8,7 +8,6 @@
 
 <script>
 import Results from "@/components/Results";
-import router from '../router.ts'
 
 export default {
   components: {Results},
