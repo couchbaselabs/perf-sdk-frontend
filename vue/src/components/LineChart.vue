@@ -39,7 +39,8 @@ export default {
 
     this.renderChart(this.chartdata, {
       legend: {
-        display: true
+        display: true,
+        position: "right"
       },
       title: {
         display: false
@@ -48,7 +49,7 @@ export default {
         callbacks: {
           label: function(tooltipItem, data) {
             const x = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
-            return `${x.nested.datetime} timeOffsetSecs=${x.x} value=${x.y} runid=${x.nested.runid}`;
+            return `${x.nested.datetime}   seconds since start=${x.x}   value=${x.y}   runid=${x.nested.runid}`;
           }
         }
       },

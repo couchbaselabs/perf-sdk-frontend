@@ -37,7 +37,7 @@
             <div v-if="graph.type === 'line'">
               <LineChart class="chartLine" :chartdata="graph.data" :options="graph.options"/>
               <div>
-                Time: All runs are shown starting from time '0' to allow them to be displayed together.  Tooltips show the wallclock time for each run.  The first 15 seconds of data have been previously discarded to reduce warmup issues.
+                Time: All runs are shown starting from time '0' to allow them to be displayed together.  Mouseover points to see the wallclock times.
               </div>
             </div>
 
@@ -178,13 +178,15 @@ export default {
     },
 
     runClicked: function(runId) {
-      router.push({
-        name: 'Single',
-        params: {
-          runId: runId,
-          display: this.input.display
-        }
-      })
+      window.history.pushState(null, '', `/single/${runId}/${this.input.display}`);
+
+      // this.$router.push({
+      //   path: `/single/${runId}/${this.input.display}`
+      //   // query: {
+      //   //   runId: runId,
+      //   //   display: this.input.display
+      //   // }
+      // })
     }
   },
   props: ['input', 'single']
