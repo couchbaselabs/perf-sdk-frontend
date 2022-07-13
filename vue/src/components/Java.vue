@@ -16,15 +16,40 @@ export default {
   components: {Results},
   data() {
     return {
+      kvInserts: {
+        "inputs": [{
+          "viewing": "cluster",
+          "params": [{
+            "type": "unmanaged",
+            "memory": 28000,
+            "storage": "couchstore",
+            "version": "7.1.1-3175-enterprise",
+            "cpuCount": 16,
+            "replicas": 0,
+            "nodeCount": 1
+          }]
+        }],
+        "group_by": "impl.version",
+        "display": "duration_average_us",
+        "impl": {"language": "java"},
+        "workload": {"operations": [{"op": "insert", "count": "$doc_num", "docLocation": {"method": "uuid"}}]},
+        "vars": {"doc_num": 10000000, "driverVersion": 6, "performerVersion": 0, "horizontal_scaling": 20},
+        "graph_type": "Simplified",
+        "grouping_type": "Average",
+        "merging_type": "Average",
+        "trimming_seconds": 15,
+        "include_metrics": false
+      },
+
       kvReplaces: {
         "inputs": [{
           "viewing": "cluster",
           "params": [{
             "type": "unmanaged",
-            "memory": 14000,
+            "memory": 28000,
             "storage": "couchstore",
             "version": "7.1.1-3175-enterprise",
-            "cpuCount": 4,
+            "cpuCount": 16,
             "replicas": 0,
             "nodeCount": 1
           }]
@@ -47,7 +72,7 @@ export default {
           "horizontal_scaling": 20
         },
         "graph_type": "Simplified",
-        "grouping_type": "Side-by-side",
+        "grouping_type": "Average",
         "merging_type": "Average",
         "trimming_seconds": 15,
         "include_metrics": false
@@ -58,10 +83,10 @@ export default {
           "viewing": "cluster",
           "params": [{
             "type": "unmanaged",
-            "memory": 14000,
+            "memory": 28000,
             "storage": "couchstore",
             "version": "7.1.1-3175-enterprise",
-            "cpuCount": 4,
+            "cpuCount": 16,
             "replicas": 0,
             "nodeCount": 1
           }]
@@ -84,32 +109,7 @@ export default {
           "horizontal_scaling": 20
         },
         "graph_type": "Simplified",
-        "grouping_type": "Side-by-side",
-        "merging_type": "Average",
-        "trimming_seconds": 15,
-        "include_metrics": false
-      },
-
-      kvInserts: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 14000,
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 4,
-            "replicas": 0,
-            "nodeCount": 1
-          }]
-        }],
-        "group_by": "impl.version",
-        "display": "duration_average_us",
-        "impl": {"language": "java"},
-        "workload": {"operations": [{"op": "insert", "count": "$doc_num", "docLocation": {"method": "uuid"}}]},
-        "vars": {"doc_num": 10000000, "driverVersion": 6, "performerVersion": 0, "horizontal_scaling": 20},
-        "graph_type": "Simplified",
-        "grouping_type": "Side-by-side",
+        "grouping_type": "Average",
         "merging_type": "Average",
         "trimming_seconds": 15,
         "include_metrics": false
