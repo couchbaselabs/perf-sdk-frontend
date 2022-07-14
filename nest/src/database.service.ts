@@ -225,30 +225,40 @@ export class DatabaseService {
     run_ids: string[],
     display: string,
     trimming_seconds: number,
-    include_metrics: boolean): Promise<Array<RunBucketPair>> {
-    const st = `SELECT
-        matched_runs.run_id,
-        buckets.time as datetime,
-        buckets.time_offset_secs,
-        buckets.${display} as value
-        ${include_metrics ? ", metrics.metrics" : ""}
-    FROM
-    (SELECT
-    params as params,
-        params->'cluster' as cluster,
-        params->'impl' as impl,
-        params->'workload' as workload,
-        params->'vars' as vars,
-        params->'other' as other,
-        id as run_id,
-        datetime
-    FROM runs
-      WHERE id in ('${run_ids.join("','")}')
-  ) as matched_runs
-    JOIN buckets ON matched_runs.run_id = buckets.run_id
-    ${include_metrics ? "LEFT OUTER JOIN metrics ON matched_runs.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}             
-    WHERE buckets.time_offset_secs >= ${trimming_seconds}
-    ORDER BY buckets.time_offset_secs ASC;`;
+    include_metrics: boolean,
+    merging: string,
+    bucketise_seconds?: number): Promise<Array<RunBucketPair>> {
+    let st;
+    if (bucketise_seconds != null && bucketise_seconds > 1) {
+      // Not sure how to group the metrics, would require some complex JSON processing
+      include_metrics = false
+      const mergingOp = this.mapMerging(merging)
+      st = `
+        SELECT buckets.run_id,
+               time_bucket('${bucketise_seconds} seconds', time) as datetime,
+               min(buckets.time_offset_secs)                     as time_offset_secs,
+               ${mergingOp}(${display}) as value 
+               ${include_metrics ? `, metrics.metrics` : ""}
+        FROM buckets
+          ${include_metrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
+        WHERE buckets.run_id in ('${run_ids.join("','")}')
+          AND buckets.time_offset_secs >= ${trimming_seconds}
+        GROUP BY run_id, datetime
+        ORDER BY datetime ASC;`
+    }
+    else {
+      st = `
+        SELECT buckets.run_id,
+               time as datetime,
+                buckets.time_offset_secs,
+               ${display} as value 
+               ${include_metrics ? `, metrics.metrics` : ""}
+        FROM buckets
+          ${include_metrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
+        WHERE buckets.run_id in ('${run_ids.join("','")}')
+          AND buckets.time_offset_secs >= ${trimming_seconds}
+        ORDER BY datetime ASC;`
+    }
 
     console.info(st);
     const result = await this.client.query(st);
@@ -269,16 +279,7 @@ export class DatabaseService {
     return await this.client.query(st);
   }
 
-  /**
-   * The Simplified display.
-   */
-  async get_groupings(
-    groupBy1: string,
-    run_ids: Array<string>,
-    display: string,
-    grouping_type: string,
-    merging: string,
-    trimming_seconds: number): Promise<Array<Result>> {
+  private mapMerging(merging: string): string {
     let mergingOp;
     if (merging == 'Average') {
       mergingOp = 'avg';
@@ -291,6 +292,20 @@ export class DatabaseService {
     } else {
       throw new Error('Unknown merging type ' + merging);
     }
+    return mergingOp;
+  }
+
+  /**
+   * The Simplified display.
+   */
+  async get_groupings(
+    groupBy1: string,
+    run_ids: Array<string>,
+    display: string,
+    grouping_type: string,
+    merging: string,
+    trimming_seconds: number): Promise<Array<Result>> {
+    const mergingOp = this.mapMerging(merging)
 
     let st;
     if (grouping_type == 'Side-by-side') {

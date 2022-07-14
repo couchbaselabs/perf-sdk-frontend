@@ -178,15 +178,17 @@ export default {
     },
 
     runClicked: function(runId) {
-      window.history.pushState(null, '', `/single/${runId}/${this.input.display}`);
+      // window.history.pushState(null, '', `/single/${runId}/${this.input.display}`);
 
-      // this.$router.push({
-      //   path: `/single/${runId}/${this.input.display}`
-      //   // query: {
-      //   //   runId: runId,
-      //   //   display: this.input.display
-      //   // }
-      // })
+      this.$router.push({
+        path: `/single`,
+        query: {
+          runId: runId,
+          display: this.input.display,
+          mergingType: this.input.merging_type,
+          bucketiseSeconds: this.input.bucketise_seconds
+        }
+      })
     }
   },
   props: ['input', 'single']

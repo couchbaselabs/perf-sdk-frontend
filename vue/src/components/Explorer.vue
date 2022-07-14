@@ -47,6 +47,25 @@
           <b-container>
             <b-row>
               <b-col class="pl-0">
+                <b-form-group label="Trim from start"
+                              description="How much data to trim from the start to account for warmup, in seconds.">
+                  <b-form-input v-model="selected_trimming_seconds" v-on:blur="handleSubmit"/>
+                </b-form-group>
+              </b-col>
+
+              <b-col class="pr-0">
+                <b-form-group label="Bucketise data"
+                              description="Can re-bucketise the data into X second buckets to make it cheaper to render.  Will use Merging setting.  0 disables.">
+                  <b-form-input v-model="selected_bucketise_seconds" v-on:blur="handleSubmit"/>
+                </b-form-group>
+              </b-col>
+            </b-row>
+          </b-container>
+
+
+          <b-container>
+            <b-row>
+              <b-col class="pl-0">
                 <b-form-group label="Merging"
                               description="How to merge bucket results in Simplified view.">
                   <b-form-select v-model="selected_merging_type" v-on:change="handleSubmit">
@@ -55,13 +74,6 @@
                     <option>Minimum</option>
                     <option>Sum</option>
                   </b-form-select>
-                </b-form-group>
-              </b-col>
-
-              <b-col class="pr-0">
-                <b-form-group label="Trim from start"
-                              description="How much data to trim from the start to account for warmup, in seconds.">
-                  <b-form-input v-model="selected_trimming_seconds" v-on:blur="handleSubmit"/>
                 </b-form-group>
               </b-col>
             </b-row>
@@ -156,7 +168,8 @@ export default {
       selected_graph_type: "Simplified",
       selected_grouping_type: "Side-by-side",
       selected_merging_type: "Average",
-      selected_trimming_seconds: 15,
+      selected_trimming_seconds: 20,
+      selected_bucketise_seconds: 0,
       fetching: undefined,
       query_params: undefined,
       input: this.initialInput
@@ -175,6 +188,7 @@ export default {
       this.selected_grouping_type = this.initialInput.grouping_type;
       this.selected_merging_type = this.initialInput.merging_type;
       this.selected_trimming_seconds = this.initialInput.trimming_seconds | 0;
+      this.selected_bucketise_seconds = this.initialInput.selected_bucketise_seconds | 0;
     }
 
     this.fetch_group_by_options()
@@ -202,6 +216,7 @@ export default {
         grouping_type: this.selected_grouping_type,
         merging_type: this.selected_merging_type,
         trimming_seconds: this.selected_trimming_seconds,
+        bucketise_seconds: this.selected_bucketise_seconds,
         include_metrics: false
       }
     },

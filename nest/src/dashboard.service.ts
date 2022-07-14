@@ -17,6 +17,8 @@ export class Single {
   display: string; // latency_average_us
   trimming_seconds: number;
   include_metrics: boolean;
+  merging_type: string;
+  bucketise_seconds?: number;
 }
 
 export class Input {
@@ -34,11 +36,16 @@ export class Input {
   // If we have reruns, how to display name - e.g. side-by-side, or averaging the results
   grouping_type: string;
 
+  // "Average"
   merging_type: string;
 
   trimming_seconds: number;
 
   include_metrics: boolean;
+
+  // It's too expensive to draw large line graphs of 1 second buckets, so re-bucketise into larger buckets if this is
+  // set
+  bucketise_seconds?: number;
 
   group_by_1(): string {
     return `params->'${this.group_by.replace('.', "'->>'")}'`;
@@ -141,7 +148,7 @@ export class DashboardService {
         input.group_by_2(),
     );
 
-    return this.add_graph_line_shared(runs, input.display, input.trimming_seconds, input.group_by, input.include_metrics);
+    return this.add_graph_line_shared(runs, input.display, input.trimming_seconds, input.group_by, input.include_metrics, input.merging_type, input.bucketise_seconds);
   }
 
   /**
@@ -153,7 +160,7 @@ export class DashboardService {
     const runs = await this.database.get_runs_by_id([input.runid]);
 
     // TODO fix this hardcoding
-    return this.add_graph_line_shared(runs, input.display, input.trimming_seconds, "impl.version", input.include_metrics);
+    return this.add_graph_line_shared(runs, input.display, input.trimming_seconds, "impl.version", input.include_metrics, input.merging_type, input.bucketise_seconds);
   }
 
 
@@ -165,17 +172,21 @@ export class DashboardService {
     display: string,
     trimming_seconds: number,
     groupBy: string,
-    includeMetrics: boolean
+    includeMetrics: boolean,
+    merging: string,
+    bucketiseSeconds?: number
   ): Promise<any> {
     const datasets = [];
     const runIds = runs.map((v) => v.id);
 
 
     const runsWithBuckets = await this.database.get_runs_with_buckets(
-      runIds,
-      display,
-      trimming_seconds,
-      includeMetrics
+        runIds,
+        display,
+        trimming_seconds,
+        includeMetrics,
+        merging,
+        bucketiseSeconds
     );
 
     const shades = [

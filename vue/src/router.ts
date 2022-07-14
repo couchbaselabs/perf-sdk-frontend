@@ -37,7 +37,8 @@ const routes = [
         component: Scala,
     },
     {
-        path: "/single/:runId/:display",
+        // path: "/single/:runId/:display",
+        path: "/single",
         name: "Single",
         component: Single,
         props: true
