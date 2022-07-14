@@ -6,6 +6,7 @@ import Python from './components/Python.vue'
 import Scala from './components/Scala.vue'
 import Kotlin from './components/Kotlin.vue'
 import Single from './components/Single.vue'
+import Versus from './components/Versus.vue'
 
 Vue.use(VueRouter)
 
@@ -35,6 +36,10 @@ const routes = [
     {
         path: "/scala",
         component: Scala,
+    },
+    {
+        path: "/versus",
+        component: Versus,
     },
     {
         // path: "/single/:runId/:display",

@@ -11,6 +11,7 @@
           <li class="nav-item"><router-link to="/java" class="nav-link">Java</router-link></li>
           <li class="nav-item"><router-link to="/kotlin" class="nav-link">Kotlin</router-link></li>
           <li class="nav-item"><router-link to="/scala" class="nav-link">Scala</router-link></li>
+          <li class="nav-item"><router-link to="/versus" class="nav-link">Versus</router-link></li>
         </b-navbar-nav>
       </b-collapse>
     </b-navbar>
