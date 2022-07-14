@@ -1,5 +1,7 @@
 <template>
   <b-container>
+    {{JSON.stringify(initialInput)}}
+
     <b-row>
       <b-col>
         <b-form>
@@ -55,7 +57,7 @@
 
               <b-col class="pr-0">
                 <b-form-group label="Bucketise data"
-                              description="Can re-bucketise the data into X second buckets to make it cheaper to render.  Will use Merging setting.  0 disables.">
+                              description="Can re-bucketise the data into X second buckets on the Full graph to make it cheaper to render.  Will use Merging setting.  0 disables.">
                   <b-form-input v-model="selected_bucketise_seconds" v-on:blur="handleSubmit"/>
                 </b-form-group>
               </b-col>
@@ -67,7 +69,7 @@
             <b-row>
               <b-col class="pl-0">
                 <b-form-group label="Merging"
-                              description="How to merge bucket results in Simplified view.">
+                              description="How to merge bucket results. Used in Simplified view, and in Full view if re-bucketising.">
                   <b-form-select v-model="selected_merging_type" v-on:change="handleSubmit">
                     <option>Average</option>
                     <option>Maximum</option>
@@ -191,6 +193,8 @@ export default {
       this.selected_bucketise_seconds = this.initialInput.selected_bucketise_seconds | 0;
     }
 
+    this.setUrl()
+
     this.fetch_group_by_options()
         .then(() => {
           this.handleGroupByChanged()
@@ -198,6 +202,28 @@ export default {
   },
 
   methods: {
+    hashCode: function(input) {
+      var hash = 0, i, chr;
+      if (input.length === 0) return hash;
+      for (i = 0; i < input.length; i++) {
+        chr   = input.charCodeAt(i);
+        hash  = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+      }
+      return Math.abs(hash);
+    },
+
+    setUrl: function () {
+      let hashed;
+      if (this.input) {
+        hashed = this.hashCode(JSON.stringify(this.input))
+      }
+      else {
+        hashed = 'initial'
+      }
+      const pathname = "/explorer?hashed=" + hashed
+      window.history.replaceState({page: "another"}, "another page", pathname);
+    },
 
     handleSubmit: function () {
       console.info("handle submit");
@@ -219,6 +245,8 @@ export default {
         bucketise_seconds: this.selected_bucketise_seconds,
         include_metrics: false
       }
+
+      this.setUrl()
     },
 
     handleGroupByChanged: async function () {

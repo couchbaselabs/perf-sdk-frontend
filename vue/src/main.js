@@ -21,9 +21,12 @@ Vue.use(IconsPlugin)
 //   render: h => h(App),
 // }).$mount('#app')
 
+window.onpopstate = function(event) {
+    console.info(`location: ${document.location}, state: ${JSON.stringify(event.state)}`)
+}
+
 
 import router from './router.ts'
-
 
 new Vue({
     router,

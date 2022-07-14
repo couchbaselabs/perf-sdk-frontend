@@ -16,7 +16,12 @@
     </b-navbar>
 
     <b-container fluid class="main">
-      <router-view class="view"></router-view>
+      <keep-alive>
+
+      <router-view class="view" :key="$route.fullPath">
+
+      </router-view>
+      </keep-alive>
     </b-container>
   </div>
 </template>

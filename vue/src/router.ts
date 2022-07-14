@@ -46,6 +46,7 @@ const routes = [
 ]
 
 const router = new VueRouter({
+    // Everything seems to work as expected in history mode
     mode: 'history',
     routes // short for `routes: routes`
 })

@@ -104,7 +104,6 @@
 <script>
 import BarChart from "./BarChart";
 import LineChart from "./LineChart";
-import router from '../router.ts'
 
 export default {
   name: "Results",
@@ -168,8 +167,23 @@ export default {
       this.results = await res.json();
     },
 
+    hashCode: function(input) {
+      var hash = 0, i, chr;
+      if (input.length === 0) return hash;
+      for (i = 0; i < input.length; i++) {
+        chr   = input.charCodeAt(i);
+        hash  = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+      }
+      return Math.abs(hash);
+    },
+
     showInExplorer: function () {
-      router.push({
+      // const path = '/explorer?hashed=' + this.hashCode(JSON.stringify(this.lastInput))
+      //
+      // console.info(path)
+
+      this.$router.push({
         name: 'Explorer',
         params: {
           initialInput: this.lastInput
@@ -178,8 +192,6 @@ export default {
     },
 
     runClicked: function(runId) {
-      // window.history.pushState(null, '', `/single/${runId}/${this.input.display}`);
-
       this.$router.push({
         path: `/single`,
         query: {
