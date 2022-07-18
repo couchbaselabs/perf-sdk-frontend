@@ -38,7 +38,7 @@ export default {
         "display": "duration_average_us",
         "impl": {"language": "scala"},
         "workload": {"operations": [{"op": "insert", "count": "$doc_num", "docLocation": {"method": "uuid"}}]},
-        "vars": {"doc_num": 10000000, "driverVer": "6", "performerVer": "0", "horizontal_scaling": 20},
+        "vars": {"doc_num": 10000000, "driverVer": "6", "performerVer": "1", "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Average",
         "merging_type": "Average",
@@ -78,7 +78,7 @@ export default {
           "doc_num": 10000000,
           "driverVer": "6",
           "pool_size": 10000,
-          "performerVer": "0",
+          "performerVer": "1",
           "horizontal_scaling": 20
         },
         "graph_type": "Simplified",
@@ -120,7 +120,7 @@ export default {
           "doc_num": 50000000,
           "driverVer": "6",
           "pool_size": 10000,
-          "performerVer": "0",
+          "performerVer": "1",
           "horizontal_scaling": 20
         },
         "graph_type": "Simplified",
