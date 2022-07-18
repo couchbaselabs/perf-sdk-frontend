@@ -1,5 +1,6 @@
 <template>
   <b-container>
+    <MetricsAlerts :input="{language:language}"></MetricsAlerts>
     <h1>KV Get</h1>
     <Results :input="kvGets"></Results>
     <h1>KV Replace</h1>
@@ -11,9 +12,10 @@
 
 <script>
 import Results from "@/components/Results";
+import MetricsAlerts from "@/components/MetricsAlerts";
 
 export default {
-  components: {Results},
+  components: {Results, MetricsAlerts},
   props: ['language'],
   data() {
     return {

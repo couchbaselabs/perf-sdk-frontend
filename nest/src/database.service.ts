@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Client } from 'pg';
+import {Metrics, MetricsQuery} from "./dashboard.service";
 
 const semver = require('semver');
-const semverParse = require('semver/functions/parse');
-const SemVer = require('semver/classes/semver');
 
 export class Run {
   params: Object;
@@ -341,5 +340,50 @@ export class DatabaseService {
     const result = await this.client.query(st);
     const rows = result;
     return rows.map((x) => new Result(x.grouping, x.value));
+  }
+
+  // cast (metrics::json->>'threadCount' as integer) > 100
+  // 'Excessive thread count, max=' || max (cast (metrics::json->>'threadCount' as integer))
+  async get_metrics_alerts(input: MetricsQuery, metrics: Metrics) {
+    const st = `select run_id,
+                       datetime,
+                       sub.message,
+                       params::jsonb->'impl'->>'version' as version
+                from
+                  (
+                  select run_id,
+                  (${metrics.message}) as message
+                  from metrics
+                  where ${metrics.whereClause}
+                  group by run_id
+                  ) as sub
+                  join runs
+                on runs.id = sub.run_id
+                where params::jsonb->'impl'->>'language' = '${input.language}'
+                order by string_to_array(params::jsonb->'impl'->>'version', '.'):: int [] desc;`
+
+    console.info(st);
+    const result = await this.client.query(st);
+    const rows = result;
+    console.info(`Got ${rows.length} alerts`)
+    return rows.map((x) => new MetricsResult(x.run_id, x.datetime, x.message, x.version, input.language));
+
+  }
+}
+
+class MetricsResult {
+  runId: string;
+  datetime: string;
+  message: string;
+  version: string;
+  language: string;
+
+
+  constructor(runId: string, datetime: string, message: string, version: string, language: string) {
+    this.runId = runId;
+    this.datetime = datetime;
+    this.message = message;
+    this.version = version;
+    this.language = language;
   }
 }

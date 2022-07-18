@@ -21,6 +21,22 @@ export class Single {
   bucketise_seconds?: number;
 }
 
+export class MetricsQuery {
+  language: string;
+}
+
+export class Metrics {
+  // cast (metrics::json->>'threadCount' as integer) > 100
+  whereClause: string;
+  // 'Excessive thread count, max=' || max (cast (metrics::json->>'threadCount' as integer))
+  message: string;
+
+  constructor(whereClause: string, message: string) {
+    this.whereClause = whereClause;
+    this.message = message;
+  }
+}
+
 export class Input {
   inputs: Array<Panel>;
 
@@ -473,86 +489,21 @@ export class DashboardService {
     };
   }
 
-  // private async gen_dashboard(input: Input): Promise<Array<any>> {
-  //     let panels = []
-  //     const next = input.inputs[0]
-  //
-  //     for (let key in next.params) {
-  //         const param = next.params[key];
-  //         let graphs = []
-  //         let sub_panels = []
-  //
-  //         if (input.inputs.length == 1) {
-  //             const graph = await this.add_graph(input, params)
-  //             graphs.push(graph)
-  //         } else {
-  //             const new_inputs = input.inputs.slice(1)
-  //             const new_input = new Input(new_inputs, input.group_by, input.display)
-  //             sub_panels = await this.gen_dashboard(new_input, params)
-  //         }
-  //
-  //         panels.push({
-  //             "title": `${next.viewing} ${param}`,
-  //             "graphs": graphs,
-  //             "panels": sub_panels
-  //         })
-  //     }
-  //
-  //     return panels
-  // }
-  // private async gen_dashboard(input: Input, params: Params = this.default_params()): Promise<Array<any>> {
-  //     let panels = []
-  //     const next = input.inputs[0]
-  //
-  //     if (next == DashboardService.LANG_LATEST || next == "impl.language") {
-  //         const impls = await this.database.get_latest_implementations()
-  //
-  //         for (let implsKey in impls) {
-  //             const impl = impls[implsKey];
-  //             params.impl = impl
-  //             let graphs = []
-  //             let sub_panels = []
-  //
-  //             if (input.inputs.length == 1) {
-  //                 const graph = await this.add_graph(input, params)
-  //                 graphs.push(graph)
-  //             } else {
-  //                 const new_inputs = input.inputs.slice(1)
-  //                 const new_input = new Input(new_inputs, input.group_by, input.display)
-  //                 sub_panels = await this.gen_dashboard(new_input, params)
-  //             }
-  //
-  //             panels.push({
-  //                 "title": `${implsKey}`,
-  //                 "graphs": graphs,
-  //                 "panels": sub_panels
-  //             })
-  //         }
-  //     } else if (next == "cluster.version") {
-  //         const clusters = await this.database.get_cluster_versions()
-  //
-  //         for (const cluster_vers of clusters) {
-  //             params.cluster.version = cluster_vers
-  //             let graphs = []
-  //             let sub_panels = []
-  //
-  //             if (input.inputs.length == 1) {
-  //                 const graph = await this.add_graph(input, params)
-  //                 graphs.push(graph)
-  //             } else {
-  //                 const new_inputs = input.inputs.slice(1)
-  //                 const new_input = new Input(new_inputs, input.group_by, input.display)
-  //                 sub_panels = await this.gen_dashboard(new_input, params)
-  //             }
-  //
-  //             panels.push({
-  //                 "title": `${cluster_vers}`,
-  //                 "graphs": graphs,
-  //                 "panels": sub_panels
-  //             })
-  //         }
-  //     }
-  //
-  //     return panels
-  // }
+  public async gen_metrics(input: MetricsQuery) {
+    let out = []
+    const excessiveThreads = new Metrics("cast (metrics::json->>'threadCount' as integer) > 100",
+        "'Excessive thread count, max=' || max (cast (metrics::json->>'threadCount' as integer))")
+    const excessiveHeap = new Metrics("cast(metrics::json->>'memHeapUsedMB' as float) > 500",
+        "'Excessive heap usage, max=' || max(cast(metrics::json->>'memHeapUsedMB' as float))")
+    const excessiveProcessCpu = new Metrics("cast(metrics::json->>'processCpu' as float) > 90",
+        "'Excessive process CPU usage, max=' || max(cast(metrics::json->>'processCpu' as float))")
+
+    out = out.concat(await this.database.get_metrics_alerts(input, excessiveThreads))
+    out = out.concat(await this.database.get_metrics_alerts(input, excessiveHeap))
+    out = out.concat(await this.database.get_metrics_alerts(input, excessiveProcessCpu))
+
+    console.info(`${out.length} total alerts`)
+
+    return out
+  }
 }

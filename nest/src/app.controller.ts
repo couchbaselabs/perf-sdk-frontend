@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { DatabaseService } from './database.service';
-import {DashboardService, Input, Params, Single} from './dashboard.service';
+import {DashboardService, Input, MetricsQuery, Params, Single} from './dashboard.service';
 import { Query } from '@nestjs/common';
 
 // export class QueryInput {
@@ -71,5 +71,12 @@ export class AppController {
     const input = Object.assign(new Single(), query);
     const out = await this.dashboard.gen_single(input);
     return out;
+  }
+
+  @Post('/metrics')
+  async metrics(@Body() query: MetricsQuery) {
+    console.info(JSON.stringify(query));
+    const input = Object.assign(new MetricsQuery(), query);
+    return await this.dashboard.gen_metrics(input);
   }
 }
