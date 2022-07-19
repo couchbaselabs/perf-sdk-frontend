@@ -360,7 +360,7 @@ export class DatabaseService {
                   join runs
                 on runs.id = sub.run_id
                 where params::jsonb->'impl'->>'language' = '${input.language}'
-                order by string_to_array(params::jsonb->'impl'->>'version', '.'):: int [] desc;`
+                order by string_to_array(params::jsonb->'impl'->>'version', '.')::text[] desc;`
 
     console.info(st);
     const result = await this.client.query(st);

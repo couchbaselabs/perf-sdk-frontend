@@ -5,33 +5,15 @@
       {{ JSON.stringify(input) }}
     </div>
 
+    <div v-if="!results">
+      <b-spinner small variant="primary" label="Spinning"></b-spinner> Fetching...
+    </div>
+
     <div v-if="results">
       <div v-for="panel in results.panels" :key="panel.uuid">
-        <!--        <h2>{{ panel.title }}</h2>-->
 
         <div class="graph" v-for="graph in panel.graphs" :key="graph.uuid">
           <b-container class="mb-3">
-
-            <!--                    <table>-->
-            <!--                        <tr>-->
-            <!--                            <td><strong>Cluster:</strong></td>-->
-            <!--                            <td>{JSON.stringify(graph.chosen.cluster)}</td>-->
-            <!--                        </tr>-->
-            <!--                        <tr>-->
-            <!--                            <td><strong>Workload:</strong></td>-->
-            <!--                            <td>{JSON.stringify(graph.chosen.workload)}</td>-->
-            <!--                        </tr>-->
-            <!--                        <tr>-->
-            <!--                            <td><strong>Vars:</strong></td>-->
-            <!--                            <td>{JSON.stringify(graph.chosen.vars)}</td>-->
-            <!--                        </tr>-->
-            <!--                        <tr>-->
-            <!--                            <td><strong>Impl:</strong></td>-->
-            <!--                            <td>{JSON.stringify(graph.chosen.impl)}</td>-->
-            <!--                        </tr>-->
-            <!--                    </table>-->
-
-            <!--              <Chart data={graph.data} type={graph.type}/>-->
 
             <BarChart v-if="graph.type === 'bar'" class="chart" :chartdata="graph.data" :options="graph.options"/>
             <div v-if="graph.type === 'line'">
@@ -91,8 +73,6 @@
                 <pre>{{ JSON.stringify(r.vars, null, 2) }}</pre>
               </td>
             </tr>
-            <!--            <p>{JSON.stringify(r)}</p>-->
-            <!--                <p>{r.id}</p>-->
           </table>
 
         </div>

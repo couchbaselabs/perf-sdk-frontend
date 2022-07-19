@@ -1,5 +1,13 @@
 <template>
   <div class="mb-5">
+    <div v-if="!results">
+      <b-spinner small variant="primary" label="Spinning"></b-spinner> Fetching metrics alerts...
+    </div>
+
+    <div v-if="results && results.length == 0">
+      ✅ No metrics alerts.
+    </div>
+
     <div v-if="results && results.length > 0" class="scrollable">
       <table class="text-left table-striped table-bordered table-sm table-responsive mt-5">
         <thead class="font-weight-bold">
