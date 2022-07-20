@@ -7,6 +7,7 @@ import Scala from './components/Scala.vue'
 import Kotlin from './components/Kotlin.vue'
 import Single from './components/Single.vue'
 import Versus from './components/Versus.vue'
+import Dotnet from './components/Dotnet.vue'
 
 Vue.use(VueRouter)
 
@@ -36,6 +37,10 @@ const routes = [
     {
         path: "/scala",
         component: Scala,
+    },
+    {
+        path: "/dotnet",
+        component: Dotnet,
     },
     {
         path: "/versus",
