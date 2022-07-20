@@ -23,7 +23,7 @@ npm install
 npm run serve
 ```
 
-Visit http://localhost:8080
+Visit http://localhost
 
 ## Running on production
 Production is setup to automatically regularly pull and use any pushed changes to the repositories, as can be seen with:
