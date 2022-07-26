@@ -39,8 +39,8 @@ export default {
         "group_by": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": this.language},
-        "workload": {"operations": [{"op": "insert", "count": "$doc_num", "docLocation": {"method": "uuid"}}]},
-        "vars": {"doc_num": 10000000, "driverVer": "6", "performerVer": "1", "horizontal_scaling": 20},
+        "workload": {"operations": [{"op": "insert", "count": "$docNum", "docLocation": {"method": "uuid"}}]},
+        "vars": {"docNum": 10000000, "driverVer": 6, "performerVer": 1, "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Side-by-side",
         "merging_type": "Average",
@@ -72,17 +72,11 @@ export default {
         "workload": {
           "operations": [{
             "op": "replace",
-            "count": "$doc_num",
-            "docLocation": {"method": "pool", "poolSize": "$pool_size", "poolSelectionStrategy": "counter"}
+            "count": "$docNum",
+            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
           }]
         },
-        "vars": {
-          "doc_num": 10000000,
-          "driverVer": "6",
-          "pool_size": 10000,
-          "performerVer": "1",
-          "horizontal_scaling": 20
-        },
+        "vars": {"docNum": 10000000, "poolSize": 10000, "driverVer": 6, "performerVer": 1, "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Side-by-side",
         "merging_type": "Average",
@@ -114,17 +108,11 @@ export default {
         "workload": {
           "operations": [{
             "op": "get",
-            "count": "$doc_num",
-            "docLocation": {"method": "pool", "poolSize": "$pool_size", "poolSelectionStrategy": "random_uniform"}
+            "count": "$docNum",
+            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
           }]
         },
-        "vars": {
-          "doc_num": 50000000,
-          "driverVer": "6",
-          "pool_size": 10000,
-          "performerVer": "1",
-          "horizontal_scaling": 20
-        },
+        "vars": {"docNum": 50000000, "poolSize": 10000, "driverVer": 6, "performerVer": 1, "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Side-by-side",
         "merging_type": "Average",
