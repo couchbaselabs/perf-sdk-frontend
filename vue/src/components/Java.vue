@@ -1,5 +1,5 @@
 <template>
-  <Shared :language="'java'"></Shared>
+  <Shared :language="'Java'"></Shared>
 </template>
 
 <script>

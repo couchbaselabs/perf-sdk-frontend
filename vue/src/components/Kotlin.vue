@@ -1,5 +1,5 @@
 <template>
-  <Shared :language="'kotlin'"></Shared>
+  <Shared :language="'Kotlin'"></Shared>
 </template>
 
 <script>

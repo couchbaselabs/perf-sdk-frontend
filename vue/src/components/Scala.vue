@@ -1,5 +1,5 @@
 <template>
-  <Shared :language="'scala'"></Shared>
+  <Shared :language="'Scala'"></Shared>
 </template>
 
 <script>
