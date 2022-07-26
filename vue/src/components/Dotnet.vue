@@ -36,13 +36,13 @@ export default {
           }]
         }],
         "group_by": "impl.version",
-        "display": "operations_success",
+        "display": "duration_average_us",
         "impl": {"language": ".NET"},
         "workload": {"operations": [{"op": "insert", "count": "$docNum", "docLocation": {"method": "uuid"}}]},
         "vars": {"docNum": 100000, "driverVer": 6, "performerVer": 1, "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Side-by-side",
-        "merging_type": "Sum",
+        "merging_type": "Average",
         "trimming_seconds": "0",
         "bucketise_seconds": 0,
         "include_metrics": false
@@ -66,7 +66,7 @@ export default {
           }]
         }],
         "group_by": "impl.version",
-        "display": "operations_success",
+        "display": "duration_average_us",
         "impl": {"language": ".NET"},
         "workload": {
           "operations": [{
@@ -78,7 +78,7 @@ export default {
         "vars": {"docNum": 100000, "poolSize": 10000, "driverVer": 6, "performerVer": 1, "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Side-by-side",
-        "merging_type": "Sum",
+        "merging_type": "Average",
         "trimming_seconds": "0",
         "bucketise_seconds": 0,
         "include_metrics": false
@@ -102,7 +102,7 @@ export default {
           }]
         }],
         "group_by": "impl.version",
-        "display": "operations_success",
+        "display": "duration_average_us",
         "impl": {"language": ".NET"},
         "workload": {
           "operations": [{
@@ -114,7 +114,7 @@ export default {
         "vars": {"docNum": 500000, "poolSize": 10000, "driverVer": 6, "performerVer": 1, "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Side-by-side",
-        "merging_type": "Sum",
+        "merging_type": "Average",
         "trimming_seconds": "0",
         "bucketise_seconds": 0,
         "include_metrics": false
