@@ -39,8 +39,14 @@ export default {
         "group_by": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": this.language},
-        "workload": {"operations": [{"op": "insert", "count": "$docNum", "docLocation": {"method": "uuid"}}]},
-        "vars": {"docNum": 10000000, "driverVer": 6, "performerVer": 1, "horizontal_scaling": 20},
+        "workload": {
+          "operations": [{
+            "op": "insert",
+            "bounds": {"forSeconds": "$forSeconds"},
+            "docLocation": {"method": "uuid"}
+          }]
+        },
+        "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Side-by-side",
         "merging_type": "Average",
@@ -72,11 +78,11 @@ export default {
         "workload": {
           "operations": [{
             "op": "replace",
-            "count": "$docNum",
+            "bounds": {"forSeconds": "$forSeconds"},
             "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
           }]
         },
-        "vars": {"docNum": 10000000, "poolSize": 10000, "driverVer": 6, "performerVer": 1, "horizontal_scaling": 20},
+        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Side-by-side",
         "merging_type": "Average",
@@ -108,11 +114,11 @@ export default {
         "workload": {
           "operations": [{
             "op": "get",
-            "count": "$docNum",
+            "bounds": {"forSeconds": "$forSeconds"},
             "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
           }]
         },
-        "vars": {"docNum": 50000000, "poolSize": 10000, "driverVer": 6, "performerVer": 1, "horizontal_scaling": 20},
+        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Side-by-side",
         "merging_type": "Average",

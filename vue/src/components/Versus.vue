@@ -36,9 +36,15 @@ export default {
         }],
         "group_by": "impl.language",
         "display": "duration_average_us",
-        "impl": {"language": "scala"},
-        "workload": {"operations": [{"op": "insert", "count": "$doc_num", "docLocation": {"method": "uuid"}}]},
-        "vars": {"doc_num": 10000000, "driverVer": "6", "performerVer": "1", "horizontal_scaling": 20},
+        "impl": {"language": "Scala"},
+        "workload": {
+          "operations": [{
+            "op": "insert",
+            "bounds": {"forSeconds": "$forSeconds"},
+            "docLocation": {"method": "uuid"}
+          }]
+        },
+        "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Average",
         "merging_type": "Average",
@@ -66,21 +72,15 @@ export default {
         }],
         "group_by": "impl.language",
         "display": "duration_average_us",
-        "impl": {"language": "scala"},
+        "impl": {"language": "Scala"},
         "workload": {
           "operations": [{
             "op": "replace",
-            "count": "$doc_num",
-            "docLocation": {"method": "pool", "poolSize": "$pool_size", "poolSelectionStrategy": "counter"}
+            "bounds": {"forSeconds": "$forSeconds"},
+            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
           }]
         },
-        "vars": {
-          "doc_num": 10000000,
-          "driverVer": "6",
-          "pool_size": 10000,
-          "performerVer": "1",
-          "horizontal_scaling": 20
-        },
+        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Average",
         "merging_type": "Average",
@@ -108,21 +108,15 @@ export default {
         }],
         "group_by": "impl.language",
         "display": "duration_average_us",
-        "impl": {"language": "scala"},
+        "impl": {"language": "Scala"},
         "workload": {
           "operations": [{
             "op": "get",
-            "count": "$doc_num",
-            "docLocation": {"method": "pool", "poolSize": "$pool_size", "poolSelectionStrategy": "random_uniform"}
+            "bounds": {"forSeconds": "$forSeconds"},
+            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
           }]
         },
-        "vars": {
-          "doc_num": 50000000,
-          "driverVer": "6",
-          "pool_size": 10000,
-          "performerVer": "1",
-          "horizontal_scaling": 20
-        },
+        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontal_scaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Average",
         "merging_type": "Average",
