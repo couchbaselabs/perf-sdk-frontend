@@ -8,6 +8,7 @@ import Kotlin from './components/Kotlin.vue'
 import Single from './components/Single.vue'
 import Versus from './components/Versus.vue'
 import Dotnet from './components/Dotnet.vue'
+import Go from './components/Go.vue'
 
 Vue.use(VueRouter)
 
@@ -41,6 +42,10 @@ const routes = [
     {
         path: "/dotnet",
         component: Dotnet,
+    },
+    {
+        path: "/go",
+        component: Go,
     },
     {
         path: "/versus",
