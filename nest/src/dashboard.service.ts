@@ -498,9 +498,14 @@ export class DashboardService {
     const excessiveProcessCpu = new Metrics("cast(metrics::json->>'processCpu' as float) > 90",
         "'Excessive process CPU usage, max=' || max(cast(metrics::json->>'processCpu' as float))")
 
-    out = out.concat(await this.database.get_metrics_alerts(input, excessiveThreads))
-    out = out.concat(await this.database.get_metrics_alerts(input, excessiveHeap))
-    out = out.concat(await this.database.get_metrics_alerts(input, excessiveProcessCpu))
+    out = out.concat(await this.database.get_metrics_alerts(input, excessiveThreads, "metrics"))
+    out = out.concat(await this.database.get_metrics_alerts(input, excessiveHeap, "metrics"))
+    out = out.concat(await this.database.get_metrics_alerts(input, excessiveProcessCpu, "metrics"))
+
+    const anyFailures = new Metrics("operations_failed > 0",
+        "'Operations failed, sum=' || sum(operations_failed)")
+
+    out = out.concat(await this.database.get_metrics_alerts(input, anyFailures, "buckets"))
 
     console.info(`${out.length} total alerts`)
 

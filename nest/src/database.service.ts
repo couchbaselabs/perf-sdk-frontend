@@ -344,7 +344,7 @@ export class DatabaseService {
 
   // cast (metrics::json->>'threadCount' as integer) > 100
   // 'Excessive thread count, max=' || max (cast (metrics::json->>'threadCount' as integer))
-  async get_metrics_alerts(input: MetricsQuery, metrics: Metrics) {
+  async get_metrics_alerts(input: MetricsQuery, metrics: Metrics, table: string) {
     const st = `select run_id,
                        datetime,
                        sub.message,
@@ -353,7 +353,7 @@ export class DatabaseService {
                   (
                   select run_id,
                   (${metrics.message}) as message
-                  from metrics
+                  from ${table}
                   where ${metrics.whereClause}
                   group by run_id
                   ) as sub
@@ -367,7 +367,6 @@ export class DatabaseService {
     const rows = result;
     console.info(`Got ${rows.length} alerts`)
     return rows.map((x) => new MetricsResult(x.run_id, x.datetime, x.message, x.version, input.language));
-
   }
 }
 
