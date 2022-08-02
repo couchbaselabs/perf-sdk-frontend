@@ -345,6 +345,8 @@ export class DatabaseService {
   // cast (metrics::json->>'threadCount' as integer) > 100
   // 'Excessive thread count, max=' || max (cast (metrics::json->>'threadCount' as integer))
   async get_metrics_alerts(input: MetricsQuery, metrics: Metrics, table: string) {
+    // datetime >= '2022-07-30 00:00:00.000000' below is because there was a driver bug fixed around there that was not
+    // closing connections.
     const st = `select run_id,
                        datetime,
                        sub.message,
@@ -360,6 +362,7 @@ export class DatabaseService {
                   join runs
                 on runs.id = sub.run_id
                 where params::jsonb->'impl'->>'language' = '${input.language}'
+                and datetime >= '2022-07-30 00:00:00.000000'
                 order by string_to_array(params::jsonb->'impl'->>'version', '.')::text[] desc;`
 
     console.info(st);
