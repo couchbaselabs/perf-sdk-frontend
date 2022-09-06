@@ -46,7 +46,7 @@ export default {
             "docLocation": {"method": "uuid"}
           }]
         },
-        "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontal_scaling": 20},
+        "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Average",
         "merging_type": "Average",
@@ -82,7 +82,7 @@ export default {
             "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
           }]
         },
-        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontal_scaling": 20},
+        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Average",
         "merging_type": "Average",
@@ -118,7 +118,7 @@ export default {
             "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
           }]
         },
-        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontal_scaling": 20},
+        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Average",
         "merging_type": "Average",

@@ -18,7 +18,7 @@ export default {
         "display": "duration_average_us",
         "impl": {"language": "python"},
         "workload": {"description": "inserting"},
-        "vars": {"doc_num": 1000000, "horizontal_scaling": 1},
+        "vars": {"doc_num": 1000000, "horizontalScaling": 1},
         "graph_type": "Simplified",
         "grouping_type": "Average",
         "merging_type": "Average",
