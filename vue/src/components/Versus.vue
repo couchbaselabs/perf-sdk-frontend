@@ -47,7 +47,7 @@ export default {
         "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Average",
-        "merging_type": "Average",
+        "merging_type": "Maximum",
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
         "include_metrics": false
@@ -83,7 +83,7 @@ export default {
         "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Average",
-        "merging_type": "Average",
+        "merging_type": "Maximum",
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
         "include_metrics": false
@@ -119,7 +119,7 @@ export default {
         "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         "graph_type": "Simplified",
         "grouping_type": "Average",
-        "merging_type": "Average",
+        "merging_type": "Maximum",
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
         "include_metrics": false

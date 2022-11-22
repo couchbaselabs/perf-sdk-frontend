@@ -70,7 +70,7 @@ export default {
         query: {
           runId: runId,
           display: "duration_average_us",
-          mergingType: "Average",
+          mergingType: "Maximum",
           bucketiseSeconds: 0
         }
       })

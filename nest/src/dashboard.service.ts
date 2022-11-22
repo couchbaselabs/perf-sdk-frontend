@@ -52,7 +52,7 @@ export class Input {
   // If we have reruns, how to display name - e.g. side-by-side, or averaging the results
   grouping_type: string;
 
-  // "Average"
+  // "Maximum"
   merging_type: string;
 
   trimming_seconds: number;
