@@ -21,7 +21,7 @@ export default {
         "vars": {"doc_num": 1000000, "horizontalScaling": 1},
         "graph_type": "Simplified",
         "grouping_type": "Average",
-        "merging_type": "Maximum",
+        "merging_type": "Average",
         "trimming_seconds": 0
       }
     }

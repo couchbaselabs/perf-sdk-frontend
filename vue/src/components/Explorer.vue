@@ -67,11 +67,11 @@
             <b-row>
               <b-col class="pl-0">
                 <b-form-group label="Merging"
-                              description="How to merge bucket results in Simplified view. Remember you can't <a href='latencytipoftheday.blogspot.com/2014/06/latencytipoftheday-you-cant-average.html'>average percentiles</a>!">
+                              description="How to merge bucket results in Simplified view.">
                   <b-form-select v-model="selected_merging_type" v-on:change="handleSubmit">
+                    <option>Average</option>
                     <option>Maximum</option>
                     <option>Minimum</option>
-                    <option>Average</option>
                     <option>Sum</option>
                   </b-form-select>
                 </b-form-group>
@@ -167,7 +167,7 @@ export default {
       selected_display: display[0].text,
       selected_graph_type: "Simplified",
       selected_grouping_type: "Side-by-side",
-      selected_merging_type: "Maximum",
+      selected_merging_type: "Average",
       selected_trimming_seconds: 20,
       selected_bucketise_seconds: 0,
       fetching: undefined,
