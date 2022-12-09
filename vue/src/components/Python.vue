@@ -1,31 +1,14 @@
 <template>
   <b-container>
-    <h1>KV Insert</h1>
-    <Results :input="input"></Results>
+    <Shared :language="'Python'"></Shared>
   </b-container>
 </template>
 
 <script>
-import Results from "@/components/Results";
+import Shared from "@/components/Shared";
 
 export default {
-  components: {Results},
-  data() {
-    return {
-      input: {
-        "inputs": [{"viewing": "cluster", "params": [{"hostname": "cbs"}]}],
-        "group_by": "impl.version",
-        "display": "duration_average_us",
-        "impl": {"language": "python"},
-        "workload": {"description": "inserting"},
-        "vars": {"doc_num": 1000000, "horizontalScaling": 1},
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 0
-      }
-    }
-  }
+  components: {Shared},
 }
 </script>
 
