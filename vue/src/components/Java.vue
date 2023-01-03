@@ -39,7 +39,7 @@ export default {
           }],
           "group_by": "variables.com.couchbase.protostellar.executorMaxThreadCount",
           "display": "duration_average_us",
-          "impl": {"language": "Java"},
+          "impl": {"language": "Java", "version": "refs/changes/35/184435/1"},
           "workload": {
             "settings": {
               "grpc": {"batch": 1000, "compression": true, "flowControl": true},
