@@ -40,7 +40,7 @@ export class Metrics {
 export class Input {
   inputs: Array<Panel>;
 
-  group_by: string; // "cluster.version"
+  group_by: string; // "cluster.version" or "variables.com.couchbase.protostellar.executorMaxThreadCount"
   display: string; // latency_average_us
 
   cluster?: Record<string, unknown>;
@@ -130,14 +130,26 @@ export class DashboardService {
     const run_ids = runs.map((v) => v.id);
 
     if (run_ids.length != 0) {
-      const buckets = await this.database.get_groupings(
-        input.group_by_1(),
-        run_ids,
-        input.display,
-        input.grouping_type,
-        input.merging_type,
-        input.trimming_seconds);
-      buckets.sort((a, b) => a.grouping.localeCompare(b.grouping));
+      let buckets
+      if (input.group_by.startsWith("variables.")) {
+        buckets = await this.database.get_groupings_for_variables(
+            input.group_by_1(),
+            run_ids,
+            input.display,
+            input.grouping_type,
+            input.merging_type,
+            input.trimming_seconds);
+      }
+      else {
+        buckets = await this.database.get_groupings(
+            input.group_by_1(),
+            run_ids,
+            input.display,
+            input.grouping_type,
+            input.merging_type,
+            input.trimming_seconds);
+        buckets.sort((a, b) => a.grouping.localeCompare(b.grouping));
+      }
       buckets.forEach((b) => {
         labels.push(b.grouping);
         values.push(b.value);

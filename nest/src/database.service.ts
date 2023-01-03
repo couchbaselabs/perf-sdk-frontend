@@ -345,6 +345,58 @@ export class DatabaseService {
     return rows.map((x) => new Result(x.grouping, x.value));
   }
 
+  /**
+   * The Simplified display for group_by = variables.com.couchbase.protostellar.executorMaxThreadCount.
+   *
+   * params.workload.settings.variables is an array so we have to do some non-trivial JSON fiddling to find the specific variable.
+   * Would be easier if it was an object and might make that change in future.
+   * That could also possibly allow removing this special case get_groupings_for_variables.
+   */
+  async get_groupings_for_variables(
+      groupBy1: string,
+      run_ids: Array<string>,
+      display: string,
+      grouping_type: string,
+      merging: string,
+      trimming_seconds: number): Promise<Array<Result>> {
+    const mergingOp = this.mapMerging(merging)
+
+    let st;
+    if (grouping_type == 'Side-by-side') {
+      // Can get it working later if needed
+      throw "Unsupported currently"
+    } else if (grouping_type == 'Average') {
+      st = `WITH 
+
+        /* We've already found the relevant runs */
+        relevant_runs AS (SELECT * FROM runs WHERE id in ('${run_ids.join("','")}')),
+        
+        /* Expand the variables array */
+        expanded_variables AS (SELECT id, json_array_elements(params::json->'workload'->'settings'->'variables') AS var FROM relevant_runs),
+        
+        /* Find the correct variable from the variables array */
+        correct_variable_selected AS (SELECT id, var from expanded_variables WHERE var->>'name'='com.couchbase.protostellar.executorMaxThreadCount'),
+        
+        /* Extract the value */
+        extracted_value AS (SELECT id, var->>'value' as value FROM correct_variable_selected),
+        
+        /* Join with buckets */
+        joined_with_buckets AS (SELECT ${mergingOp}(buckets.${display}) as value, extracted_value.value as grouping
+                          FROM buckets JOIN extracted_value ON buckets.run_id = extracted_value.id
+                          WHERE buckets.time_offset_secs >= ${trimming_seconds}
+                          GROUP BY value, grouping)
+        
+        SELECT * from joined_with_buckets ORDER BY grouping::int;
+        `
+    } else {
+      throw new Error('Unknown grouping_type ' + grouping_type);
+    }
+    console.info(st);
+    const result = await this.client.query(st);
+    const rows = result;
+    return rows.map((x) => new Result(x.grouping, x.value));
+  }
+
   // cast (metrics::json->>'threadCount' as integer) > 100
   // 'Excessive thread count, max=' || max (cast (metrics::json->>'threadCount' as integer))
   async get_metrics_alerts(input: MetricsQuery, metrics: Metrics, table: string) {
