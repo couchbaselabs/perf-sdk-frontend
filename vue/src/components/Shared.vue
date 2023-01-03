@@ -1,5 +1,9 @@
 <template>
   <b-container>
+    <b-form-checkbox v-model="exclude_snapshots">
+      Exclude snapshots
+    </b-form-checkbox>
+
     <MetricsAlerts :input="{language:language}"></MetricsAlerts>
     <h1>KV Get</h1>
     <Results :input="kvGets"></Results>
@@ -17,9 +21,9 @@ import MetricsAlerts from "@/components/MetricsAlerts";
 export default {
   components: {Results, MetricsAlerts},
   props: ['language'],
-  data() {
-    return {
-      kvInserts: {
+  computed: {
+    kvInserts() {
+      return {
         "inputs": [{
           "viewing": "cluster",
           "params": [{
@@ -52,10 +56,14 @@ export default {
         "merging_type": "Average",
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
-        "include_metrics": false
-      },
+        "include_metrics": false,
+        "exclude_snapshots": this.exclude_snapshots,
+        "exclude_gerrit": true,
+      }
+    },
 
-      kvReplaces: {
+    kvReplaces() {
+      return {
         "inputs": [{
           "viewing": "cluster",
           "params": [{
@@ -88,10 +96,14 @@ export default {
         "merging_type": "Average",
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
-        "include_metrics": false
-      },
+        "include_metrics": false,
+        "exclude_gerrit": this.exclude_gerrit,
+        "exclude_snapshots": this.exclude_snapshots,
+      }
+    },
 
-      kvGets: {
+    kvGets() {
+      return {
         "inputs": [{
           "viewing": "cluster",
           "params": [{
@@ -124,8 +136,16 @@ export default {
         "merging_type": "Average",
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
-        "include_metrics": false
+        "include_metrics": false,
+        "exclude_gerrit": this.exclude_gerrit || false,
+        "exclude_snapshots": this.exclude_snapshots || false,
       }
+    }
+  },
+  data() {
+    return {
+      exclude_snapshots: false,
+      exclude_gerrit: true,
     }
   }
 }

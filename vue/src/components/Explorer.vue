@@ -110,9 +110,14 @@
             </b-form-select>
           </b-form-group>
 
-          <!--        <button type=submit>-->
-          <!--            Submit-->
-          <!--        </button>-->
+          <b-form-group label="Versions">
+            <b-form-checkbox v-model="exclude_snapshots" v-on:change="handleSubmit">
+              Exclude snapshots
+            </b-form-checkbox>
+            <b-form-checkbox v-model="exclude_gerrit" v-on:change="handleSubmit">
+              Exclude Gerrit builds
+            </b-form-checkbox>
+          </b-form-group>
         </b-form>
       </b-col>
     </b-row>
@@ -172,7 +177,9 @@ export default {
       selected_bucketise_seconds: 0,
       fetching: undefined,
       query_params: undefined,
-      input: this.initialInput
+      input: this.initialInput,
+      exclude_gerrit: false,
+      exclude_snapshots: false,
     }
   },
 
@@ -217,7 +224,9 @@ export default {
         merging_type: this.selected_merging_type,
         trimming_seconds: this.selected_trimming_seconds,
         bucketise_seconds: this.selected_bucketise_seconds,
-        include_metrics: false
+        include_metrics: false,
+        exclude_gerrit: this.exclude_gerrit,
+        exclude_snapshots: this.exclude_snapshots,
       }
     },
 

@@ -9,7 +9,7 @@ export class Panel {
   // cluster
   viewing: string;
   // [{"env":"AWS","disk":"ssd","nodes":3,"node_size":"m4"},{"env":"GCP","disk":"ssd","nodes":4,"node_size":"x2"}]
-  params: Array<Object>;
+  params: Array<Record<string, unknown>>;
 }
 
 export class Single {
@@ -43,10 +43,10 @@ export class Input {
   group_by: string; // "cluster.version"
   display: string; // latency_average_us
 
-  cluster?: Object;
-  impl?: Object;
-  workload?: Object;
-  vars?: Object;
+  cluster?: Record<string, unknown>;
+  impl?: Record<string, unknown>;
+  workload?: Record<string, unknown>;
+  vars?: Record<string, unknown>;
   graph_type: string;
 
   // If we have reruns, how to display name - e.g. side-by-side, or averaging the results
@@ -62,6 +62,12 @@ export class Input {
   // It's too expensive to draw large line graphs of 1 second buckets, so re-bucketise into larger buckets if this is
   // set
   bucketise_seconds?: number;
+
+  // Whether to exclude interim/snapshot versions ("3.4.0-20221020.123751-26")
+  exclude_snapshots: boolean;
+
+  // Whether to exclude Gerrit versions ("refs/changes/19/183619/30")
+  exclude_gerrit: boolean;
 
   group_by_1(): string {
     return `params->'${this.group_by.replace('.', "'->>'")}'`;
@@ -93,19 +99,34 @@ export class Params {
 export class DashboardService {
   constructor(private readonly database: DatabaseService) {}
 
+  private filter_runs(runs: Run[], input: Input) {
+    return runs.filter(run => {
+      const version = run.impl["version"] as string
+      const isGerrit = version.startsWith("refs/")
+      const isSnapshot = version.includes("-")
+      if (input.exclude_gerrit && isGerrit) {
+        return false
+      }
+      if (input.exclude_snapshots && isSnapshot) {
+        return false
+      }
+      return true
+    })
+  }
+
   /**
    * Builds the Simplified bar graph
    */
   private async add_graph_bar(
-    compared_json: Object,
+    compared_json: Record<string, unknown>,
     input: Input,
   ): Promise<any> {
     const labels = [];
     const values = [];
-    const runs = await this.database.get_runs(
+    const runs = this.filter_runs(await this.database.get_runs(
       compared_json,
       input.group_by_2(),
-    );
+    ), input);
     const run_ids = runs.map((v) => v.id);
 
     if (run_ids.length != 0) {
@@ -156,13 +177,13 @@ export class DashboardService {
    * Builds the Full line graph for multiple runs.
    */
   private async add_graph_line(
-      compared_json: Object,
+      compared_json: Record<string, unknown>,
       input: Input,
   ): Promise<any> {
-    const runs = await this.database.get_runs(
+    const runs = this.filter_runs(await this.database.get_runs(
         compared_json,
         input.group_by_2(),
-    );
+    ), input);
 
     return this.add_graph_line_shared(runs, input.display, input.trimming_seconds, input.group_by, input.include_metrics, input.merging_type, input.bucketise_seconds);
   }
@@ -325,7 +346,7 @@ export class DashboardService {
     const group_by_split = group_by.split('.');
 
     runs.forEach((run_raw) => {
-      const run = run_raw['params'];
+      const run = run_raw['params'] as Record<string, unknown>;
 
       DashboardService.remove_display_by_if_needed(run, group_by_split);
 
@@ -356,22 +377,22 @@ export class DashboardService {
     );
   }
 
-  static parse_from(input: Object, groupBy: Array<string>): string {
+  static parse_from(input: Record<string, unknown>, groupBy: Array<string>): string {
     const looking_for = groupBy[0];
     const keys = Object.keys(input);
 
     if (keys.includes(looking_for)) {
       if (groupBy.length == 1) {
-        return input[looking_for];
+        return input[looking_for] as string;
       } else {
-        const next = input[looking_for];
+        const next = input[looking_for] as Record<string, unknown>;
         return this.parse_from(next, groupBy.splice(1));
       }
     }
   }
 
   static remove_display_by_if_needed(
-    input: Object,
+    input: Record<string, unknown>,
     display: Array<string>,
   ): void {
     const to_remove = display[0];
@@ -381,7 +402,7 @@ export class DashboardService {
       if (display.length == 1) {
         delete input[to_remove];
       } else {
-        const next = input[to_remove];
+        const next = input[to_remove] as Record<string, unknown>;
         this.remove_display_by_if_needed(next, display.slice(1));
       }
     }
@@ -391,13 +412,13 @@ export class DashboardService {
     const runs = await this.database.get_runs_raw();
     const keys = new Set<string>();
     runs.forEach((run) => {
-      const props = DashboardService.gen_strings('', run['params']);
+      const props = DashboardService.gen_strings('', run['params'] as Record<string, unknown>);
       props.forEach((p) => keys.add(p));
     });
     return [...keys.values()];
   }
 
-  static gen_strings(input_key: string, input: Object): Array<string> {
+  static gen_strings(input_key: string, input: Record<string, unknown>): Array<string> {
     let out = [];
     const keys = Object.keys(input);
     const next_key = input_key.length == 0 ? '' : input_key + '.';
@@ -407,7 +428,7 @@ export class DashboardService {
       if (v == null) {
         console.warn(`Found null value ${key} in ${JSON.stringify(input)}`);
       } else if (typeof v === 'object') {
-        const next = this.gen_strings(next_key + key, v);
+        const next = this.gen_strings(next_key + key, v as Record<string, unknown>);
         out = out.concat(next);
       } else {
         out.push(next_key + key);
@@ -421,7 +442,7 @@ export class DashboardService {
     input: Input,
     panel: Panel,
     remaining: Array<Panel>,
-  ): Promise<Array<Object>> {
+  ): Promise<Array<Record<string, unknown>>> {
     const panels = [];
 
     for (const key in panel.params) {

@@ -5,9 +5,9 @@ import {Metrics, MetricsQuery} from "./dashboard.service";
 const semver = require('semver');
 
 export class Run {
-  params: Object;
+  params: Record<string, unknown>;
   cluster: string;
-  impl: string;
+  impl: Record<string, unknown>;
   workload: string;
   vars: string;
   other: string;
@@ -15,9 +15,9 @@ export class Run {
   datetime: string;
 
   constructor(
-    params: Object,
+    params: Record<string, unknown>,
     cluster: string,
-    impl: string,
+    impl: Record<string, unknown>,
     workload: string,
     vars: string,
     other: string,
@@ -81,7 +81,7 @@ class Impl {
   semver: any;
   json: object;
 
-  constructor(language: string, version: string, semver: any, json: object) {
+  constructor(language: string, version: string, semver: any, json: Record<string, unknown>) {
     this.language = language;
     this.version = version;
     this.semver = semver;
@@ -153,7 +153,10 @@ export class DatabaseService {
     return res;
   }
 
-  async get_runs(compared_json: Object, group_by: string): Promise<Array<Run>> {
+  /**
+   * Used for both the Simplified and Full graphs.
+   */
+  async get_runs(compared_json: Record<string, unknown>, group_by: string): Promise<Array<Run>> {
     const st = `SELECT
                         params as params,
                         params->'cluster' as cluster,
@@ -272,7 +275,7 @@ export class DatabaseService {
     });
   }
 
-  async get_runs_raw(): Promise<Array<Object>> {
+  async get_runs_raw(): Promise<Array<Record<string, unknown>>> {
     const st = `SELECT params::json
                     FROM runs`;
     return await this.client.query(st);
