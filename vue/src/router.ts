@@ -3,6 +3,7 @@ import VueRouter from 'vue-router';
 import Explorer from './components/Explorer.vue'
 import Java from './components/Java.vue'
 import Python from './components/Python.vue'
+import Node from './components/Node.vue'
 import Scala from './components/Scala.vue'
 import Kotlin from './components/Kotlin.vue'
 import Single from './components/Single.vue'
