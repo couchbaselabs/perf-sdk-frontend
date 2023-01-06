@@ -3,10 +3,12 @@
     <Shared :language="'Java'"></Shared>
     <h1>Transactions</h1>
     <Results :input="transactions"></Results>
-    <h1>Stellar Nebula</h1>
-    com.couchbase.protostellar.executorMaxThreadCount
+    <h1>Experiment: Stellar Nebula com.couchbase.protostellar.executorMaxThreadCount</h1>
+    <p>Testing various sizes of thread pool for the executor used for GRPC operations.  It's setting tunable com.couchbase.protostellar.executorMaxThreadCount.</p>
     <Results :input="stellarNebulaGets"></Results>
     <h1>Experiment: CoreKvOps</h1>
+    <p>Testing experimental approach under <a href="https://review.couchbase.org/c/couchbase-jvm-clients/+/184307">https://review.couchbase.org/c/couchbase-jvm-clients/+/184307</a> of CoreKvOps.
+    This test is checking KV gets.</p>
     <Results :input="coreKvOps"></Results>
   </b-container>
 </template>
