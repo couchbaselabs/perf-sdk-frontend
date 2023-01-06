@@ -32,6 +32,10 @@ const routes = [
         component: Python,
     },
     {
+        path: "/node",
+        component: Node,
+    },
+    {
         path: "/kotlin",
         component: Kotlin,
     },
