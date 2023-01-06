@@ -6,6 +6,8 @@
     <h1>Stellar Nebula</h1>
     com.couchbase.protostellar.executorMaxThreadCount
     <Results :input="stellarNebulaGets"></Results>
+    <h1>Experiment: CoreKvOps</h1>
+    <Results :input="coreKvOps"></Results>
   </b-container>
 </template>
 
@@ -79,8 +81,45 @@ export default {
           "include_metrics": false,
           "exclude_gerrit": false,
           "exclude_snapshots": false
+        },
+        coreKvOps: {
+            "inputs": [{
+              "viewing": "cluster",
+              "params": [{
+                "type": "unmanaged",
+                "memory": 28000,
+                "region": "us-east-2",
+                "storage": "couchstore",
+                "version": "7.1.1-3175-enterprise",
+                "cpuCount": 16,
+                "instance": "c5.4xlarge",
+                "replicas": 0,
+                "topology": "A",
+                "nodeCount": 1,
+                "compaction": "disabled"
+              }]
+            }],
+            "group_by": "impl.language",
+            "display": "duration_average_us",
+            "impl": {"language": "Java", "version": "refs/changes/07/184307/8"},
+            "workload": {
+              "operations": [{
+                "op": "get",
+                "bounds": {"forSeconds": "$forSeconds"},
+                "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+              }]
+            },
+            "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
+            "graph_type": "Simplified",
+            "grouping_type": "Average",
+            "merging_type": "Average",
+            "trimming_seconds": 20,
+            "bucketise_seconds": 0,
+            "include_metrics": false,
+            "exclude_gerrit": this.exclude_gerrit || false,
+            "exclude_snapshots": this.exclude_snapshots || false,
+          }
         }
-      }
     }
 }
 </script>
