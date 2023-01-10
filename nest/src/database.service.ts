@@ -382,14 +382,18 @@ export class DatabaseService {
         extracted_value AS (SELECT id, var->>'value' as value FROM correct_variable_selected),
         
         /* Join with buckets */
-        joined_with_buckets AS (SELECT ${mergingOp}(buckets.${display}) as value, extracted_value.value as grouping
+        joined_with_buckets AS (SELECT ${mergingOp}(buckets.${display}) AS value,
+                                /* Handle true/false tests, convert to int */
+                                (CASE WHEN extracted_value.value = 'true' THEN 1
+                                    WHEN extracted_value.value = 'false' THEN 0
+                                    ELSE extracted_value.value::integer
+                                END) AS grouping
                           FROM buckets JOIN extracted_value ON buckets.run_id = extracted_value.id
                           WHERE buckets.time_offset_secs >= ${trimming_seconds}
                           GROUP BY value, grouping)
 
         /* Cannot group by ::int as it breaks on true/false tests */
-        /* SELECT * from joined_with_buckets ORDER BY grouping::int; */
-        SELECT * from joined_with_buckets ORDER BY grouping;
+        SELECT * from joined_with_buckets ORDER BY grouping::int;
         `
     } else {
       throw new Error('Unknown grouping_type ' + grouping_type);
