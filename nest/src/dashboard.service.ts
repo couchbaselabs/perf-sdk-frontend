@@ -134,6 +134,7 @@ export class DashboardService {
       if (input.group_by.startsWith("variables.")) {
         buckets = await this.database.get_groupings_for_variables(
             input.group_by_1(),
+            input.group_by.replace("variables.", ""),
             run_ids,
             input.display,
             input.grouping_type,

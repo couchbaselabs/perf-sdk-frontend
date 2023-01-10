@@ -169,7 +169,7 @@ export class DatabaseService {
                       FROM runs
                       where (params) @>
                         ('${JSON.stringify(
-                          compared_json,
+                          compared_json, null, 2
                         )}'::jsonb #- '${group_by}')`;
     console.info(st);
     const result = await this.client.query(st);
@@ -354,6 +354,7 @@ export class DatabaseService {
    */
   async get_groupings_for_variables(
       groupBy1: string,
+      group_by: string,
       run_ids: Array<string>,
       display: string,
       grouping_type: string,
@@ -375,7 +376,7 @@ export class DatabaseService {
         expanded_variables AS (SELECT id, json_array_elements(params::json->'workload'->'settings'->'variables') AS var FROM relevant_runs),
         
         /* Find the correct variable from the variables array */
-        correct_variable_selected AS (SELECT id, var from expanded_variables WHERE var->>'name'='com.couchbase.protostellar.executorMaxThreadCount'),
+        correct_variable_selected AS (SELECT id, var from expanded_variables WHERE var->>'name'='${group_by}'),
         
         /* Extract the value */
         extracted_value AS (SELECT id, var->>'value' as value FROM correct_variable_selected),
@@ -385,8 +386,10 @@ export class DatabaseService {
                           FROM buckets JOIN extracted_value ON buckets.run_id = extracted_value.id
                           WHERE buckets.time_offset_secs >= ${trimming_seconds}
                           GROUP BY value, grouping)
-        
-        SELECT * from joined_with_buckets ORDER BY grouping::int;
+
+        /* Cannot group by ::int as it breaks on true/false tests */
+        /* SELECT * from joined_with_buckets ORDER BY grouping::int; */
+        SELECT * from joined_with_buckets ORDER BY grouping;
         `
     } else {
       throw new Error('Unknown grouping_type ' + grouping_type);

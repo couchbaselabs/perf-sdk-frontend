@@ -31,7 +31,7 @@
             </b-button>
 
             <b-button v-if="!display" v-on:click="display = true" variant="outline-primary">
-              Show runs
+              Show runs ({{graph.runs.length}})
             </b-button>
 
             <b-button v-if="display" v-on:click="display = false" variant="outline-primary">
