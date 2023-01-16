@@ -4,6 +4,10 @@
     <h1>Transactions</h1>
     <Results :input="transactions"></Results>
 
+    <h1>Experiment: Stellar Nebula com.couchbase.protostellar.numEndpoints</h1>
+    <p>Testing different numbers of connections to STG.  Simple round-robining over them.  Testing KV gets.</p>
+    <Results :input="numEndpoints"></Results>
+
     <h1>Experiment: Stellar Nebula ForkJoinPool com.couchbase.protostellar.executorMaxThreadCount</h1>
     <p>Testing various sizes of thread pool for the executor used for GRPC operations. Testing KV gets.</p>
     <p>With ThreadPool</p>
@@ -16,9 +20,12 @@
     <p>Seeing if creating a new GRPC stub for each operation has a cost.  Testing KV gets.</p>
     <Results :input="reuseStubs"></Results>
 
-    <h1>Experiment: Stellar Nebula com.couchbase.protostellar.numEndpoints</h1>
-    <p>Testing different numbers of connections to STG.  Simple round-robining over them.  Testing KV gets.</p>
-    <Results :input="numEndpoints"></Results>
+    <h1>Experiment: Stellar Nebula protostellarLoadBalancing</h1>
+    <p>GRPC's generated code includes options to load balance.  Trying this out, setting com.couchbase.protostellar.numEndpoints=1 to disable our own pooling, and trying to get GRPC to create N connections to the same STG instance.</p>
+    <p>com.couchbase.protostellar.loadBalancingSingle=true</p>
+    <Results :input="protostellarLoadBalancingSingle"></Results>
+    <p>com.couchbase.protostellar.loadBalancingSingle=false</p>
+    <Results :input="protostellarLoadBalancingNotSingle"></Results>
 
     <h1>Experiment: CoreKvOps</h1>
     <p>Testing experimental approach under <a href="https://review.couchbase.org/c/couchbase-jvm-clients/+/184307">https://review.couchbase.org/c/couchbase-jvm-clients/+/184307</a>
@@ -329,7 +336,78 @@ export default {
         "exclude_gerrit": false,
         "exclude_snapshots": false
       },
-    }
+      protostellarLoadBalancingSingle: {
+        "inputs": [{
+          "viewing": "cluster",
+          "params": [{
+            "type": "unmanaged",
+            "memory": 28000,
+            "region": "us-east-2",
+            "scheme": "protostellar",
+            "storage": "couchstore",
+            "version": "7.1.1-3175-enterprise",
+            "cpuCount": 16,
+            "instance": "c5.4xlarge",
+            "replicas": 0,
+            "topology": "A",
+            "nodeCount": 1,
+            "compaction": "disabled",
+            "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
+          }]
+        }],
+        "display": "duration_average_us",
+        "group_by": "variables.com.couchbase.protostellar.loadBalancing",
+        "workload": {
+          "settings": {
+            "variables": [{"name": "experimentName", "value": "protostellarLoadBalancing"},
+              {"name": "com.couchbase.protostellar.loadBalancingSingle", "value": "true"}]
+          },
+        },
+        "graph_type": "Simplified",
+        "grouping_type": "Average",
+        "merging_type": "Average",
+        "trimming_seconds": 20,
+        "bucketise_seconds": 0,
+        "include_metrics": false,
+        "exclude_gerrit": false,
+        "exclude_snapshots": false
+      },
+      protostellarLoadBalancingNotSingle: {
+        "inputs": [{
+          "viewing": "cluster",
+          "params": [{
+            "type": "unmanaged",
+            "memory": 28000,
+            "region": "us-east-2",
+            "scheme": "protostellar",
+            "storage": "couchstore",
+            "version": "7.1.1-3175-enterprise",
+            "cpuCount": 16,
+            "instance": "c5.4xlarge",
+            "replicas": 0,
+            "topology": "A",
+            "nodeCount": 1,
+            "compaction": "disabled",
+            "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
+          }]
+        }],
+        "display": "duration_average_us",
+        "group_by": "variables.com.couchbase.protostellar.loadBalancing",
+        "workload": {
+          "settings": {
+            "variables": [{"name": "experimentName", "value": "protostellarLoadBalancing"},
+              {"name": "com.couchbase.protostellar.loadBalancingSingle", "value": "false"}]
+          },
+        },
+        "graph_type": "Simplified",
+        "grouping_type": "Average",
+        "merging_type": "Average",
+        "trimming_seconds": 20,
+        "bucketise_seconds": 0,
+        "include_metrics": false,
+        "exclude_gerrit": false,
+        "exclude_snapshots": false
+      },    }
   }
 }
 </script>
