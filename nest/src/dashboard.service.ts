@@ -279,7 +279,7 @@ export class DashboardService {
         if (b.metrics) {
           //console.info(b.metrics)
           //console.info(typeof b.metrics)
-          const metricsJson = JSON.parse(b.metrics);
+          const metricsJson = b.metrics;
           const keys = Object.keys(metricsJson);
           keys.forEach(key => {
             // const x = b.run_id + "_" + key;
