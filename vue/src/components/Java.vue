@@ -1,11 +1,18 @@
 <template>
   <b-container>
     <Shared :language="'Java'"></Shared>
+
+    <h1>KV Gets (Blocking API)</h1>
+    <Results :input="kvGetsBlocking"></Results>
+
+    <h1>KV Gets (Reactive API)</h1>
+    <Results :input="kvGetsReactive"></Results>
+
     <h1>Transactions</h1>
     <Results :input="transactions"></Results>
 
     <h1>Experiment: Stellar Nebula com.couchbase.protostellar.numEndpoints</h1>
-    <p>Testing different numbers of connections to STG.  Simple round-robining over them.  Testing KV gets.</p>
+    <p>Testing different numbers of connections to STG. Simple round-robining over them. Testing KV gets.</p>
     <Results :input="numEndpoints"></Results>
 
     <h1>Experiment: Stellar Nebula ForkJoinPool com.couchbase.protostellar.executorMaxThreadCount</h1>
@@ -17,11 +24,13 @@
     <Results :input="forkJoinPoolExecutorMaxThreadCount"></Results>
 
     <h1>Experiment: Stellar Nebula com.couchbase.protostellar.reuseStubs</h1>
-    <p>Seeing if creating a new GRPC stub for each operation has a cost.  Testing KV gets.</p>
+    <p>Seeing if creating a new GRPC stub for each operation has a cost. Testing KV gets.</p>
     <Results :input="reuseStubs"></Results>
 
     <h1>Experiment: Stellar Nebula protostellarLoadBalancing</h1>
-    <p>GRPC's generated code includes options to load balance.  Trying this out, setting com.couchbase.protostellar.numEndpoints=1 to disable our own pooling, and trying to get GRPC to create N connections to the same STG instance.</p>
+    <p>GRPC's generated code includes options to load balance. Trying this out, setting
+      com.couchbase.protostellar.numEndpoints=1 to disable our own pooling, and trying to get GRPC to create N
+      connections to the same STG instance.</p>
     <p>com.couchbase.protostellar.loadBalancingSingle=true</p>
     <Results :input="protostellarLoadBalancingSingle"></Results>
     <p>com.couchbase.protostellar.loadBalancingSingle=false</p>
@@ -43,6 +52,94 @@ export default {
   components: {Shared, Results},
   data() {
     return {
+      kvGetsBlocking: {
+        "inputs": [{
+          "viewing": "cluster",
+          "params": [{
+            "type": "unmanaged",
+            "memory": 28000,
+            "region": "us-east-2",
+            "storage": "couchstore",
+            "version": "7.1.1-3175-enterprise",
+            "cpuCount": 16,
+            "instance": "c5.4xlarge",
+            "replicas": 0,
+            "topology": "A",
+            "nodeCount": 1,
+            "compaction": "disabled"
+          }]
+        }],
+        "group_by": "impl.version",
+        "display": "duration_average_us",
+        "impl": {"language": this.language},
+        "workload": {
+          "operations": [{
+            "op": "get",
+            "bounds": {"forSeconds": "$forSeconds"},
+            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+          }]
+        },
+        "vars": {
+          "poolSize": 10000,
+          "driverVer": 6,
+          "forSeconds": 300,
+          "performerVer": 1,
+          "horizontalScaling": 20,
+          api: "DEFAULT"
+        },
+        "graph_type": "Simplified",
+        "grouping_type": "Average",
+        "merging_type": "Average",
+        "trimming_seconds": 20,
+        "bucketise_seconds": 0,
+        "include_metrics": false,
+        "exclude_gerrit": this.exclude_gerrit || false,
+        "exclude_snapshots": this.exclude_snapshots || false,
+      },
+      kvGetsReactive: {
+        "inputs": [{
+          "viewing": "cluster",
+          "params": [{
+            "type": "unmanaged",
+            "memory": 28000,
+            "region": "us-east-2",
+            "storage": "couchstore",
+            "version": "7.1.1-3175-enterprise",
+            "cpuCount": 16,
+            "instance": "c5.4xlarge",
+            "replicas": 0,
+            "topology": "A",
+            "nodeCount": 1,
+            "compaction": "disabled"
+          }]
+        }],
+        "group_by": "impl.version",
+        "display": "duration_average_us",
+        "impl": {"language": this.language},
+        "workload": {
+          "operations": [{
+            "op": "get",
+            "bounds": {"forSeconds": "$forSeconds"},
+            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+          }]
+        },
+        "vars": {
+          "poolSize": 10000,
+          "driverVer": 6,
+          "forSeconds": 300,
+          "performerVer": 1,
+          "horizontalScaling": 20,
+          api: "ASYNC"
+        },
+        "graph_type": "Simplified",
+        "grouping_type": "Average",
+        "merging_type": "Average",
+        "trimming_seconds": 20,
+        "bucketise_seconds": 0,
+        "include_metrics": false,
+        "exclude_gerrit": this.exclude_gerrit || false,
+        "exclude_snapshots": this.exclude_snapshots || false,
+      },
       transactions: {
         "inputs": [{
           "viewing": "cluster",
@@ -407,7 +504,8 @@ export default {
         "include_metrics": false,
         "exclude_gerrit": false,
         "exclude_snapshots": false
-      },    }
+      },
+    }
   }
 }
 </script>
