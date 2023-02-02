@@ -15,6 +15,7 @@
           <li class="nav-item"><router-link to="/go" class="nav-link">Go</router-link></li>
           <li class="nav-item"><router-link to="/python" class="nav-link">Python</router-link></li>
           <li class="nav-item"><router-link to="/node" class="nav-link">Node</router-link></li>
+          <li class="nav-item"><router-link to="/cpp" class="nav-link">C++</router-link></li>
           <li class="nav-item"><router-link to="/versus" class="nav-link">Versus</router-link></li>
         </b-navbar-nav>
       </b-collapse>
