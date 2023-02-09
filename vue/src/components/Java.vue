@@ -2,6 +2,10 @@
   <b-container>
     <Shared :language="'Java'"></Shared>
 
+    <h1>Horizontal Scaling (Reactive)</h1>
+    Tests how the SDK scales with parallelism, using KV gets and the reactive API.
+    <Results :input="kvGetsHorizontalScalingAsync"></Results>
+
     <h1>Transactions</h1>
     <Results :input="transactions"></Results>
 
@@ -52,6 +56,51 @@ export default {
   components: {Shared, Results},
   data() {
     return {
+      kvGetsHorizontalScalingAsync: {
+        "inputs": [{
+          "viewing": "cluster",
+          "params": [{
+            "type": "unmanaged",
+            "memory": 28000,
+            "region": "us-east-2",
+            "storage": "couchstore",
+            "version": "7.1.1-3175-enterprise",
+            "cpuCount": 16,
+            "instance": "c5.4xlarge",
+            "replicas": 0,
+            "topology": "A",
+            "nodeCount": 1,
+            "compaction": "disabled"
+          }]
+        }],
+        "group_by": "variables.horizontalScaling",
+        "display": "duration_average_us",
+        "impl": {"language": "Java"},
+        "workload": {
+          "operations": [{
+            "op": "get",
+            "bounds": {"forSeconds": "$forSeconds"},
+            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+          }]
+        },
+        "vars": {
+          "poolSize": 10000,
+          "driverVer": 6,
+          "forSeconds": 300,
+          "performerVer": 1,
+          "experimentName": "horizontalScaling",
+          "api": "ASYNC",
+        },
+        "graph_type": "Simplified",
+        "grouping_type": "Average",
+        "merging_type": "Average",
+        "trimming_seconds": 20,
+        "bucketise_seconds": 0,
+        "include_metrics": false,
+        "exclude_gerrit": true,
+        "exclude_snapshots": this.exclude_snapshots || false
+      },
+
       kvGetsBlocking: {
         "inputs": [{
           "viewing": "cluster",
