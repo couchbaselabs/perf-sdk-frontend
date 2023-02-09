@@ -2,14 +2,14 @@
   <b-container>
     <Shared :language="'Java'"></Shared>
 
+    <h1>Transactions</h1>
+    <Results :input="transactions"></Results>
+
     <h1>KV Gets (Blocking API)</h1>
     <Results :input="kvGetsBlocking"></Results>
 
     <h1>KV Gets (Reactive API)</h1>
     <Results :input="kvGetsReactive"></Results>
-
-    <h1>Transactions</h1>
-    <Results :input="transactions"></Results>
 
     <h1>Experiment: Stellar Nebula com.couchbase.protostellar.numEndpoints</h1>
     <p>Testing different numbers of connections to STG. Simple round-robining over them. Testing KV gets.</p>
@@ -71,7 +71,7 @@ export default {
         }],
         "group_by": "impl.version",
         "display": "duration_average_us",
-        "impl": {"language": this.language},
+        "impl": {"language": "Java"},
         "workload": {
           "operations": [{
             "op": "get",
@@ -93,7 +93,7 @@ export default {
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
         "include_metrics": false,
-        "exclude_gerrit": this.exclude_gerrit || false,
+        "exclude_gerrit": true,
         "exclude_snapshots": this.exclude_snapshots || false,
       },
       kvGetsReactive: {
@@ -115,7 +115,7 @@ export default {
         }],
         "group_by": "impl.version",
         "display": "duration_average_us",
-        "impl": {"language": this.language},
+        "impl": {"language": "Java"},
         "workload": {
           "operations": [{
             "op": "get",
@@ -137,8 +137,7 @@ export default {
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
         "include_metrics": false,
-        "exclude_gerrit": this.exclude_gerrit || false,
-        "exclude_snapshots": this.exclude_snapshots || false,
+        "exclude_gerrit": true
       },
       transactions: {
         "inputs": [{
@@ -176,7 +175,9 @@ export default {
         "merging_type": "Average",
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
-        "include_metrics": false
+        "include_metrics": false,
+        "exclude_gerrit": true,
+        "exclude_snapshots": this.exclude_snapshots || false
       },
       stellarNebulaGets: {
         "inputs": [{

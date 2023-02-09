@@ -58,7 +58,7 @@ export default {
         "bucketise_seconds": 0,
         "include_metrics": false,
         "exclude_snapshots": this.exclude_snapshots,
-        "exclude_gerrit": true,
+        "exclude_gerrit": this.exclude_gerrit || true,
       }
     },
 
@@ -97,7 +97,7 @@ export default {
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
         "include_metrics": false,
-        "exclude_gerrit": this.exclude_gerrit,
+        "exclude_gerrit": this.exclude_gerrit || true,
         "exclude_snapshots": this.exclude_snapshots,
       }
     },
@@ -137,7 +137,7 @@ export default {
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
         "include_metrics": false,
-        "exclude_gerrit": this.exclude_gerrit || false,
+        "exclude_gerrit": this.exclude_gerrit || true,
         "exclude_snapshots": this.exclude_snapshots || false,
       }
     }
