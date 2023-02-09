@@ -50,7 +50,8 @@ export default {
         "merging_type": "Average",
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
-        "include_metrics": false
+        "include_metrics": false,
+        "exclude_gerrit": true,
       },
 
       kvReplaces: {
@@ -86,7 +87,8 @@ export default {
         "merging_type": "Average",
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
-        "include_metrics": false
+        "include_metrics": false,
+        "exclude_gerrit": true,
       },
 
       kvGets: {
@@ -122,7 +124,8 @@ export default {
         "merging_type": "Average",
         "trimming_seconds": 20,
         "bucketise_seconds": 0,
-        "include_metrics": false
+        "include_metrics": false,
+        "exclude_gerrit": true,
       }
     }
   }
