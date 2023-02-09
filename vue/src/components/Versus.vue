@@ -52,6 +52,7 @@ export default {
         "bucketise_seconds": 0,
         "include_metrics": false,
         "exclude_gerrit": true,
+        "filter_runs": "Latest"
       },
 
       kvReplaces: {
@@ -89,6 +90,7 @@ export default {
         "bucketise_seconds": 0,
         "include_metrics": false,
         "exclude_gerrit": true,
+        "filter_runs": "Latest"
       },
 
       kvGets: {
@@ -126,6 +128,7 @@ export default {
         "bucketise_seconds": 0,
         "include_metrics": false,
         "exclude_gerrit": true,
+        "filter_runs": "Latest"
       }
     }
   }

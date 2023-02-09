@@ -37,30 +37,56 @@ export class Metrics {
   }
 }
 
+// The main search class from the frontend.  There are a number of different graphs displayed and they are all
+// represented through here.
 export class Input {
   inputs: Array<Panel>;
 
-  group_by: string; // "cluster.version" or "variables.com.couchbase.protostellar.executorMaxThreadCount"
+  // What to display on the x-axis.  E.g. what we're grouping the database results by.
+  // Supported options:
+  // * "cluster.version"
+  // * "variables.<some_tunable>" e.g. "variables.com.couchbase.protostellar.executorMaxThreadCount"
+  // This really wants refactoring into two fields: what 'sort of thing' we're grouping by (e.g. versions, or tunables),
+  // and then what exactly we're grouping by ("cluster.version" or "com.couchbase.protostellar.executorMaxThreadCount").
+  group_by: string;
+
+  // What to display on the y-axis.
   display: string; // latency_average_us
 
+  // These next fields are used for apples-to-apples comparisons.  We're very careful to only compare results that make
+  // sense to.  E.g. if we ran Java 3.3.4 against cluster A but Java 3.3.5 against cluster B, we don't want those to
+  // be appearing on the same graph.
+  // This is handled by taking these fields, which are JSON, and comparing them directly against the JSON blobs in the
+  // database.  The database blobs must contain these input blobs (which also usually come originally from those database
+  // blobs).
+  // This approach allows us and the UI to be (somewhat) agnostic to what's in the database.  E.g. there's not much
+  // code that 'knows' we're dealing with a cluster, or variables, or whatever.  It's handled fairly generically based
+  // on the JSON.
   cluster?: Record<string, unknown>;
   impl?: Record<string, unknown>;
   workload?: Record<string, unknown>;
   vars?: Record<string, unknown>;
+
+  // "Simplified" (aggregated bar chart) or "Full" (line chart showing each run over time)
   graph_type: string;
 
-  // If we have reruns, how to display name - e.g. side-by-side, or averaging the results
+  // If in Simplified mode (bar chart) and we have multiple results for a particular bar, how to display them.
+  // e.g. "Side-by-Side", or "Average"ing the results.  (Though "Average" is a misnomer, it's actually controlled by
+  // merging_type).
   grouping_type: string;
 
-  // "Average"
+  // If in Simplified mode (bar chart) and we have multiple results for a particular bar, and grouping_type = "Average",
+  // how do we actually merge them.  "Average", "Sum", "Maximum", "Minimum".
   merging_type: string;
 
+  // How many seconds of data to trim off the start of each run, to account for e.g. JVM warmup and general settling.
   trimming_seconds: number;
 
+  // Whether the metrics table data should be fetched and included.
   include_metrics: boolean;
 
   // It's too expensive to draw large line graphs of 1 second buckets, so re-bucketise into larger buckets if this is
-  // set
+  // set.
   bucketise_seconds?: number;
 
   // Whether to exclude interim/snapshot versions ("3.4.0-20221020.123751-26")
@@ -68,6 +94,16 @@ export class Input {
 
   // Whether to exclude Gerrit versions ("refs/changes/19/183619/30")
   exclude_gerrit: boolean;
+
+  // Supported:
+  // * "All" (or missing, e.g. default): don't filter runs.
+  // * "Latest": if the database returns results for 1.1.0, 1.1.1 and 1.1.2 for SDK A, and 3.0.3, 3.0.4 and 3.0.5 for SDK B,
+  //    will keep results for 1.1.2 for SDK A and 3.0.5 for SDK B.
+  //    It's based on the results for this particular input.  E.g. if the real current latest version of SDK A is 1.1.3,
+  //    will still keep results for 1.1.2.
+  //    Only non-snapshot and non-Gerrit versions will get included in this mode.
+  //    Snapshot versions are too hard to compare for some SDKs...
+  filter_runs: string;
 
   group_by_1(): string {
     return `params->'${this.group_by.replace('.', "'->>'")}'`;
@@ -99,8 +135,51 @@ export class Params {
 export class DashboardService {
   constructor(private readonly database: DatabaseService) {}
 
-  private filter_runs(runs: Run[], input: Input) {
+  // credit: https://stackoverflow.com/questions/6832596/how-can-i-compare-software-version-number-using-javascript-only-numbers
+  private version_compare(version1, version2){
+    const regExStrip0 = /(\.0+)+$/;
+    const segmentsA = version1.replace(regExStrip0, '').split('.');
+    const segmentsB = version2.replace(regExStrip0, '').split('.');
+
+    if(segmentsA > segmentsB) {
+      return 1
+    } else if (segmentsA< segmentsB) {
+      return -1
+    } else{
+      return 0
+    }
+  }
+  /**
+   * Takes runs from the database and filters them against the requested Input.
+   */
+  private filter_runs(runs: Run[], input: Input): Run[] {
+    const latestForEachLanguage = new Map<string, string>()
+
+    if (input.filter_runs == "Latest") {
+      runs.forEach(run => {
+        const sdk = run.impl["language"] as string
+        const version = run.impl["version"] as string
+        const isGerrit = version.startsWith("refs/")
+        const isSnapshot = version.includes("-")
+        const currentLatest = latestForEachLanguage.get(sdk)
+
+        if (!isGerrit && !isSnapshot) {
+          if (currentLatest === undefined) {
+            latestForEachLanguage.set(sdk, version)
+          }
+          else {
+            if (this.version_compare(version, currentLatest) > 0) {
+              latestForEachLanguage.set(sdk, version)
+            }
+          }
+        }
+      })
+
+      latestForEachLanguage.forEach((version, sdk) => console.info(`Latest for ${sdk} = ${version}`))
+    }
+
     return runs.filter(run => {
+      const sdk = run.impl["language"] as string
       const version = run.impl["version"] as string
       const isGerrit = version.startsWith("refs/")
       const isSnapshot = version.includes("-")
@@ -110,6 +189,11 @@ export class DashboardService {
       if (input.exclude_snapshots && isSnapshot) {
         return false
       }
+
+      if (input.filter_runs == "Latest") {
+        return latestForEachLanguage.get(sdk) == version
+      }
+
       return true
     })
   }
