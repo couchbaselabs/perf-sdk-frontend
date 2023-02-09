@@ -15,7 +15,6 @@ export default {
       scaleLabel: {
         display: true,
         labelString: 'Time',
-
       },
       ticks: {
         callback: function(value) {
@@ -29,6 +28,10 @@ export default {
 
     const y =
         {
+          scaleLabel: {
+            display: true,
+            labelString: this.input.display,
+          },
           title: {
             display: true
           },
@@ -64,6 +67,9 @@ export default {
     })
   },
   props: {
+    input: {
+      type: Object
+    },
     chartdata: {
       type: Object,
       default: null

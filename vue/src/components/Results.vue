@@ -15,9 +15,9 @@
         <div class="graph" v-for="graph in panel.graphs" :key="graph.uuid">
           <b-container class="mb-3">
 
-            <BarChart v-if="graph.type === 'bar'" class="chart" :chartdata="graph.data" :options="graph.options"/>
+            <BarChart v-if="graph.type === 'bar'" class="chart" :chartdata="graph.data" :options="graph.options" :input="input"/>
             <div v-if="graph.type === 'line'">
-              <LineChart class="chartLine" :chartdata="graph.data" :options="graph.options"/>
+              <LineChart class="chartLine" :chartdata="graph.data" :options="graph.options" :input="input"/>
               <div>
                 Time: All runs are shown starting from time '0' to allow them to be displayed together.  Mouseover points to see the wallclock times.
               </div>

@@ -14,9 +14,9 @@ export default {
       scales: {
         yAxes: [
           {
-            title: {
+            scaleLabel: {
               display: true,
-              text: 'Per second'
+              labelString: this.input.display,
             },
             ticks: {
               beginAtZero: true
@@ -37,6 +37,9 @@ export default {
     }
   },
   props: {
+    input: {
+      type: Object
+    },
     chartdata: {
       type: Object,
       default: null
