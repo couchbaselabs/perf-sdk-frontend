@@ -97,11 +97,11 @@ export default {
     }
   },
   mounted() {
-    if (this.input) {
-      this.fetchQuery(this.input)
-    }
-    else if (this.single) {
+    if (this.single) {
       this.fetchSingleQuery(this.single)
+    }
+    else if (this.input) {
+      this.fetchQuery(this.input)
     }
   },
   updated() {

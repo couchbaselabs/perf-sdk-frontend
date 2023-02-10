@@ -8,7 +8,7 @@
       </div>
     </div>
 
-    <Results :single="input"></Results>
+    <Results :single="input" :input="input"></Results>
   </b-container>
 </template>
 
