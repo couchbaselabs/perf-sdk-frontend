@@ -1,10 +1,16 @@
 <template>
   <b-container>
-    <h1>KV Get</h1>
+    <h1>KV Get (1 thread)</h1>
+    <Results :input="kvGetsSingleThreaded"></Results>
+    <h1>KV Replace (1 threads)</h1>
+    <Results :input="kvReplacesSingleThreaded"></Results>
+    <h1>KV Insert (1 threads)</h1>
+    <Results :input="kvInsertsSingleThreaded"></Results>
+    <h1>KV Get (20 threads)</h1>
     <Results :input="kvGets"></Results>
-    <h1>KV Replace</h1>
+    <h1>KV Replace (20 threads)</h1>
     <Results :input="kvReplaces"></Results>
-    <h1>KV Insert</h1>
+    <h1>KV Insert (20 threads)</h1>
     <Results :input="kvInserts"></Results>
   </b-container>
 </template>
@@ -36,7 +42,6 @@ export default {
         }],
         "group_by": "impl.language",
         "display": "duration_average_us",
-        "impl": {"language": "Scala"},
         "workload": {
           "operations": [{
             "op": "insert",
@@ -74,7 +79,6 @@ export default {
         }],
         "group_by": "impl.language",
         "display": "duration_average_us",
-        "impl": {"language": "Scala"},
         "workload": {
           "operations": [{
             "op": "replace",
@@ -112,7 +116,6 @@ export default {
         }],
         "group_by": "impl.language",
         "display": "duration_average_us",
-        "impl": {"language": "Scala"},
         "workload": {
           "operations": [{
             "op": "get",
@@ -129,7 +132,119 @@ export default {
         "include_metrics": false,
         "exclude_gerrit": true,
         "filter_runs": "Latest"
+      },
+
+      kvInsertsSingleThreaded: {
+        "inputs": [{
+          "viewing": "cluster",
+          "params": [{
+            "type": "unmanaged",
+            "memory": 28000,
+            "region": "us-east-2",
+            "storage": "couchstore",
+            "version": "7.1.1-3175-enterprise",
+            "cpuCount": 16,
+            "instance": "c5.4xlarge",
+            "replicas": 0,
+            "topology": "A",
+            "nodeCount": 1,
+            "compaction": "disabled"
+          }]
+        }],
+        "group_by": "impl.language",
+        "display": "duration_average_us",
+        "workload": {
+          "operations": [{
+            "op": "insert",
+            "bounds": {"forSeconds": "$forSeconds"},
+            "docLocation": {"method": "uuid"}
+          }]
+        },
+        "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1},
+        "graph_type": "Simplified",
+        "grouping_type": "Average",
+        "merging_type": "Average",
+        "trimming_seconds": 20,
+        "bucketise_seconds": 0,
+        "include_metrics": false,
+        "exclude_gerrit": true,
+        "filter_runs": "Latest"
+      },
+
+      kvReplacesSingleThreaded: {
+        "inputs": [{
+          "viewing": "cluster",
+          "params": [{
+            "type": "unmanaged",
+            "memory": 28000,
+            "region": "us-east-2",
+            "storage": "couchstore",
+            "version": "7.1.1-3175-enterprise",
+            "cpuCount": 16,
+            "instance": "c5.4xlarge",
+            "replicas": 0,
+            "topology": "A",
+            "nodeCount": 1,
+            "compaction": "disabled"
+          }]
+        }],
+        "group_by": "impl.language",
+        "display": "duration_average_us",
+        "workload": {
+          "operations": [{
+            "op": "replace",
+            "bounds": {"forSeconds": "$forSeconds"},
+            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
+          }]
+        },
+        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1},
+        "graph_type": "Simplified",
+        "grouping_type": "Average",
+        "merging_type": "Average",
+        "trimming_seconds": 20,
+        "bucketise_seconds": 0,
+        "include_metrics": false,
+        "exclude_gerrit": true,
+        "filter_runs": "Latest"
+      },
+
+      kvGetsSingleThreaded: {
+        "inputs": [{
+          "viewing": "cluster",
+          "params": [{
+            "type": "unmanaged",
+            "memory": 28000,
+            "region": "us-east-2",
+            "storage": "couchstore",
+            "version": "7.1.1-3175-enterprise",
+            "cpuCount": 16,
+            "instance": "c5.4xlarge",
+            "replicas": 0,
+            "topology": "A",
+            "nodeCount": 1,
+            "compaction": "disabled"
+          }]
+        }],
+        "group_by": "impl.language",
+        "display": "duration_average_us",
+        "workload": {
+          "operations": [{
+            "op": "get",
+            "bounds": {"forSeconds": "$forSeconds"},
+            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+          }]
+        },
+        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1},
+        "graph_type": "Simplified",
+        "grouping_type": "Average",
+        "merging_type": "Average",
+        "trimming_seconds": 20,
+        "bucketise_seconds": 0,
+        "include_metrics": false,
+        "exclude_gerrit": true,
+        "filter_runs": "Latest"
       }
+
     }
   }
 }
