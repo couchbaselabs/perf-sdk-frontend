@@ -2,9 +2,9 @@
   <b-container>
     <h1>KV Get (1 thread)</h1>
     <Results :input="kvGetsSingleThreaded"></Results>
-    <h1>KV Replace (1 threads)</h1>
+    <h1>KV Replace (1 thread)</h1>
     <Results :input="kvReplacesSingleThreaded"></Results>
-    <h1>KV Insert (1 threads)</h1>
+    <h1>KV Insert (1 thread)</h1>
     <Results :input="kvInsertsSingleThreaded"></Results>
     <h1>KV Get (20 threads)</h1>
     <Results :input="kvGets"></Results>
