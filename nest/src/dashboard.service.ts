@@ -154,16 +154,23 @@ export class DashboardService {
    */
   private filter_runs(runs: Run[], input: Input): Run[] {
     const latestForEachLanguage = new Map<string, string>()
+    const needLatest = input.filter_runs == "Latest"
+    const needLatestNonShapshot = input.filter_runs == "LatestNonSnaphot"
 
-    if (input.filter_runs == "Latest") {
+    if (needLatest || needLatestNonShapshot) {
       runs.forEach(run => {
         const sdk = run.impl["language"] as string
         const version = run.impl["version"] as string
         const isGerrit = version.startsWith("refs/")
         const isSnapshot = version.includes("-")
         const currentLatest = latestForEachLanguage.get(sdk)
+        let skip = isGerrit
 
-        if (!isGerrit && !isSnapshot) {
+        if (isSnapshot && needLatestNonShapshot) {
+          skip = true
+        }
+
+        if (!skip) {
           if (currentLatest === undefined) {
             latestForEachLanguage.set(sdk, version)
           }
@@ -190,7 +197,7 @@ export class DashboardService {
         return false
       }
 
-      if (input.filter_runs == "Latest") {
+      if (needLatestNonShapshot || needLatest) {
         return latestForEachLanguage.get(sdk) == version
       }
 
