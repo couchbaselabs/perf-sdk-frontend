@@ -188,7 +188,8 @@ export default {
         "bucketise_seconds": 0,
         "include_metrics": false,
         "exclude_gerrit": true,
-        "exclude_snapshots": this.exclude_snapshots || false
+        "exclude_snapshots": this.exclude_snapshots || false,
+        "filter_runs": "Latest"
       }
     }
   },

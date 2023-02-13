@@ -101,8 +101,8 @@ export class Input {
   //    will keep results for 1.1.2 for SDK A and 3.0.5 for SDK B.
   //    It's based on the results for this particular input.  E.g. if the real current latest version of SDK A is 1.1.3,
   //    will still keep results for 1.1.2.
-  //    Only non-snapshot and non-Gerrit versions will get included in this mode.
-  //    Snapshot versions are too hard to compare for some SDKs...
+  //    Gerrit versions are automatically excluded.
+  // * "LatestNonSnapshot" is same as "Latest" except it will ignore snapshot releases.
   filter_runs: string;
 
   group_by_1(): string {
