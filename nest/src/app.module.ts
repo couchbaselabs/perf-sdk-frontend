@@ -18,7 +18,6 @@ const pgp = require('pg-promise')(initOptions);
   providers: [
     {
       provide: DatabaseService,
-      // TODO get database config properly
       useFactory: async () => {
         const client = pgp({
           user: 'postgres',

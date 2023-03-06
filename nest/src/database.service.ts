@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { Client } from 'pg';
-import {Metrics, MetricsQuery} from "./dashboard.service";
+import {Injectable} from '@nestjs/common';
+import {Client} from 'pg';
+import {GroupingType, MergingAlgorithm, Metrics, MetricsQuery} from "./dashboard.service";
 
 const semver = require('semver');
 
@@ -39,22 +39,22 @@ export class Run {
  * For when the database output is multiple buckets for each run.
  */
 class RunBucketPair {
-  run_id: string;
+  runId: string;
   datetime: string;
-  time_offset_secs: number;
+  timeOffsetSecs: number;
   value: number;
   metrics?: string;
 
   constructor(
-    run_id: string,
+    runId: string,
     datetime: string,
-    time_offset_secs: number,
+    timeOffsetSecs: number,
     value: number,
     metrics?: string
   ) {
-    this.run_id = run_id;
+    this.runId = runId;
     this.datetime = datetime;
-    this.time_offset_secs = time_offset_secs;
+    this.timeOffsetSecs = timeOffsetSecs;
     this.value = value;
     this.metrics = metrics;
   }
@@ -79,7 +79,7 @@ class Impl {
   language: string;
   version: string;
   semver: any;
-  json: object;
+  json: Record<string, unknown>;
 
   constructor(language: string, version: string, semver: any, json: Record<string, unknown>) {
     this.language = language;
@@ -93,70 +93,10 @@ class Impl {
 export class DatabaseService {
   constructor(private client: Client) {}
 
-  async get_cluster_versions(): Promise<Array<string>> {
-    const res = await this.client.query(
-      "select params::jsonb->'cluster'->>'version' as v from runs group by (v);",
-    );
-    return res.map((v) => v.v);
-  }
-
-  async get_clusters(): Promise<Array<object>> {
-    const res = await this.client.query(
-      "select params::jsonb->'cluster' as v from runs group by (v);",
-    );
-    return res;
-  }
-
-  async get_implementations(): Promise<Array<Impl>> {
-    const res = await this.client.query(
-      "select params::jsonb->'impl' as v from runs group by (v);",
-    );
-    return res.map(
-      (row) =>
-        new Impl(
-          row.v.language,
-          row.v.version,
-          semver.parse(row.v.version),
-          row.v,
-        ),
-    );
-  }
-
-  async get_latest_implementations(): Promise<{ [name: string]: Impl }> {
-    const impls = await this.get_implementations();
-    const latest: { [name: string]: Impl } = {};
-
-    impls.forEach((impl) => {
-      if (!latest.hasOwnProperty(impl.language)) {
-        latest[impl.language] = impl;
-      } else if (
-        semver.compare(impl.version, latest[impl.language].version) == 1
-      ) {
-        latest[impl.language] = impl;
-      }
-    });
-
-    return latest;
-  }
-
-  async get_workloads(): Promise<Array<string>> {
-    const res = await this.client.query(
-      "select params::jsonb->'workload'->>'description' as v from runs group by (v);",
-    );
-    return res;
-  }
-
-  async get_vars(): Promise<Array<string>> {
-    const res = await this.client.query(
-      "select params->'vars' as v from runs group by (v);",
-    );
-    return res;
-  }
-
   /**
    * Used for both the Simplified and Full graphs.
    */
-  async get_runs(compared_json: Record<string, unknown>, group_by: string): Promise<Array<Run>> {
+  async getRuns(comparedJson: Record<string, unknown>, groupBy: string): Promise<Array<Run>> {
     const st = `SELECT
                         params as params,
                         params->'cluster' as cluster,
@@ -169,27 +109,25 @@ export class DatabaseService {
                       FROM runs
                       where (params) @>
                         ('${JSON.stringify(
-                          compared_json, null, 2
-                        )}'::jsonb #- '${group_by}')`;
+                          comparedJson, null, 2
+                        )}'::jsonb #- '${groupBy}')`;
     console.info(st);
-    const result = await this.client.query(st);
-    const rows = result;
-    const ret = rows.map((x) => {
+    const rows = await this.client.query(st);
+    return rows.map((x) => {
       return new Run(
-        x.params,
-        x.cluster,
-        x.impl,
-        x.workload,
-        x.vars,
-        x.other,
-        x.run_id,
-        x.datetime,
+          x.params,
+          x.cluster,
+          x.impl,
+          x.workload,
+          x.vars,
+          x.other,
+          x.run_id,
+          x.datetime,
       );
     });
-    return ret;
   }
 
-  async get_runs_by_id(runIds: Array<string>): Promise<Array<Run>> {
+  async getRunsById(runIds: Array<string>): Promise<Array<Run>> {
     const st = `SELECT
                         params as params,
                         params->'cluster' as cluster,
@@ -203,8 +141,7 @@ export class DatabaseService {
                 WHERE id in ('${runIds.join("','")}')`;
     console.info(st);
     const result = await this.client.query(st);
-    const rows = result;
-    const ret = rows.map((x) => {
+    return result.map((x) => {
       return new Run(
           x.params,
           x.cluster,
@@ -216,35 +153,34 @@ export class DatabaseService {
           x.datetime,
       );
     });
-    return ret;
   }
 
   /**
    * Returns all runs that match, together with the bucket data for each.
    * Used for building the Full line graph.
    */
-  async get_runs_with_buckets(
-    run_ids: string[],
+  async getRunsWithBuckets(
+    runIds: Array<string>,
     display: string,
-    trimming_seconds: number,
-    include_metrics: boolean,
-    merging: string,
-    bucketise_seconds?: number): Promise<Array<RunBucketPair>> {
+    trimmingSeconds: number,
+    includeMetrics: boolean,
+    merging: MergingAlgorithm,
+    bucketiseSeconds?: number): Promise<Array<RunBucketPair>> {
     let st;
-    if (bucketise_seconds != null && bucketise_seconds > 1) {
+    if (bucketiseSeconds != null && bucketiseSeconds > 1) {
       // Not sure how to group the metrics, would require some complex JSON processing
-      include_metrics = false
+      includeMetrics = false
       const mergingOp = this.mapMerging(merging)
       st = `
         SELECT buckets.run_id,
-               time_bucket('${bucketise_seconds} seconds', time) as datetime,
+               time_bucket('${bucketiseSeconds} seconds', time) as datetime,
                min(buckets.time_offset_secs)                     as time_offset_secs,
                ${mergingOp}(${display}) as value 
-               ${include_metrics ? `, metrics.metrics` : ""}
+               ${includeMetrics ? `, metrics.metrics` : ""}
         FROM buckets
-          ${include_metrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
-        WHERE buckets.run_id in ('${run_ids.join("','")}')
-          AND buckets.time_offset_secs >= ${trimming_seconds}
+          ${includeMetrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
+        WHERE buckets.run_id in ('${runIds.join("','")}')
+          AND buckets.time_offset_secs >= ${trimmingSeconds}
         GROUP BY run_id, datetime
         ORDER BY datetime ASC;`
     }
@@ -254,11 +190,11 @@ export class DatabaseService {
                time as datetime,
                 buckets.time_offset_secs,
                ${display} as value 
-               ${include_metrics ? `, metrics.metrics` : ""}
+               ${includeMetrics ? `, metrics.metrics` : ""}
         FROM buckets
-          ${include_metrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
-        WHERE buckets.run_id in ('${run_ids.join("','")}')
-          AND buckets.time_offset_secs >= ${trimming_seconds}
+          ${includeMetrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
+        WHERE buckets.run_id in ('${runIds.join("','")}')
+          AND buckets.time_offset_secs >= ${trimmingSeconds}
         ORDER BY datetime ASC;`
     }
 
@@ -275,21 +211,20 @@ export class DatabaseService {
     });
   }
 
-  async get_runs_raw(): Promise<Array<Record<string, unknown>>> {
-    const st = `SELECT params::json
-                    FROM runs`;
+  async getRunsRaw(): Promise<Array<Record<string, unknown>>> {
+    const st = `SELECT params::json FROM runs`;
     return await this.client.query(st);
   }
 
-  private mapMerging(merging: string): string {
+  private mapMerging(merging: MergingAlgorithm): string {
     let mergingOp;
-    if (merging == 'Average') {
+    if (merging == MergingAlgorithm.AVERAGE) {
       mergingOp = 'avg';
-    } else if (merging == 'Maximum') {
+    } else if (merging == MergingAlgorithm.MAXIMUM) {
       mergingOp = 'max';
-    } else if (merging == 'Minimum') {
+    } else if (merging == MergingAlgorithm.MINIMUM) {
       mergingOp = 'min';
-    } else if (merging == 'Sum') {
+    } else if (merging == MergingAlgorithm.SUM) {
       mergingOp = 'sum';
     } else {
       throw new Error('Unknown merging type ' + merging);
@@ -300,17 +235,17 @@ export class DatabaseService {
   /**
    * The Simplified display.
    */
-  async get_groupings(
+  async getGroupings(
     groupBy1: string,
-    run_ids: Array<string>,
+    runIds: Array<string>,
     display: string,
-    grouping_type: string,
-    merging: string,
+    groupingType: GroupingType,
+    merging: MergingAlgorithm,
     trimming_seconds: number): Promise<Array<Result>> {
     const mergingOp = this.mapMerging(merging)
 
     let st;
-    if (grouping_type == 'Side-by-side') {
+    if (groupingType == GroupingType.SIDE_BY_SIDE) {
       st = `SELECT runs.id,
                    sub.value,
                    ${groupBy1} as grouping
@@ -318,31 +253,30 @@ export class DatabaseService {
                          ${mergingOp}(buckets.${display}) as value
                   FROM buckets join runs
                   on buckets.run_id = runs.id
-                  WHERE run_id in ('${run_ids.join("','")}')
+                  WHERE run_id in ('${runIds.join("','")}')
                     AND buckets.time_offset_secs >= ${trimming_seconds}
                   GROUP BY run_id) as sub
                    JOIN runs ON sub.run_id = runs.id
             ORDER BY grouping, datetime asc`;
-    } else if (grouping_type == 'Average') {
+    } else if (groupingType == GroupingType.MERGED) {
       st = `SELECT avg(sub.value) as value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
                         ${mergingOp}(buckets.${display}) as value
                   FROM buckets join runs
                   on buckets.run_id = runs.id
-                  WHERE run_id in ('${run_ids.join("','")}')
+                  WHERE run_id in ('${runIds.join("','")}')
                     AND buckets.time_offset_secs >= ${trimming_seconds}
                   GROUP BY run_id) as sub
                    JOIN runs ON sub.run_id = runs.id
             GROUP BY grouping
             ORDER BY grouping`;
     } else {
-      throw new Error('Unknown grouping_type ' + grouping_type);
+      throw new Error('Unknown grouping_type ' + groupingType);
     }
     console.info(st);
     const result = await this.client.query(st);
-    const rows = result;
-    return rows.map((x) => new Result(x.grouping, x.value));
+    return result.map((x) => new Result(x.grouping, x.value));
   }
 
   /**
@@ -352,31 +286,31 @@ export class DatabaseService {
    * Would be easier if it was an object and might make that change in future.
    * That could also possibly allow removing this special case get_groupings_for_variables.
    */
-  async get_groupings_for_variables(
+  async getGroupingsForVariables(
       groupBy1: string,
-      group_by: string,
-      run_ids: Array<string>,
+      groupBy: string,
+      runIds: Array<string>,
       display: string,
-      grouping_type: string,
-      merging: string,
-      trimming_seconds: number): Promise<Array<Result>> {
+      groupingType: GroupingType,
+      merging: MergingAlgorithm,
+      trimmingSeconds: number): Promise<Array<Result>> {
     const mergingOp = this.mapMerging(merging)
 
     let st;
-    if (grouping_type == 'Side-by-side') {
+    if (groupingType == GroupingType.SIDE_BY_SIDE) {
       // Can get it working later if needed
       throw "Unsupported currently"
-    } else if (grouping_type == 'Average') {
+    } else if (groupingType == GroupingType.MERGED) {
       st = `WITH 
 
         /* We've already found the relevant runs */
-        relevant_runs AS (SELECT * FROM runs WHERE id in ('${run_ids.join("','")}')),
+        relevant_runs AS (SELECT * FROM runs WHERE id in ('${runIds.join("','")}')),
         
         /* Expand the variables array */
         expanded_variables AS (SELECT id, json_array_elements(params::json->'workload'->'settings'->'variables') AS var FROM relevant_runs),
         
         /* Find the correct variable from the variables array */
-        correct_variable_selected AS (SELECT id, var from expanded_variables WHERE var->>'name'='${group_by}'),
+        correct_variable_selected AS (SELECT id, var from expanded_variables WHERE var->>'name'='${groupBy}'),
         
         /* Extract the value */
         extracted_value AS (SELECT id, var->>'value' as value FROM correct_variable_selected),
@@ -389,24 +323,23 @@ export class DatabaseService {
                                     ELSE extracted_value.value::integer
                                 END) AS grouping
                           FROM buckets JOIN extracted_value ON buckets.run_id = extracted_value.id
-                          WHERE buckets.time_offset_secs >= ${trimming_seconds}
+                          WHERE buckets.time_offset_secs >= ${trimmingSeconds}
                           GROUP BY value, grouping)
 
         /* Cannot group by ::int as it breaks on true/false tests */
         SELECT * from joined_with_buckets ORDER BY grouping::int;
         `
     } else {
-      throw new Error('Unknown grouping_type ' + grouping_type);
+      throw new Error('Unknown grouping_type ' + groupingType);
     }
     console.info(st);
     const result = await this.client.query(st);
-    const rows = result;
-    return rows.map((x) => new Result(x.grouping, x.value));
+    return result.map((x) => new Result(x.grouping, x.value));
   }
 
   // cast (metrics::json->>'threadCount' as integer) > 100
   // 'Excessive thread count, max=' || max (cast (metrics::json->>'threadCount' as integer))
-  async get_metrics_alerts(input: MetricsQuery, metrics: Metrics, table: string) {
+  async getMetricsAlerts(input: MetricsQuery, metrics: Metrics, table: string) {
     // datetime >= '2022-07-30 00:00:00.000000' below is because there was a driver bug fixed around there that was not
     // closing connections.
     const st = `select run_id,
@@ -429,9 +362,8 @@ export class DatabaseService {
 
     console.info(st);
     const result = await this.client.query(st);
-    const rows = result;
-    console.info(`Got ${rows.length} alerts`)
-    return rows.map((x) => new MetricsResult(x.run_id, x.datetime, x.message, x.version, input.language));
+    console.info(`Got ${result.length} alerts`)
+    return result.map((x) => new MetricsResult(x.run_id, x.datetime, x.message, x.version, input.language));
   }
 }
 
@@ -441,7 +373,6 @@ class MetricsResult {
   message: string;
   version: string;
   language: string;
-
 
   constructor(runId: string, datetime: string, message: string, version: string, language: string) {
     this.runId = runId;
