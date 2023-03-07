@@ -83,19 +83,7 @@ export class Input {
   // What to display on the y-axis.
   display: string; // "latency_average_us"
 
-  // These next fields are used for apples-to-apples comparisons.  We're very careful to only compare results that make
-  // sense to.  E.g. if we ran Java 3.3.4 against cluster A but Java 3.3.5 against cluster B, we don't want those to
-  // be appearing on the same graph.
-  // This is handled by taking these fields, which are JSON, and comparing them directly against the JSON blobs in the
-  // database.  The database blobs must contain these input blobs (which also usually come originally from those database
-  // blobs).
-  // This approach allows us and the UI to be (somewhat) agnostic to what's in the database.  E.g. there's not much
-  // code that 'knows' we're dealing with a cluster, or variables, or whatever.  It's handled fairly generically based
-  // on the JSON.
-  cluster?: Record<string, unknown>;
-  impl?: Record<string, unknown>;
-  workload?: Record<string, unknown>;
-  vars?: Record<string, unknown>;
+  databaseCompare: DatabaseCompare;
 
   graphType: GraphType;
   groupingType: GroupingType;
@@ -131,20 +119,21 @@ export class Input {
   }
 }
 
-export class Params {
-  impl: any;
-  cluster: any;
-  workload: any;
-  vars: any;
-  other: any;
-
-  constructor(impl: any, cluster: any, workload: any, vars: any, other: any) {
-    this.impl = impl;
-    this.cluster = cluster;
-    this.workload = workload;
-    this.vars = vars;
-    this.other = other;
-  }
+// These fields are used for apples-to-apples comparisons.  We're very careful to only compare results that make
+// sense to.  E.g. if we ran Java 3.3.4 against cluster A but Java 3.3.5 against cluster B, we don't want those to
+// be appearing on the same graph.
+//
+// This is handled by taking these fields, which are JSON, and comparing them directly against the JSON blobs in the
+// database.  The database blobs must be a superset of these input blobs.
+//
+// This approach allows us and the UI to be (somewhat) agnostic to what's in the database.  E.g. there's not much
+// code that 'knows' we're dealing with a cluster, or variables, or whatever.  It's handled fairly generically based
+// on the JSON.
+export class DatabaseCompare {
+  cluster?: Record<string, unknown>;
+  impl?: Record<string, unknown>;
+  workload?: Record<string, unknown>;
+  vars?: Record<string, unknown>;
 }
 
 @Injectable()
@@ -222,15 +211,12 @@ export class DashboardService {
   /**
    * Builds the Simplified bar graph
    */
-  private async addGraphBar(
-    comparedJson: Record<string, unknown>,
-    input: Input,
-  ): Promise<any> {
+  private async addGraphBar(input: Input): Promise<any> {
     const isVariablesQuery = input.groupBy.startsWith("variables.")
     const labels = [];
     const values = [];
     const runs = this.filterRuns(await this.database.getRuns(
-      comparedJson,
+      input.databaseCompare,
       input.groupBy2(),
     ), input);
     const runIds = runs.map((v) => v.id);
@@ -266,7 +252,7 @@ export class DashboardService {
     return {
       type: 'bar',
       runs: runs,
-      chosen: comparedJson,
+      chosen: JSON.stringify(input.databaseCompare),
       data: {
         labels: labels,
         datasets: [
@@ -283,12 +269,9 @@ export class DashboardService {
   /**
    * Builds the Full line graph for multiple runs.
    */
-  private async addGraphLine(
-      comparedJson: Record<string, unknown>,
-      input: Input,
-  ): Promise<any> {
+  private async addGraphLine(input: Input): Promise<any> {
     const runs = this.filterRuns(await this.database.getRuns(
-        comparedJson,
+        input.databaseCompare,
         input.groupBy2(),
     ), input);
 
@@ -525,17 +508,10 @@ export class DashboardService {
   public async genGraph(
     input: Input,
   ): Promise<any> {
-    const comparedJson = {
-      cluster: input.cluster,
-      impl: input.impl,
-      workload: input.workload,
-      vars: input.vars,
-    };
-
     if (input.graphType == GraphType.SIMPLIFIED) {
-      return await this.addGraphBar(comparedJson, input);
+      return await this.addGraphBar(input);
     } else {
-      return await this.addGraphLine(comparedJson, input);
+      return await this.addGraphLine(input);
     }
   }
 

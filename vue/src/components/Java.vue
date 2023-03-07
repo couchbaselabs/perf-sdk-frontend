@@ -59,22 +59,24 @@ export default {
       kvGetsHorizontalScalingAsync: {
         "groupBy": "variables.horizontalScaling",
         "display": "duration_average_us",
-        "impl": {"language": "Java"},
-        "cluster": defaultCluster,
-        "workload": {
-          "operations": [{
-            "op": "get",
-            "bounds": {"forSeconds": "$forSeconds"},
-            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-          }]
-        },
-        "vars": {
-          "poolSize": 10000,
-          "driverVer": 6,
-          "forSeconds": 300,
-          "performerVer": 1,
-          "experimentName": "horizontalScaling",
-          "api": "ASYNC",
+        "databaseCompare": {
+          "impl": {"language": "Java"},
+          "cluster": defaultCluster,
+          "workload": {
+            "operations": [{
+              "op": "get",
+              "bounds": {"forSeconds": "$forSeconds"},
+              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+            }]
+          },
+          "vars": {
+            "poolSize": 10000,
+            "driverVer": 6,
+            "forSeconds": 300,
+            "performerVer": 1,
+            "experimentName": "horizontalScaling",
+            "api": "ASYNC",
+          }
         },
         "graphType": "Simplified",
         "groupingType": "Average",
@@ -89,22 +91,24 @@ export default {
       kvGetsBlocking: {
         "groupBy": "impl.version",
         "display": "duration_average_us",
-        "impl": {"language": "Java"},
-        "cluster": defaultCluster,
-        "workload": {
-          "operations": [{
-            "op": "get",
-            "bounds": {"forSeconds": "$forSeconds"},
-            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-          }]
-        },
-        "vars": {
-          "poolSize": 10000,
-          "driverVer": 6,
-          "forSeconds": 300,
-          "performerVer": 1,
-          "horizontalScaling": 20,
-          api: "DEFAULT"
+        "databaseCompare": {
+          "impl": {"language": "Java"},
+          "cluster": defaultCluster,
+          "workload": {
+            "operations": [{
+              "op": "get",
+              "bounds": {"forSeconds": "$forSeconds"},
+              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+            }]
+          },
+          "vars": {
+            "poolSize": 10000,
+            "driverVer": 6,
+            "forSeconds": 300,
+            "performerVer": 1,
+            "horizontalScaling": 20,
+            api: "DEFAULT"
+          }
         },
         "graphType": "Simplified",
         "groupingType": "Average",
@@ -118,22 +122,24 @@ export default {
       kvGetsReactive: {
         "groupBy": "impl.version",
         "display": "duration_average_us",
-        "impl": {"language": "Java"},
-        "cluster": defaultCluster,
-        "workload": {
-          "operations": [{
-            "op": "get",
-            "bounds": {"forSeconds": "$forSeconds"},
-            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-          }]
-        },
-        "vars": {
-          "poolSize": 10000,
-          "driverVer": 6,
-          "forSeconds": 300,
-          "performerVer": 1,
-          "horizontalScaling": 20,
-          api: "ASYNC"
+        "databaseCompare": {
+          "impl": {"language": "Java"},
+          "cluster": defaultCluster,
+          "workload": {
+            "operations": [{
+              "op": "get",
+              "bounds": {"forSeconds": "$forSeconds"},
+              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+            }]
+          },
+          "vars": {
+            "poolSize": 10000,
+            "driverVer": 6,
+            "forSeconds": 300,
+            "performerVer": 1,
+            "horizontalScaling": 20,
+            api: "ASYNC"
+          }
         },
         "graphType": "Simplified",
         "groupingType": "Average",
@@ -146,19 +152,21 @@ export default {
       transactions: {
         "groupBy": "impl.version",
         "display": "duration_average_us",
-        "impl": {"language": "Java"},
-        "cluster": defaultCluster,
-        "workload": {
-          "operations": [{
-            "transaction": {
-              "ops": [{
-                "op": "replace",
-                "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-              }, {"op": "insert", "docLocation": {"method": "uuid"}}], "bounds": {"forSeconds": "$forSeconds"}
-            }
-          }]
+        "databaseCompare": {
+          "impl": {"language": "Java"},
+          "cluster": defaultCluster,
+          "workload": {
+            "operations": [{
+              "transaction": {
+                "ops": [{
+                  "op": "replace",
+                  "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+                }, {"op": "insert", "docLocation": {"method": "uuid"}}], "bounds": {"forSeconds": "$forSeconds"}
+              }
+            }]
+          },
+          "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
-        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         "graphType": "Simplified",
         "groupingType": "Average",
         "mergingType": "Average",
@@ -171,38 +179,40 @@ export default {
       stellarNebulaGets: {
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
         "display": "duration_average_us",
-        "cluster": protostellarCluster,
-        "impl": {"language": "Java", "version": "refs/changes/35/184435/1"},
-        "workload": {
-          "settings": {
-            "grpc": {"batch": 1000, "compression": true, "flowControl": true},
-            "variables": [{
-              "name": "com.couchbase.protostellar.executorType",
-              "type": "tunable",
-              "value": "ForkJoinPool"
-            }, {
-              "name": "com.couchbase.protostellar.overrideHostname",
-              "type": "tunable",
-              "value": "172.17.0.1"
-            }, {"name": "poolSize", "value": 10000}, {
-              "name": "horizontalScaling",
-              "value": 20
-            }, {"name": "forSeconds", "value": 300}]
+        "databaseCompare": {
+          "cluster": protostellarCluster,
+          "impl": {"language": "Java", "version": "refs/changes/35/184435/1"},
+          "workload": {
+            "settings": {
+              "grpc": {"batch": 1000, "compression": true, "flowControl": true},
+              "variables": [{
+                "name": "com.couchbase.protostellar.executorType",
+                "type": "tunable",
+                "value": "ForkJoinPool"
+              }, {
+                "name": "com.couchbase.protostellar.overrideHostname",
+                "type": "tunable",
+                "value": "172.17.0.1"
+              }, {"name": "poolSize", "value": 10000}, {
+                "name": "horizontalScaling",
+                "value": 20
+              }, {"name": "forSeconds", "value": 300}]
+            },
+            "operations": [{
+              "op": "get",
+              "bounds": {"forSeconds": "$forSeconds"},
+              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+            }]
           },
-          "operations": [{
-            "op": "get",
-            "bounds": {"forSeconds": "$forSeconds"},
-            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-          }]
-        },
-        "vars": {
-          "poolSize": 10000,
-          "driverVer": 6,
-          "forSeconds": 300,
-          "performerVer": 1,
-          "horizontalScaling": 20,
-          "com.couchbase.protostellar.executorType": "ForkJoinPool",
-          "com.couchbase.protostellar.overrideHostname": "172.17.0.1",
+          "vars": {
+            "poolSize": 10000,
+            "driverVer": 6,
+            "forSeconds": 300,
+            "performerVer": 1,
+            "horizontalScaling": 20,
+            "com.couchbase.protostellar.executorType": "ForkJoinPool",
+            "com.couchbase.protostellar.overrideHostname": "172.17.0.1",
+          }
         },
         "graphType": "Simplified",
         "groupingType": "Average",
@@ -216,19 +226,21 @@ export default {
       forkJoinPoolExecutorMaxThreadCount: {
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
-        "cluster": protostellarCluster,
-        "workload": {
-          "settings": {
-            "variables": [{"name": "experimentName", "value": "ThreadPool"},
-              {"name": "com.couchbase.protostellar.executorType", "value": "ForkJoinPool"}]
+        "databaseCompare": {
+          "cluster": protostellarCluster,
+          "workload": {
+            "settings": {
+              "variables": [{"name": "experimentName", "value": "ThreadPool"},
+                {"name": "com.couchbase.protostellar.executorType", "value": "ForkJoinPool"}]
+            },
           },
-        },
-        "vars": {
-          "poolSize": 10000,
-          "driverVer": 6,
-          "forSeconds": 300,
-          "performerVer": 1,
-          "horizontalScaling": 20
+          "vars": {
+            "poolSize": 10000,
+            "driverVer": 6,
+            "forSeconds": 300,
+            "performerVer": 1,
+            "horizontalScaling": 20
+          }
         },
         "graphType": "Simplified",
         "groupingType": "Average",
@@ -242,19 +254,21 @@ export default {
       threadPoolExecutorMaxThreadCount: {
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
-        "cluster": protostellarCluster,
-        "workload": {
-          "settings": {
-            "variables": [{"name": "experimentName", "value": "ThreadPool"},
-              {"name": "com.couchbase.protostellar.executorType", "value": "ThreadPool"}]
+        "databaseCompare": {
+          "cluster": protostellarCluster,
+          "workload": {
+            "settings": {
+              "variables": [{"name": "experimentName", "value": "ThreadPool"},
+                {"name": "com.couchbase.protostellar.executorType", "value": "ThreadPool"}]
+            },
           },
-        },
-        "vars": {
-          "poolSize": 10000,
-          "driverVer": 6,
-          "forSeconds": 300,
-          "performerVer": 1,
-          "horizontalScaling": 20
+          "vars": {
+            "poolSize": 10000,
+            "driverVer": 6,
+            "forSeconds": 300,
+            "performerVer": 1,
+            "horizontalScaling": 20
+          }
         },
         "graphType": "Simplified",
         "groupingType": "Average",
@@ -268,16 +282,18 @@ export default {
       coreKvOps: {
         "groupBy": "impl.language",
         "display": "duration_average_us",
-        "impl": {"language": "Java", "version": "refs/changes/07/184307/8"},
-        "cluster": protostellarCluster,
-        "workload": {
-          "operations": [{
-            "op": "get",
-            "bounds": {"forSeconds": "$forSeconds"},
-            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-          }]
+        "databaseCompare": {
+          "impl": {"language": "Java", "version": "refs/changes/07/184307/8"},
+          "cluster": defaultCluster,
+          "workload": {
+            "operations": [{
+              "op": "get",
+              "bounds": {"forSeconds": "$forSeconds"},
+              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+            }]
+          },
+          "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         },
-        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         "graphType": "Simplified",
         "groupingType": "Average",
         "mergingType": "Average",
@@ -290,11 +306,13 @@ export default {
       reuseStubs: {
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.reuseStubs",
-        "cluster": protostellarCluster,
-        "workload": {
-          "settings": {
-            "variables": [{"name": "experimentName", "value": "reuseStubs"}]
-          },
+        "databaseCompare": {
+          "cluster": protostellarCluster,
+          "workload": {
+            "settings": {
+              "variables": [{"name": "experimentName", "value": "reuseStubs"}]
+            },
+          }
         },
         "graphType": "Simplified",
         "groupingType": "Average",
@@ -308,11 +326,13 @@ export default {
       numEndpoints: {
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.numEndpoints",
-        "cluster": protostellarCluster,
-        "workload": {
-          "settings": {
-            "variables": [{"name": "experimentName", "value": "numEndpoints"}]
-          },
+        "databaseCompare": {
+          "cluster": protostellarCluster,
+          "workload": {
+            "settings": {
+              "variables": [{"name": "experimentName", "value": "numEndpoints"}]
+            },
+          }
         },
         "graphType": "Simplified",
         "groupingType": "Average",
@@ -326,12 +346,14 @@ export default {
       protostellarLoadBalancingSingle: {
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
-        "cluster": protostellarCluster,
-        "workload": {
-          "settings": {
-            "variables": [{"name": "experimentName", "value": "protostellarLoadBalancing"},
-              {"name": "com.couchbase.protostellar.loadBalancingSingle", "value": "true"}]
-          },
+        "databaseCompare": {
+          "cluster": protostellarCluster,
+          "workload": {
+            "settings": {
+              "variables": [{"name": "experimentName", "value": "protostellarLoadBalancing"},
+                {"name": "com.couchbase.protostellar.loadBalancingSingle", "value": "true"}]
+            },
+          }
         },
         "graphType": "Simplified",
         "groupingType": "Average",
@@ -345,12 +367,14 @@ export default {
       protostellarLoadBalancingNotSingle: {
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
-        "cluster": protostellarCluster,
-        "workload": {
-          "settings": {
-            "variables": [{"name": "experimentName", "value": "protostellarLoadBalancing"},
-              {"name": "com.couchbase.protostellar.loadBalancingSingle", "value": "false"}]
-          },
+        "databaseCompare": {
+          "cluster": protostellarCluster,
+          "workload": {
+            "settings": {
+              "variables": [{"name": "experimentName", "value": "protostellarLoadBalancing"},
+                {"name": "com.couchbase.protostellar.loadBalancingSingle", "value": "false"}]
+            },
+          }
         },
         "graphType": "Simplified",
         "groupingType": "Average",

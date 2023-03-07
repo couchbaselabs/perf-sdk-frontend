@@ -210,15 +210,14 @@ export default {
       console.info("handle submit");
 
       this.input = {
-        inputs: [{
-          viewing: 'cluster',
-          params: [JSON.parse(this.selectedCluster)]
-        }],
         groupBy: this.selectedGroupBy,
         display: this.selectedDisplay,
-        impl: JSON.parse(this.selectedImpl),
-        workload: JSON.parse(this.selectedWorkload),
-        vars: JSON.parse(this.selectedVars),
+        compare: {
+          cluster: JSON.parse(this.selectedCluster),
+          impl: JSON.parse(this.selectedImpl),
+          workload: JSON.parse(this.selectedWorkload),
+          vars: JSON.parse(this.selectedVars)
+        },
         graphType: this.selectedGraphType,
         groupingType: this.selectedGroupingType,
         mergingType: this.selectedMergingType,

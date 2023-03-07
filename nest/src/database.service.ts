@@ -1,6 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import {Client} from 'pg';
-import {GroupingType, MergingAlgorithm, Metrics, MetricsQuery} from "./dashboard.service";
+import {DatabaseCompare, GroupingType, MergingAlgorithm, Metrics, MetricsQuery} from "./dashboard.service";
 
 const semver = require('semver');
 
@@ -96,7 +96,7 @@ export class DatabaseService {
   /**
    * Used for both the Simplified and Full graphs.
    */
-  async getRuns(comparedJson: Record<string, unknown>, groupBy: string): Promise<Array<Run>> {
+  async getRuns(compare: DatabaseCompare, groupBy: string): Promise<Array<Run>> {
     const st = `SELECT
                         params as params,
                         params->'cluster' as cluster,
@@ -109,7 +109,7 @@ export class DatabaseService {
                       FROM runs
                       where (params) @>
                         ('${JSON.stringify(
-                          comparedJson, null, 2
+                          compare, null, 2
                         )}'::jsonb #- '${groupBy}')`;
     console.info(st);
     const rows = await this.client.query(st);

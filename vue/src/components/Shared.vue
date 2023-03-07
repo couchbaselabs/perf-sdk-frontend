@@ -29,16 +29,18 @@ export default {
       return {
         "groupBy": "impl.version",
         "display": "duration_average_us",
-        "impl": {"language": this.language},
-        "cluster": defaultCluster,
-        "workload": {
-          "operations": [{
-            "op": "insert",
-            "bounds": {"forSeconds": "$forSeconds"},
-            "docLocation": {"method": "uuid"}
-          }]
+        "databaseCompare": {
+          "impl": {"language": this.language},
+          "cluster": defaultCluster,
+          "workload": {
+            "operations": [{
+              "op": "insert",
+              "bounds": {"forSeconds": "$forSeconds"},
+              "docLocation": {"method": "uuid"}
+            }]
+          },
+          "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
-        "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         "graphType": "Simplified",
         "groupingType": "Average",
         "mergingType": "Average",
@@ -54,16 +56,18 @@ export default {
       return {
         "groupBy": "impl.version",
         "display": "duration_average_us",
-        "impl": {"language": this.language},
-        "cluster": defaultCluster,
-        "workload": {
-          "operations": [{
-            "op": "replace",
-            "bounds": {"forSeconds": "$forSeconds"},
-            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
-          }]
+        "databaseCompare": {
+          "impl": {"language": this.language},
+          "cluster": defaultCluster,
+          "workload": {
+            "operations": [{
+              "op": "replace",
+              "bounds": {"forSeconds": "$forSeconds"},
+              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
+            }]
+          },
+          "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
-        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         "graphType": "Simplified",
         "groupingType": "Average",
         "mergingType": "Average",
@@ -79,16 +83,18 @@ export default {
       return {
         "groupBy": "impl.version",
         "display": "duration_average_us",
-        "cluster": defaultCluster,
-        "impl": {"language": this.language},
-        "workload": {
-          "operations": [{
-            "op": "get",
-            "bounds": {"forSeconds": "$forSeconds"},
-            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-          }]
+        "databaseCompare": {
+          "cluster": defaultCluster,
+          "impl": {"language": this.language},
+          "workload": {
+            "operations": [{
+              "op": "get",
+              "bounds": {"forSeconds": "$forSeconds"},
+              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+            }]
+          },
+          "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
-        "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         "graphType": "Simplified",
         "groupingType": "Average",
         "mergingType": "Average",
@@ -104,22 +110,24 @@ export default {
       return {
         "groupBy": "variables.horizontalScaling",
         "display": "duration_average_us",
-        "cluster": defaultCluster,
-        "impl": {"language": this.language},
-        "workload": {
-          "operations": [{
-            "op": "get",
-            "bounds": {"forSeconds": "$forSeconds"},
-            "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-          }]
-        },
-        "vars": {
-          "poolSize": 10000,
-          "driverVer": 6,
-          "forSeconds": 300,
-          "performerVer": 1,
-          "experimentName": "horizontalScaling",
-          "api":"DEFAULT",
+        "databaseCompare": {
+          "cluster": defaultCluster,
+          "impl": {"language": this.language},
+          "workload": {
+            "operations": [{
+              "op": "get",
+              "bounds": {"forSeconds": "$forSeconds"},
+              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+            }]
+          },
+          "vars": {
+            "poolSize": 10000,
+            "driverVer": 6,
+            "forSeconds": 300,
+            "performerVer": 1,
+            "experimentName": "horizontalScaling",
+            "api": "DEFAULT",
+          }
         },
         "graphType": "Simplified",
         "groupingType": "Average",
