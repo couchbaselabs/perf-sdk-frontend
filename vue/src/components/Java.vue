@@ -55,6 +55,7 @@ import Shared, {
   defaultVars,
   defaultVarsWithoutHorizontalScaling,
   protostellarCluster,
+  defaultWorkloadGets,
   withoutKey
 } from "@/components/Shared";
 import Results from "@/components/Results";
@@ -68,14 +69,12 @@ export default {
         "groupBy": "variables.horizontalScaling",
         "databaseCompare": {
           "impl": {"language": "Java"},
-          "workload": {
-            "operations": [{
-              "op": "get",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-            }]
-          },
-          "vars": {"poolSize": 10000, ... defaultVarsWithoutHorizontalScaling, "experimentName": "horizontalScaling", "api": "ASYNC"}
+          "workload": defaultWorkloadGets,
+          "vars": {
+            "poolSize": 10000, ...defaultVarsWithoutHorizontalScaling,
+            "experimentName": "horizontalScaling",
+            "api": "ASYNC"
+          }
         },
         "excludeSnapshots": this.excludeSnapshots || false
       },
@@ -84,14 +83,8 @@ export default {
         ...defaultQuery,
         "databaseCompare": {
           "impl": {"language": "Java"},
-          "workload": {
-            "operations": [{
-              "op": "get",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-            }]
-          },
-          "vars": {"poolSize": 10000, ... defaultVars, api: "DEFAULT"}
+          "workload": defaultWorkloadGets,
+          "vars": {"poolSize": 10000, ...defaultVars, api: "DEFAULT"}
         },
         "excludeSnapshots": this.excludeSnapshots || false,
       },
@@ -99,14 +92,8 @@ export default {
         ...defaultQuery,
         "databaseCompare": {
           "impl": {"language": "Java"},
-          "workload": {
-            "operations": [{
-              "op": "get",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-            }]
-          },
-          "vars": {"poolSize": 10000, ... defaultVars, api: "ASYNC"}
+          "workload": defaultWorkloadGets,
+          "vars": {"poolSize": 10000, ...defaultVars, api: "ASYNC"}
         },
         "excludeSnapshots": this.excludeSnapshots || false,
       },
@@ -124,7 +111,7 @@ export default {
               }
             }]
           },
-          "vars": {... defaultVars}
+          "vars": {...defaultVars}
         },
         "excludeSnapshots": this.excludeSnapshots || false
       },
@@ -135,6 +122,7 @@ export default {
           "cluster": protostellarCluster,
           "impl": {"language": "Java", "version": "refs/changes/35/184435/1"},
           "workload": {
+            ... defaultWorkloadGets,
             "settings": {
               "grpc": {"batch": 1000, "compression": true, "flowControl": true},
               "variables": [{
@@ -149,15 +137,11 @@ export default {
                 "name": "horizontalScaling",
                 "value": 20
               }, {"name": "forSeconds", "value": 300}]
-            },
-            "operations": [{
-              "op": "get",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-            }]
+            }
           },
-          "vars": {"poolSize": 10000,
-            ... defaultVars,
+          "vars": {
+            "poolSize": 10000,
+            ...defaultVars,
             "com.couchbase.protostellar.executorType": "ForkJoinPool",
             "com.couchbase.protostellar.overrideHostname": "172.17.0.1",
           }
@@ -175,7 +159,7 @@ export default {
                 {"name": "com.couchbase.protostellar.executorType", "value": "ForkJoinPool"}]
             },
           },
-          "vars": {"poolSize": 10000, ... withoutKey("api", defaultVars)}
+          "vars": {"poolSize": 10000, ...withoutKey("api", defaultVars)}
         },
         "excludeGerrit": false,
       },
@@ -190,7 +174,7 @@ export default {
                 {"name": "com.couchbase.protostellar.executorType", "value": "ThreadPool"}]
             },
           },
-          "vars": {"poolSize": 10000, ... withoutKey("api", defaultVars)}
+          "vars": {"poolSize": 10000, ...withoutKey("api", defaultVars)}
         },
         "excludeGerrit": false,
       },
@@ -200,14 +184,8 @@ export default {
         "databaseCompare": {
           "impl": {"language": "Java", "version": "refs/changes/07/184307/8"},
           "cluster": defaultCluster,
-          "workload": {
-            "operations": [{
-              "op": "get",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-            }]
-          },
-          "vars": {... defaultVars},
+          "workload": defaultWorkloadGets,
+          "vars": {...defaultVars},
         },
         "excludeGerrit": true,
         "excludeSnapshots": this.excludeSnapshots || false,

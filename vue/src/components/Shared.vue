@@ -30,13 +30,7 @@ export default {
         ... defaultQuery,
         "databaseCompare": {
           "impl": {"language": this.language},
-          "workload": {
-            "operations": [{
-              "op": "insert",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "uuid"}
-            }]
-          },
+          "workload": defaultWorkloadInserts,
           "vars": {"docNum": 10000000, ... defaultVars}
         },
         "excludeSnapshots": this.excludeSnapshots,
@@ -49,13 +43,7 @@ export default {
         ... defaultQuery,
         "databaseCompare": {
           "impl": {"language": this.language},
-          "workload": {
-            "operations": [{
-              "op": "replace",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
-            }]
-          },
+          "workload": defaultWorkloadReplaces,
           "vars": {... defaultVars}
         },
         "excludeGerrit": this.excludeGerrit || true,
@@ -68,13 +56,7 @@ export default {
         ... defaultQuery,
         "databaseCompare": {
           "impl": {"language": this.language},
-          "workload": {
-            "operations": [{
-              "op": "get",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-            }]
-          },
+          "workload": defaultWorkloadGets,
           "vars": {... defaultVars}
         },
         "excludeGerrit": this.excludeGerrit || true,
@@ -88,13 +70,7 @@ export default {
         "groupBy": "variables.horizontalScaling",
         "databaseCompare": {
           "impl": {"language": this.language},
-          "workload": {
-            "operations": [{
-              "op": "get",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-            }]
-          },
+          "workload": defaultWorkloadGets,
           "vars": {"poolSize": 10000, ... defaultVarsWithoutHorizontalScaling, "experimentName": "horizontalScaling" }
         },
         "excludeSnapshots": this.excludeSnapshots || false,
@@ -168,7 +144,7 @@ export const defaultQuery = {
   "includeMetrics": false,
 
   // Generally want to include snapshot (interim) releases.
-  "excludeSnapshots": true,
+  "excludeSnapshots": false,
 
   // Generally don't want to include Gerrit results.
   "excludeGerrit": true,
@@ -201,6 +177,30 @@ export const defaultVars = {
 
   // Most tests are done with this level of load.
   "horizontalScaling": 20
+}
+
+export const defaultWorkloadInserts = {
+  "operations": [{
+    "op": "insert",
+    "bounds": {"forSeconds": "$forSeconds"},
+    "docLocation": {"method": "uuid"}
+  }]
+}
+
+export const defaultWorkloadReplaces = {
+  "operations": [{
+    "op": "replace",
+    "bounds": {"forSeconds": "$forSeconds"},
+    "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
+  }]
+}
+
+export const defaultWorkloadGets = {
+  "operations": [{
+    "op": "get",
+    "bounds": {"forSeconds": "$forSeconds"},
+    "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
+  }]
 }
 
 // Return a copy of `vars` (a JSON object) with key `key` removed.

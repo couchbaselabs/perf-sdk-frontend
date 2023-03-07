@@ -17,7 +17,14 @@
 
 <script>
 import Results from "@/components/Results";
-import {defaultQuery, defaultVars, defaultCluster} from "@/components/Shared";
+import {
+  defaultQuery,
+  defaultVars,
+  defaultWorkloadInserts,
+  defaultWorkloadReplaces,
+  defaultWorkloadGets,
+    withoutKey
+} from "@/components/Shared";
 
 export default {
   components: {Results},
@@ -25,92 +32,61 @@ export default {
   data() {
     return {
       kvInserts: {
-        ... defaultQuery,
+        ...withoutKey("groupBy", defaultQuery),
+        "groupBy": "impl.language",
         "databaseCompare": {
-          "cluster": defaultCluster,
-          "workload": {
-            "operations": [{
-              "op": "insert",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "uuid"}
-            }]
-          },
-          "vars": {"docNum": 10000000, ... defaultVars}
+          "workload": defaultWorkloadInserts,
+          "vars": {"docNum": 10000000, ...defaultVars}
         },
         "filterRuns": "Latest"
       },
 
       kvReplaces: {
-        ... defaultQuery,
+        ...defaultQuery,
+        "groupBy": "impl.language",
         "databaseCompare": {
-          "workload": {
-            "operations": [{
-              "op": "replace",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
-            }]
-          },
-          "vars": {"poolSize": 10000, ... defaultVars}
+          "workload": defaultWorkloadReplaces,
+          "vars": {"poolSize": 10000, ...defaultVars}
         },
         "filterRuns": "Latest"
       },
 
       kvGets: {
-        ... defaultQuery,
+        ...defaultQuery,
+        "groupBy": "impl.language",
         "databaseCompare": {
-          "workload": {
-            "operations": [{
-              "op": "get",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-            }]
-          },
-          "vars": {"poolSize": 10000, ... defaultVars}
+          "workload": defaultWorkloadGets,
+          "vars": {"poolSize": 10000, ...defaultVars}
         },
         "filterRuns": "Latest"
       },
 
       kvInsertsSingleThreaded: {
-        ... defaultQuery,
+        ...defaultQuery,
+        "groupBy": "impl.language",
         "databaseCompare": {
-          "workload": {
-            "operations": [{
-              "op": "insert",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "uuid"}
-            }]
-          },
-          "vars": {"docNum": 10000000, ... defaultVars, "horizontalScaling": 1}
+          "workload": defaultWorkloadInserts,
+          "vars": {"docNum": 10000000, ...defaultVars, "horizontalScaling": 1}
         },
         "filterRuns": "Latest"
       },
 
       kvReplacesSingleThreaded: {
-        ... defaultQuery,
+        ...defaultQuery,
+        "groupBy": "impl.language",
         "databaseCompare": {
-          "workload": {
-            "operations": [{
-              "op": "replace",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
-            }]
-          },
-          "vars": {"poolSize": 10000, ... defaultVars, "horizontalScaling": 1}
+          "workload": defaultWorkloadReplaces,
+          "vars": {"poolSize": 10000, ...defaultVars, "horizontalScaling": 1}
         },
         "filterRuns": "Latest"
       },
 
       kvGetsSingleThreaded: {
-        ... defaultQuery,
+        ...defaultQuery,
+        "groupBy": "impl.language",
         "databaseCompare": {
-          "workload": {
-            "operations": [{
-              "op": "get",
-              "bounds": {"forSeconds": "$forSeconds"},
-              "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-            }]
-          },
-          "vars": {"poolSize": 10000, ... defaultVars, "horizontalScaling": 1}
+          "workload": defaultWorkloadGets,
+          "vars": {"poolSize": 10000, ...defaultVars, "horizontalScaling": 1}
         },
         "filterRuns": "Latest"
       }
