@@ -5,23 +5,23 @@ import { versionCompare } from './versions';
 
 // Query for a single run
 export class Single {
-  runId: string;
-  display: string; // latency_average_us
-  trimmingSeconds: number;
-  includeMetrics: boolean;
-  mergingType: MergingAlgorithm;
-  bucketiseSeconds?: number;
+  readonly runId: string;
+  readonly display: string; // latency_average_us
+  readonly trimmingSeconds: number;
+  readonly includeMetrics: boolean;
+  readonly mergingType: MergingAlgorithm;
+  readonly bucketiseSeconds?: number;
 }
 
 export class MetricsQuery {
-  language: string;
+  readonly language: string;
 }
 
 export class Metrics {
   // cast (metrics::json->>'threadCount' as integer) > 100
-  whereClause: string;
+  readonly whereClause: string;
   // 'Excessive thread count, max=' || max (cast (metrics::json->>'threadCount' as integer))
-  message: string;
+  readonly message: string;
 
   constructor(whereClause: string, message: string) {
     this.whereClause = whereClause;
@@ -80,38 +80,38 @@ export class Input {
   // This really wants refactoring into two fields: what 'sort of thing' we're grouping by (e.g. versions, or tunables),
   // and then what exactly we're grouping by ("cluster.version" or "com.couchbase.protostellar.executorMaxThreadCount").
   // What we want to display on the horizontal axis
-  hAxis: HorizontalAxisDynamic;
+  readonly hAxis: HorizontalAxisDynamic;
 
   // What to display on the y-axis, e.g. "latency_average_us".
   // Generally corresponds to a database column in the `buckets` table.
-  display: string;
+  readonly display: string;
 
-  databaseCompare: DatabaseCompare;
+  readonly databaseCompare: DatabaseCompare;
 
-  graphType: GraphType;
+  readonly graphType: GraphType;
 
   // These two only apply if graphType == SIMPLIFIED
-  multipleResultsHandling: MultipleResultsHandling;
-  mergingType: MergingAlgorithm;
+  readonly multipleResultsHandling: MultipleResultsHandling;
+  readonly mergingType: MergingAlgorithm;
 
   // How many seconds of data to trim off the start of each run, to account for e.g. JVM warmup and general settling.
-  trimmingSeconds: number;
+  readonly trimmingSeconds: number;
 
   // Whether the metrics table data should be fetched and included.
-  includeMetrics: boolean;
+  readonly includeMetrics: boolean;
 
   // It's too expensive to draw large line graphs of 1 second buckets, so re-bucketise into larger buckets if this is
   // set.
-  bucketiseSeconds?: number;
+  readonly bucketiseSeconds?: number;
 
   // Whether to exclude interim/snapshot versions ("3.4.0-20221020.123751-26")
-  excludeSnapshots: boolean;
+  readonly excludeSnapshots: boolean;
 
   // Whether to exclude Gerrit versions ("refs/changes/19/183619/30")
-  excludeGerrit: boolean;
+  readonly excludeGerrit: boolean;
 
   // Whether to filter matched runs.  The default is ALL (no filtering).
-  filterRuns: FilterRuns;
+  readonly filterRuns: FilterRuns;
 }
 
 // This class is a little hard to explain...
@@ -127,7 +127,7 @@ export class Input {
 // This approach does work, to an extent.  It doesn't handle some sorts of graphs like displaying how a metric changes
 // over time, so there are other HorizontalAxis classes for those.
 export interface HorizontalAxisDynamic {
-  type: "dynamic";
+  readonly type: "dynamic";
 
   // Can be any database field, though some fields are more likely than others to produce useful results:
   // "impl.version" - displays SDK versions.  Most useful if the query is limited with `Compare` to one SDK.
@@ -135,10 +135,10 @@ export interface HorizontalAxisDynamic {
   // Some fields that _might_ work but haven't been used yet:
   // "cluster.version" - displays cluster versions: "7.0.0" etc.  Could be useful for seeing how an SDK's performance
   //       has changed over time vs cluster versions.
-  databaseField: string;
+  readonly databaseField: string;
 
   // Gives some indication what type the results are, which helps with ordering them correctly.
-  resultType: HorizontalAxisType
+  readonly resultType: HorizontalAxisType
 }
 
 export enum HorizontalAxisType {
@@ -175,16 +175,16 @@ class HorizontalAxisDynamicUtil {
 // on the JSON.
 export class DatabaseCompare {
   // A JSON blob containing info about the cluster that was used for this run.
-  cluster?: Record<string, unknown>;
+  readonly cluster?: Record<string, unknown>;
 
   // A JSON blob containing info about the SDK that was used for this run - language, version, etc.
-  impl?: Record<string, unknown>;
+  readonly impl?: Record<string, unknown>;
 
   // A JSON blob containing info about the workload that was run - KV inserts, etc.
-  workload?: Record<string, unknown>;
+  readonly workload?: Record<string, unknown>;
 
   // A JSON blob containing the runtime variables that affected this run.  Number of docs, length of run, etc.
-  vars?: Record<string, unknown>;
+  readonly vars?: Record<string, unknown>;
 }
 
 @Injectable()
