@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import Shared from "@/components/Shared";
+import Shared, {defaultCluster, protostellarCluster} from "@/components/Shared";
 import Results from "@/components/Results";
 
 export default {
@@ -59,19 +59,7 @@ export default {
       kvGetsHorizontalScalingAsync: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "variables.horizontalScaling",
         "display": "duration_average_us",
@@ -104,19 +92,7 @@ export default {
       kvGetsBlocking: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.version",
         "display": "duration_average_us",
@@ -148,19 +124,7 @@ export default {
       kvGetsReactive: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.version",
         "display": "duration_average_us",
@@ -191,19 +155,7 @@ export default {
       transactions: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.version",
         "display": "duration_average_us",
@@ -231,21 +183,7 @@ export default {
       stellarNebulaGets: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "scheme": "protostellar",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled",
-            "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
-          }]
+          "params": protostellarCluster
         }],
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
         "display": "duration_average_us",
@@ -293,21 +231,7 @@ export default {
       forkJoinPoolExecutorMaxThreadCount: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "scheme": "protostellar",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled",
-            "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
-          }]
+          "params": protostellarCluster
         }],
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
@@ -336,21 +260,7 @@ export default {
       threadPoolExecutorMaxThreadCount: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "scheme": "protostellar",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled",
-            "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
-          }]
+          "params": protostellarCluster
         }],
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
@@ -379,19 +289,7 @@ export default {
       coreKvOps: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.language",
         "display": "duration_average_us",
@@ -416,21 +314,7 @@ export default {
       reuseStubs: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "scheme": "protostellar",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled",
-            "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
-          }]
+          "params": protostellarCluster
         }],
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.reuseStubs",
@@ -451,21 +335,7 @@ export default {
       numEndpoints: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "scheme": "protostellar",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled",
-            "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
-          }]
+          "params": protostellarCluster
         }],
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.numEndpoints",
@@ -486,21 +356,7 @@ export default {
       protostellarLoadBalancingSingle: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "scheme": "protostellar",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled",
-            "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
-          }]
+          "params": protostellarCluster
         }],
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
@@ -522,21 +378,7 @@ export default {
       protostellarLoadBalancingNotSingle: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "scheme": "protostellar",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled",
-            "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
-          }]
+          "params": protostellarCluster
         }],
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.loadBalancing",

@@ -29,19 +29,7 @@ export default {
       return {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.version",
         "display": "duration_average_us",
@@ -69,19 +57,7 @@ export default {
       return {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.version",
         "display": "duration_average_us",
@@ -109,19 +85,7 @@ export default {
       return {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.version",
         "display": "duration_average_us",
@@ -149,19 +113,7 @@ export default {
       return {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "variables.horizontalScaling",
         "display": "duration_average_us",
@@ -200,5 +152,36 @@ export default {
     }
   }
 }
+
+export const defaultCluster = [{
+  "type": "unmanaged",
+  "memory": 28000,
+  "region": "us-east-2",
+  "storage": "couchstore",
+  "version": "7.1.1-3175-enterprise",
+  "cpuCount": 16,
+  "instance": "c5.4xlarge",
+  "replicas": 0,
+  "topology": "A",
+  "nodeCount": 1,
+  "compaction": "disabled"
+}]
+
+export const protostellarCluster = [{
+  "type": "unmanaged",
+  "memory": 28000,
+  "region": "us-east-2",
+  "scheme": "protostellar",
+  "storage": "couchstore",
+  "version": "7.1.1-3175-enterprise",
+  "cpuCount": 16,
+  "instance": "c5.4xlarge",
+  "replicas": 0,
+  "topology": "A",
+  "nodeCount": 1,
+  "compaction": "disabled",
+  "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
+}]
 </script>
+
 

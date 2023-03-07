@@ -2,21 +2,22 @@
   <b-container>
     <h1>KV Get (1 thread)</h1>
     <Results :input="kvGetsSingleThreaded"></Results>
-    <h1>KV Replace (1 thread)</h1>
-    <Results :input="kvReplacesSingleThreaded"></Results>
-    <h1>KV Insert (1 thread)</h1>
-    <Results :input="kvInsertsSingleThreaded"></Results>
-    <h1>KV Get (20 threads)</h1>
-    <Results :input="kvGets"></Results>
-    <h1>KV Replace (20 threads)</h1>
-    <Results :input="kvReplaces"></Results>
-    <h1>KV Insert (20 threads)</h1>
-    <Results :input="kvInserts"></Results>
+<!--    <h1>KV Replace (1 thread)</h1>-->
+<!--    <Results :input="kvReplacesSingleThreaded"></Results>-->
+<!--    <h1>KV Insert (1 thread)</h1>-->
+<!--    <Results :input="kvInsertsSingleThreaded"></Results>-->
+<!--    <h1>KV Get (20 threads)</h1>-->
+<!--    <Results :input="kvGets"></Results>-->
+<!--    <h1>KV Replace (20 threads)</h1>-->
+<!--    <Results :input="kvReplaces"></Results>-->
+<!--    <h1>KV Insert (20 threads)</h1>-->
+<!--    <Results :input="kvInserts"></Results>-->
   </b-container>
 </template>
 
 <script>
 import Results from "@/components/Results";
+import defaultCluster from "./Shared";
 
 export default {
   components: {Results},
@@ -26,19 +27,7 @@ export default {
       kvInserts: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.language",
         "display": "duration_average_us",
@@ -63,19 +52,7 @@ export default {
       kvReplaces: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.language",
         "display": "duration_average_us",
@@ -100,19 +77,7 @@ export default {
       kvGets: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.language",
         "display": "duration_average_us",
@@ -137,19 +102,7 @@ export default {
       kvInsertsSingleThreaded: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.language",
         "display": "duration_average_us",
@@ -174,19 +127,7 @@ export default {
       kvReplacesSingleThreaded: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.language",
         "display": "duration_average_us",
@@ -211,19 +152,7 @@ export default {
       kvGetsSingleThreaded: {
         "inputs": [{
           "viewing": "cluster",
-          "params": [{
-            "type": "unmanaged",
-            "memory": 28000,
-            "region": "us-east-2",
-            "storage": "couchstore",
-            "version": "7.1.1-3175-enterprise",
-            "cpuCount": 16,
-            "instance": "c5.4xlarge",
-            "replicas": 0,
-            "topology": "A",
-            "nodeCount": 1,
-            "compaction": "disabled"
-          }]
+          "params": defaultCluster
         }],
         "groupBy": "impl.language",
         "display": "duration_average_us",
