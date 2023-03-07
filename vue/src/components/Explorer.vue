@@ -248,7 +248,7 @@ export default {
     },
 
     fetchGroupByOptions: async function () {
-      const url = new URL(`http://${document.location.hostname}:3002/dashboard/group_by_options`);
+      const url = new URL(`http://${document.location.hostname}:3002/dashboard/groupByOptions`);
       const res = await fetch(url);
       this.groupBy = await res.json();
     }

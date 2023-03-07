@@ -35,8 +35,8 @@ export class AppController {
     return await this.dashboard.getFiltered(query.groupBy);
   }
 
-  @Get('/group_by_options')
-  async group_by_options() {
+  @Get('/groupByOptions')
+  async groupByOptions() {
     return await this.dashboard.getGroupBy();
   }
 
