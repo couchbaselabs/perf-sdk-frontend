@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import Shared, {defaultCluster, protostellarCluster} from "@/components/Shared";
+import Shared, {defaultCluster, defaultQuery, protostellarCluster} from "@/components/Shared";
 import Results from "@/components/Results";
 
 export default {
@@ -57,11 +57,10 @@ export default {
   data() {
     return {
       kvGetsHorizontalScalingAsync: {
+        ...defaultQuery,
         "groupBy": "variables.horizontalScaling",
-        "display": "duration_average_us",
         "databaseCompare": {
           "impl": {"language": "Java"},
-          "cluster": defaultCluster,
           "workload": {
             "operations": [{
               "op": "get",
@@ -78,22 +77,13 @@ export default {
             "api": "ASYNC",
           }
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
-        "excludeGerrit": true,
-        "excludeSnapshots": this.exclude_snapshots || false
+        "excludeSnapshots": this.excludeSnapshots || false
       },
 
       kvGetsBlocking: {
-        "groupBy": "impl.version",
-        "display": "duration_average_us",
+        ...defaultQuery,
         "databaseCompare": {
           "impl": {"language": "Java"},
-          "cluster": defaultCluster,
           "workload": {
             "operations": [{
               "op": "get",
@@ -110,21 +100,12 @@ export default {
             api: "DEFAULT"
           }
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
-        "excludeGerrit": true,
-        "excludeSnapshots": this.exclude_snapshots || false,
+        "excludeSnapshots": this.excludeSnapshots || false,
       },
       kvGetsReactive: {
-        "groupBy": "impl.version",
-        "display": "duration_average_us",
+        ...defaultQuery,
         "databaseCompare": {
           "impl": {"language": "Java"},
-          "cluster": defaultCluster,
           "workload": {
             "operations": [{
               "op": "get",
@@ -141,20 +122,12 @@ export default {
             api: "ASYNC"
           }
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
-        "excludeGerrit": true
+        "excludeSnapshots": this.excludeSnapshots || false,
       },
       transactions: {
-        "groupBy": "impl.version",
-        "display": "duration_average_us",
+        ...defaultQuery,
         "databaseCompare": {
           "impl": {"language": "Java"},
-          "cluster": defaultCluster,
           "workload": {
             "operations": [{
               "transaction": {
@@ -167,18 +140,11 @@ export default {
           },
           "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
-        "excludeGerrit": true,
-        "excludeSnapshots": this.exclude_snapshots || false
+        "excludeSnapshots": this.excludeSnapshots || false
       },
       stellarNebulaGets: {
+        ...defaultQuery,
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
-        "display": "duration_average_us",
         "databaseCompare": {
           "cluster": protostellarCluster,
           "impl": {"language": "Java", "version": "refs/changes/35/184435/1"},
@@ -214,17 +180,10 @@ export default {
             "com.couchbase.protostellar.overrideHostname": "172.17.0.1",
           }
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
         "excludeGerrit": false,
-        "excludeSnapshots": false
       },
       forkJoinPoolExecutorMaxThreadCount: {
-        "display": "duration_average_us",
+        ...defaultQuery,
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
         "databaseCompare": {
           "cluster": protostellarCluster,
@@ -242,17 +201,10 @@ export default {
             "horizontalScaling": 20
           }
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
         "excludeGerrit": false,
-        "excludeSnapshots": false
       },
       threadPoolExecutorMaxThreadCount: {
-        "display": "duration_average_us",
+        ...defaultQuery,
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
         "databaseCompare": {
           "cluster": protostellarCluster,
@@ -270,18 +222,11 @@ export default {
             "horizontalScaling": 20
           }
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
         "excludeGerrit": false,
-        "excludeSnapshots": false
       },
       coreKvOps: {
         "groupBy": "impl.language",
-        "display": "duration_average_us",
+        ...defaultQuery,
         "databaseCompare": {
           "impl": {"language": "Java", "version": "refs/changes/07/184307/8"},
           "cluster": defaultCluster,
@@ -294,17 +239,11 @@ export default {
           },
           "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
-        "excludeGerrit": this.excludeGerrit || false,
+        "excludeGerrit": true,
         "excludeSnapshots": this.excludeSnapshots || false,
       },
       reuseStubs: {
-        "display": "duration_average_us",
+        ...defaultQuery,
         "groupBy": "variables.com.couchbase.protostellar.reuseStubs",
         "databaseCompare": {
           "cluster": protostellarCluster,
@@ -314,17 +253,10 @@ export default {
             },
           }
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
         "excludeGerrit": false,
-        "excludeSnapshots": false
       },
       numEndpoints: {
-        "display": "duration_average_us",
+        ...defaultQuery,
         "groupBy": "variables.com.couchbase.protostellar.numEndpoints",
         "databaseCompare": {
           "cluster": protostellarCluster,
@@ -334,17 +266,10 @@ export default {
             },
           }
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
         "excludeGerrit": false,
-        "excludeSnapshots": false
       },
       protostellarLoadBalancingSingle: {
-        "display": "duration_average_us",
+        ...defaultQuery,
         "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
         "databaseCompare": {
           "cluster": protostellarCluster,
@@ -355,17 +280,10 @@ export default {
             },
           }
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
         "excludeGerrit": false,
-        "excludeSnapshots": false
       },
       protostellarLoadBalancingNotSingle: {
-        "display": "duration_average_us",
+        ...defaultQuery,
         "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
         "databaseCompare": {
           "cluster": protostellarCluster,
@@ -376,14 +294,7 @@ export default {
             },
           }
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
         "excludeGerrit": false,
-        "excludeSnapshots": false
       },
     }
   }

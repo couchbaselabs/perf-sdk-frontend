@@ -27,11 +27,9 @@ export default {
   computed: {
     kvInserts() {
       return {
-        "groupBy": "impl.version",
-        "display": "duration_average_us",
+        ... defaultQuery,
         "databaseCompare": {
           "impl": {"language": this.language},
-          "cluster": defaultCluster,
           "workload": {
             "operations": [{
               "op": "insert",
@@ -41,12 +39,6 @@ export default {
           },
           "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
         "excludeSnapshots": this.excludeSnapshots,
         "excludeGerrit": this.excludeGerrit || true,
       }
@@ -54,11 +46,9 @@ export default {
 
     kvReplaces() {
       return {
-        "groupBy": "impl.version",
-        "display": "duration_average_us",
+        ... defaultQuery,
         "databaseCompare": {
           "impl": {"language": this.language},
-          "cluster": defaultCluster,
           "workload": {
             "operations": [{
               "op": "replace",
@@ -68,12 +58,6 @@ export default {
           },
           "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
         "excludeGerrit": this.excludeGerrit || true,
         "excludeSnapshots": this.excludeSnapshots,
       }
@@ -81,10 +65,8 @@ export default {
 
     kvGets() {
       return {
-        "groupBy": "impl.version",
-        "display": "duration_average_us",
+        ... defaultQuery,
         "databaseCompare": {
-          "cluster": defaultCluster,
           "impl": {"language": this.language},
           "workload": {
             "operations": [{
@@ -95,12 +77,6 @@ export default {
           },
           "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
         "excludeGerrit": this.excludeGerrit || true,
         "excludeSnapshots": this.excludeSnapshots || false,
       }
@@ -108,10 +84,9 @@ export default {
 
     kvGetsHorizontalScaling() {
       return {
+        ... defaultQuery,
         "groupBy": "variables.horizontalScaling",
-        "display": "duration_average_us",
         "databaseCompare": {
-          "cluster": defaultCluster,
           "impl": {"language": this.language},
           "workload": {
             "operations": [{
@@ -129,13 +104,6 @@ export default {
             "api": "DEFAULT",
           }
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
-        "excludeGerrit": true,
         "excludeSnapshots": this.excludeSnapshots || false,
         "filterRuns": "Latest"
       }
@@ -177,6 +145,43 @@ export const protostellarCluster = {
   "nodeCount": 1,
   "compaction": "disabled",
   "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
+}
+
+export const defaultQuery = {
+  // We're usually display SDK versions
+  "groupBy": "impl.version",
+
+  // It's not best practice to display averages - max or p99 would be better - but the test variance is unfortunately
+  // too high for that to display useful results.
+  "display": "duration_average_us",
+
+  // These fields are compared to the database, and are what's most likely to change in each graph.
+  "databaseCompare": {
+    "cluster": defaultCluster,
+  },
+
+  // Usually want the simplified Showfast-style bar graph.
+  "graphType": "Simplified",
+
+  // Usually want to merge any duplicated results, for space reasons.
+  "multipleResultsHandling": "Merged",
+  "mergingType": "Average",
+
+  // Usually want to trim a few seconds of data from the start, especially for JVM languages.
+  "trimmingSeconds": 20,
+
+  // Not used in the Simplified graph.
+  "bucketiseSeconds": 0,
+  "includeMetrics": false,
+
+  // Generally want to include snapshot (interim) releases.
+  "excludeSnapshots": true,
+
+  // Generally don't want to include Gerrit results.
+  "excludeGerrit": true,
+
+  // Generally want to include all runs.
+  "filterRuns": "All"
 }
 </script>
 

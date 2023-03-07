@@ -18,6 +18,7 @@
 <script>
 import Results from "@/components/Results";
 import {defaultCluster} from "./Shared";
+import {defaultQuery} from "@/components/Shared";
 
 export default {
   components: {Results},
@@ -25,8 +26,7 @@ export default {
   data() {
     return {
       kvInserts: {
-        "groupBy": "impl.language",
-        "display": "duration_average_us",
+        ... defaultQuery,
         "databaseCompare": {
           "cluster": defaultCluster,
           "workload": {
@@ -35,24 +35,15 @@ export default {
               "bounds": {"forSeconds": "$forSeconds"},
               "docLocation": {"method": "uuid"}
             }]
-          }
+          },
+          "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
-        "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
-        "excludeGerrit": true,
         "filterRuns": "Latest"
       },
 
       kvReplaces: {
-        "groupBy": "impl.language",
-        "display": "duration_average_us",
+        ... defaultQuery,
         "databaseCompare": {
-          "cluster": defaultCluster,
           "workload": {
             "operations": [{
               "op": "replace",
@@ -62,21 +53,12 @@ export default {
           },
           "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
-        "excludeGerrit": true,
         "filterRuns": "Latest"
       },
 
       kvGets: {
-        "groupBy": "impl.language",
-        "display": "duration_average_us",
+        ... defaultQuery,
         "databaseCompare": {
-          "cluster": defaultCluster,
           "workload": {
             "operations": [{
               "op": "get",
@@ -86,21 +68,12 @@ export default {
           },
           "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
-        "excludeGerrit": true,
         "filterRuns": "Latest"
       },
 
       kvInsertsSingleThreaded: {
-        "groupBy": "impl.language",
-        "display": "duration_average_us",
+        ... defaultQuery,
         "databaseCompare": {
-          "cluster": defaultCluster,
           "workload": {
             "operations": [{
               "op": "insert",
@@ -110,21 +83,12 @@ export default {
           },
           "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1}
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
-        "excludeGerrit": true,
         "filterRuns": "Latest"
       },
 
       kvReplacesSingleThreaded: {
-        "groupBy": "impl.language",
-        "display": "duration_average_us",
+        ... defaultQuery,
         "databaseCompare": {
-          "cluster": defaultCluster,
           "workload": {
             "operations": [{
               "op": "replace",
@@ -134,21 +98,12 @@ export default {
           },
           "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1}
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
-        "excludeGerrit": true,
         "filterRuns": "Latest"
       },
 
       kvGetsSingleThreaded: {
-        "groupBy": "impl.language",
-        "display": "duration_average_us",
+        ... defaultQuery,
         "databaseCompare": {
-          "cluster": defaultCluster,
           "workload": {
             "operations": [{
               "op": "get",
@@ -158,13 +113,6 @@ export default {
           },
           "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1}
         },
-        "graphType": "Simplified",
-        "multipleResultsHandling": "Merged",
-        "mergingType": "Average",
-        "trimmingSeconds": 20,
-        "bucketiseSeconds": 0,
-        "includeMetrics": false,
-        "excludeGerrit": true,
         "filterRuns": "Latest"
       }
 
