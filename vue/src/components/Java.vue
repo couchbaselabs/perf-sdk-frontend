@@ -49,7 +49,14 @@
 </template>
 
 <script>
-import Shared, {defaultCluster, defaultQuery, protostellarCluster} from "@/components/Shared";
+import Shared, {
+  defaultCluster,
+  defaultQuery,
+  defaultVars,
+  defaultVarsWithoutHorizontalScaling,
+  protostellarCluster,
+  withoutKey
+} from "@/components/Shared";
 import Results from "@/components/Results";
 
 export default {
@@ -68,14 +75,7 @@ export default {
               "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
             }]
           },
-          "vars": {
-            "poolSize": 10000,
-            "driverVer": 6,
-            "forSeconds": 300,
-            "performerVer": 1,
-            "experimentName": "horizontalScaling",
-            "api": "ASYNC",
-          }
+          "vars": {"poolSize": 10000, ... defaultVarsWithoutHorizontalScaling, "experimentName": "horizontalScaling", "api": "ASYNC"}
         },
         "excludeSnapshots": this.excludeSnapshots || false
       },
@@ -91,14 +91,7 @@ export default {
               "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
             }]
           },
-          "vars": {
-            "poolSize": 10000,
-            "driverVer": 6,
-            "forSeconds": 300,
-            "performerVer": 1,
-            "horizontalScaling": 20,
-            api: "DEFAULT"
-          }
+          "vars": {"poolSize": 10000, ... defaultVars, api: "DEFAULT"}
         },
         "excludeSnapshots": this.excludeSnapshots || false,
       },
@@ -113,14 +106,7 @@ export default {
               "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
             }]
           },
-          "vars": {
-            "poolSize": 10000,
-            "driverVer": 6,
-            "forSeconds": 300,
-            "performerVer": 1,
-            "horizontalScaling": 20,
-            api: "ASYNC"
-          }
+          "vars": {"poolSize": 10000, ... defaultVars, api: "ASYNC"}
         },
         "excludeSnapshots": this.excludeSnapshots || false,
       },
@@ -138,7 +124,7 @@ export default {
               }
             }]
           },
-          "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
+          "vars": {... defaultVars}
         },
         "excludeSnapshots": this.excludeSnapshots || false
       },
@@ -170,12 +156,8 @@ export default {
               "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
             }]
           },
-          "vars": {
-            "poolSize": 10000,
-            "driverVer": 6,
-            "forSeconds": 300,
-            "performerVer": 1,
-            "horizontalScaling": 20,
+          "vars": {"poolSize": 10000,
+            ... defaultVars,
             "com.couchbase.protostellar.executorType": "ForkJoinPool",
             "com.couchbase.protostellar.overrideHostname": "172.17.0.1",
           }
@@ -193,13 +175,7 @@ export default {
                 {"name": "com.couchbase.protostellar.executorType", "value": "ForkJoinPool"}]
             },
           },
-          "vars": {
-            "poolSize": 10000,
-            "driverVer": 6,
-            "forSeconds": 300,
-            "performerVer": 1,
-            "horizontalScaling": 20
-          }
+          "vars": {"poolSize": 10000, ... withoutKey("api", defaultVars)}
         },
         "excludeGerrit": false,
       },
@@ -214,13 +190,7 @@ export default {
                 {"name": "com.couchbase.protostellar.executorType", "value": "ThreadPool"}]
             },
           },
-          "vars": {
-            "poolSize": 10000,
-            "driverVer": 6,
-            "forSeconds": 300,
-            "performerVer": 1,
-            "horizontalScaling": 20
-          }
+          "vars": {"poolSize": 10000, ... withoutKey("api", defaultVars)}
         },
         "excludeGerrit": false,
       },
@@ -237,7 +207,7 @@ export default {
               "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
             }]
           },
-          "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
+          "vars": {... defaultVars},
         },
         "excludeGerrit": true,
         "excludeSnapshots": this.excludeSnapshots || false,

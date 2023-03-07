@@ -37,7 +37,7 @@ export default {
               "docLocation": {"method": "uuid"}
             }]
           },
-          "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
+          "vars": {"docNum": 10000000, ... defaultVars}
         },
         "excludeSnapshots": this.excludeSnapshots,
         "excludeGerrit": this.excludeGerrit || true,
@@ -56,7 +56,7 @@ export default {
               "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
             }]
           },
-          "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
+          "vars": {... defaultVars}
         },
         "excludeGerrit": this.excludeGerrit || true,
         "excludeSnapshots": this.excludeSnapshots,
@@ -75,7 +75,7 @@ export default {
               "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
             }]
           },
-          "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
+          "vars": {... defaultVars}
         },
         "excludeGerrit": this.excludeGerrit || true,
         "excludeSnapshots": this.excludeSnapshots || false,
@@ -95,14 +95,7 @@ export default {
               "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
             }]
           },
-          "vars": {
-            "poolSize": 10000,
-            "driverVer": 6,
-            "forSeconds": 300,
-            "performerVer": 1,
-            "experimentName": "horizontalScaling",
-            "api": "DEFAULT",
-          }
+          "vars": {"poolSize": 10000, ... defaultVarsWithoutHorizontalScaling, "experimentName": "horizontalScaling" }
         },
         "excludeSnapshots": this.excludeSnapshots || false,
         "filterRuns": "Latest"
@@ -182,6 +175,39 @@ export const defaultQuery = {
 
   // Generally want to include all runs.
   "filterRuns": "All"
+}
+
+export const defaultVarsWithoutHorizontalScaling = {
+  // driverVer increases whenever the driver logic changes in a way that would meaningfully impact results.
+  "driverVer": 6,
+
+  // Most tests run for this time.
+  "forSeconds": 300,
+
+  // performerVer is meant to change whenever the performer's code changes in a way that would meaningfully impact
+  // results.  So each performer technically has its own performerVer, and it shouldn't really be useful to have it here.
+  // However, in practice we usually wipe the database results instead, so this is currently 1 for all performers.
+  "performerVer": 1,
+
+  // Mainly affects Java - if there are multiple APIs, just use the default one.
+  "api": "DEFAULT",
+
+  // undefined is not yet supported - when it is, we will usually not want to include experiments.
+  // "experimentName": undefined
+}
+
+export const defaultVars = {
+  ... defaultVarsWithoutHorizontalScaling,
+
+  // Most tests are done with this level of load.
+  "horizontalScaling": 20
+}
+
+// Return a copy of `vars` (a JSON object) with key `key` removed.
+export function withoutKey(key, vars) {
+  // eslint-disable-next-line no-unused-vars
+  const {[key]: _, ... rest} = vars
+  return rest;
 }
 </script>
 

@@ -17,8 +17,7 @@
 
 <script>
 import Results from "@/components/Results";
-import {defaultCluster} from "./Shared";
-import {defaultQuery} from "@/components/Shared";
+import {defaultQuery, defaultVars, defaultCluster} from "@/components/Shared";
 
 export default {
   components: {Results},
@@ -36,7 +35,7 @@ export default {
               "docLocation": {"method": "uuid"}
             }]
           },
-          "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
+          "vars": {"docNum": 10000000, ... defaultVars}
         },
         "filterRuns": "Latest"
       },
@@ -51,7 +50,7 @@ export default {
               "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
             }]
           },
-          "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
+          "vars": {"poolSize": 10000, ... defaultVars}
         },
         "filterRuns": "Latest"
       },
@@ -66,7 +65,7 @@ export default {
               "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
             }]
           },
-          "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
+          "vars": {"poolSize": 10000, ... defaultVars}
         },
         "filterRuns": "Latest"
       },
@@ -81,7 +80,7 @@ export default {
               "docLocation": {"method": "uuid"}
             }]
           },
-          "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1}
+          "vars": {"docNum": 10000000, ... defaultVars, "horizontalScaling": 1}
         },
         "filterRuns": "Latest"
       },
@@ -96,7 +95,7 @@ export default {
               "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "counter"}
             }]
           },
-          "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1}
+          "vars": {"poolSize": 10000, ... defaultVars, "horizontalScaling": 1}
         },
         "filterRuns": "Latest"
       },
@@ -111,7 +110,7 @@ export default {
               "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
             }]
           },
-          "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1}
+          "vars": {"poolSize": 10000, ... defaultVars, "horizontalScaling": 1}
         },
         "filterRuns": "Latest"
       }
