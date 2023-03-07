@@ -9,8 +9,7 @@ export class Filtered {
   vars: Array<string>;
 
   // There are going to be too many vars and they're too workload-distinct to display all of them
-  // vars_by_workload: { [workload: string]: string }
-  vars_by_workload: Map<string, Set<string>>;
+  varsByWorkload: Map<string, Set<string>>;
 
   constructor(
     clusters: Array<string>,
@@ -23,7 +22,7 @@ export class Filtered {
     this.workloads = workloads;
     this.impls = impls;
     this.vars = vars;
-    this.vars_by_workload = varsByWorkload;
+    this.varsByWorkload = varsByWorkload;
   }
 }
 
@@ -32,8 +31,8 @@ export class AppController {
   constructor(private readonly dashboard: DashboardService) {}
 
   @Get('/filtered')
-  async filtered(@Query() query: { group_by: string }) {
-    return await this.dashboard.getFiltered(query.group_by);
+  async filtered(@Query() query: { groupBy: string }) {
+    return await this.dashboard.getFiltered(query.groupBy);
   }
 
   @Get('/group_by_options')
@@ -45,7 +44,7 @@ export class AppController {
   async query(@Body() query: Input) {
     console.info(JSON.stringify(query));
     const input = Object.assign(new Input(), query);
-    return await this.dashboard.genDashboardWrapper(input);
+    return await this.dashboard.genGraph(input);
   }
 
   @Post('/single')

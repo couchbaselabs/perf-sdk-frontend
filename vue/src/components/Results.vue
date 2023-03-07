@@ -6,77 +6,75 @@
     </div>
 
     <div v-if="!results">
-      <b-spinner small variant="primary" label="Spinning"></b-spinner> Fetching...
+      <b-spinner small variant="primary" label="Spinning"></b-spinner>
+      Fetching...
     </div>
 
-    <div v-if="results">
-      <div v-for="panel in results.panels" :key="panel.uuid">
+    <div v-if="results" class="graph">
+      <b-container class="mb-3">
 
-        <div class="graph" v-for="graph in panel.graphs" :key="graph.uuid">
-          <b-container class="mb-3">
-
-            <BarChart v-if="graph.type === 'bar'" class="chart" :chartData="graph.data" :options="graph.options" :input="input"/>
-            <div v-if="graph.type === 'line'">
-              <LineChart class="chartLine" :chartdata="graph.data" :options="graph.options" :input="input"/>
-              <div>
-                Time: All runs are shown starting from time '0' to allow them to be displayed together.  Mouseover points to see the wallclock times.
-              </div>
-            </div>
-
-          </b-container>
-
+        <BarChart v-if="results.type === 'bar'" class="chart" :chartData="results.data" :options="results.options"
+                  :input="input"/>
+        <div v-if="results.type === 'line'">
+          <LineChart class="chartLine" :chartdata="results.data" :options="results.options" :input="input"/>
           <div>
-            <b-button class="mr-2" v-on:click="showInExplorer" variant="outline-primary">
-              Show in Explorer
-            </b-button>
-
-            <b-button v-if="!display" v-on:click="display = true" variant="outline-primary">
-              Show runs ({{graph.runs.length}})
-            </b-button>
-
-            <b-button v-if="display" v-on:click="display = false" variant="outline-primary">
-              Hide runs
-            </b-button>
+            Time: All runs are shown starting from time '0' to allow them to be displayed together. Mouseover points
+            to see the wallclock times.
           </div>
-
-          <table v-if="display" class="text-left table-striped table-bordered table-sm table-responsive mt-5">
-            <thead  class="font-weight-bold">
-            <tr>
-              <td>Run</td>
-              <td>Date</td>
-              <td>Display</td>
-              <td>Impl</td>
-              <td>Cluster</td>
-              <td>Workload</td>
-              <td>Vars</td>
-            </tr>
-            </thead>
-
-            <tr v-for="r in graph.runs" :key="r.id">
-              <td v-bind:style="{color: r.color}">
-                <a href="#" v-on:click="runClicked(r.id)">
-                  {{ r.id }}
-                </a>
-              </td>
-              <td v-bind:style="{color: r.color}">{{ r.datetime }}</td>
-              <td>{{ r.groupedBy }}</td>
-              <td>
-                <pre>{{ JSON.stringify(r.impl, null, 2) }}</pre>
-              </td>
-              <td>
-                <pre>{{ JSON.stringify(r.cluster, null, 2) }}</pre>
-              </td>
-              <td>
-                <pre>{{ JSON.stringify(r.workload, null, 2) }}</pre>
-              </td>
-              <td>
-                <pre>{{ JSON.stringify(r.vars, null, 2) }}</pre>
-              </td>
-            </tr>
-          </table>
-
         </div>
+
+      </b-container>
+
+      <div>
+        <b-button class="mr-2" v-on:click="showInExplorer" variant="outline-primary">
+          Show in Explorer
+        </b-button>
+
+        <b-button v-if="!display" v-on:click="display = true" variant="outline-primary">
+          Show runs ({{ results.runs.length }})
+        </b-button>
+
+        <b-button v-if="display" v-on:click="display = false" variant="outline-primary">
+          Hide runs
+        </b-button>
       </div>
+
+      <table v-if="display" class="text-left table-striped table-bordered table-sm table-responsive mt-5">
+        <thead class="font-weight-bold">
+        <tr>
+          <td>Run</td>
+          <td>Date</td>
+          <td>Display</td>
+          <td>Impl</td>
+          <td>Cluster</td>
+          <td>Workload</td>
+          <td>Vars</td>
+        </tr>
+        </thead>
+
+        <tr v-for="r in results.runs" :key="r.id">
+          <td v-bind:style="{color: r.color}">
+            <a href="#" v-on:click="runClicked(r.id)">
+              {{ r.id }}
+            </a>
+          </td>
+          <td v-bind:style="{color: r.color}">{{ r.datetime }}</td>
+          <td>{{ r.groupedBy }}</td>
+          <td>
+            <pre>{{ JSON.stringify(r.impl, null, 2) }}</pre>
+          </td>
+          <td>
+            <pre>{{ JSON.stringify(r.cluster, null, 2) }}</pre>
+          </td>
+          <td>
+            <pre>{{ JSON.stringify(r.workload, null, 2) }}</pre>
+          </td>
+          <td>
+            <pre>{{ JSON.stringify(r.vars, null, 2) }}</pre>
+          </td>
+        </tr>
+      </table>
+
     </div>
   </div>
 </template>
@@ -88,7 +86,7 @@ import router from '../router.ts'
 
 export default {
   name: "Results",
-  components: {BarChart,LineChart},
+  components: {BarChart, LineChart},
   data() {
     return {
       lastInput: undefined,
@@ -99,8 +97,7 @@ export default {
   mounted() {
     if (this.single) {
       this.fetchSingleQuery(this.single)
-    }
-    else if (this.input) {
+    } else if (this.input) {
       this.fetchQuery(this.input)
     }
   },
@@ -157,7 +154,7 @@ export default {
       })
     },
 
-    runClicked: function(runId) {
+    runClicked: function (runId) {
       // window.history.pushState(null, '', `/single/${runId}/${this.input.display}`);
 
       this.$router.push({

@@ -27,13 +27,10 @@ export default {
   computed: {
     kvInserts() {
       return {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": defaultCluster
-        }],
         "groupBy": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": this.language},
+        "cluster": defaultCluster,
         "workload": {
           "operations": [{
             "op": "insert",
@@ -55,13 +52,10 @@ export default {
 
     kvReplaces() {
       return {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": defaultCluster
-        }],
         "groupBy": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": this.language},
+        "cluster": defaultCluster,
         "workload": {
           "operations": [{
             "op": "replace",
@@ -83,12 +77,9 @@ export default {
 
     kvGets() {
       return {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": defaultCluster
-        }],
         "groupBy": "impl.version",
         "display": "duration_average_us",
+        "cluster": defaultCluster,
         "impl": {"language": this.language},
         "workload": {
           "operations": [{
@@ -111,12 +102,9 @@ export default {
 
     kvGetsHorizontalScaling() {
       return {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": defaultCluster
-        }],
         "groupBy": "variables.horizontalScaling",
         "display": "duration_average_us",
+        "cluster": defaultCluster,
         "impl": {"language": this.language},
         "workload": {
           "operations": [{
@@ -153,7 +141,7 @@ export default {
   }
 }
 
-export const defaultCluster = [{
+export const defaultCluster = {
   "type": "unmanaged",
   "memory": 28000,
   "region": "us-east-2",
@@ -165,9 +153,9 @@ export const defaultCluster = [{
   "topology": "A",
   "nodeCount": 1,
   "compaction": "disabled"
-}]
+}
 
-export const protostellarCluster = [{
+export const protostellarCluster = {
   "type": "unmanaged",
   "memory": 28000,
   "region": "us-east-2",
@@ -181,7 +169,7 @@ export const protostellarCluster = [{
   "nodeCount": 1,
   "compaction": "disabled",
   "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
-}]
+}
 </script>
 
 

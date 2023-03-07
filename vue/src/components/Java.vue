@@ -57,13 +57,10 @@ export default {
   data() {
     return {
       kvGetsHorizontalScalingAsync: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": defaultCluster
-        }],
         "groupBy": "variables.horizontalScaling",
         "display": "duration_average_us",
         "impl": {"language": "Java"},
+        "cluster": defaultCluster,
         "workload": {
           "operations": [{
             "op": "get",
@@ -90,13 +87,10 @@ export default {
       },
 
       kvGetsBlocking: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": defaultCluster
-        }],
         "groupBy": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": "Java"},
+        "cluster": defaultCluster,
         "workload": {
           "operations": [{
             "op": "get",
@@ -122,13 +116,10 @@ export default {
         "excludeSnapshots": this.exclude_snapshots || false,
       },
       kvGetsReactive: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": defaultCluster
-        }],
         "groupBy": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": "Java"},
+        "cluster": defaultCluster,
         "workload": {
           "operations": [{
             "op": "get",
@@ -153,13 +144,10 @@ export default {
         "excludeGerrit": true
       },
       transactions: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": defaultCluster
-        }],
         "groupBy": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": "Java"},
+        "cluster": defaultCluster,
         "workload": {
           "operations": [{
             "transaction": {
@@ -181,12 +169,9 @@ export default {
         "excludeSnapshots": this.exclude_snapshots || false
       },
       stellarNebulaGets: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": protostellarCluster
-        }],
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
         "display": "duration_average_us",
+        "cluster": protostellarCluster,
         "impl": {"language": "Java", "version": "refs/changes/35/184435/1"},
         "workload": {
           "settings": {
@@ -229,12 +214,9 @@ export default {
         "excludeSnapshots": false
       },
       forkJoinPoolExecutorMaxThreadCount: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": protostellarCluster
-        }],
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
+        "cluster": protostellarCluster,
         "workload": {
           "settings": {
             "variables": [{"name": "experimentName", "value": "ThreadPool"},
@@ -258,12 +240,9 @@ export default {
         "excludeSnapshots": false
       },
       threadPoolExecutorMaxThreadCount: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": protostellarCluster
-        }],
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
+        "cluster": protostellarCluster,
         "workload": {
           "settings": {
             "variables": [{"name": "experimentName", "value": "ThreadPool"},
@@ -287,13 +266,10 @@ export default {
         "excludeSnapshots": false
       },
       coreKvOps: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": defaultCluster
-        }],
         "groupBy": "impl.language",
         "display": "duration_average_us",
         "impl": {"language": "Java", "version": "refs/changes/07/184307/8"},
+        "cluster": protostellarCluster,
         "workload": {
           "operations": [{
             "op": "get",
@@ -308,16 +284,13 @@ export default {
         "trimmingSeconds": 20,
         "bucketiseSeconds": 0,
         "includeMetrics": false,
-        "excludeGerrit": this.exclude_gerrit || false,
-        "excludeSnapshots": this.exclude_snapshots || false,
+        "excludeGerrit": this.excludeGerrit || false,
+        "excludeSnapshots": this.excludeSnapshots || false,
       },
       reuseStubs: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": protostellarCluster
-        }],
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.reuseStubs",
+        "cluster": protostellarCluster,
         "workload": {
           "settings": {
             "variables": [{"name": "experimentName", "value": "reuseStubs"}]
@@ -333,12 +306,9 @@ export default {
         "excludeSnapshots": false
       },
       numEndpoints: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": protostellarCluster
-        }],
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.numEndpoints",
+        "cluster": protostellarCluster,
         "workload": {
           "settings": {
             "variables": [{"name": "experimentName", "value": "numEndpoints"}]
@@ -354,12 +324,9 @@ export default {
         "excludeSnapshots": false
       },
       protostellarLoadBalancingSingle: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": protostellarCluster
-        }],
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
+        "cluster": protostellarCluster,
         "workload": {
           "settings": {
             "variables": [{"name": "experimentName", "value": "protostellarLoadBalancing"},
@@ -376,12 +343,9 @@ export default {
         "excludeSnapshots": false
       },
       protostellarLoadBalancingNotSingle: {
-        "inputs": [{
-          "viewing": "cluster",
-          "params": protostellarCluster
-        }],
         "display": "duration_average_us",
         "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
+        "cluster": protostellarCluster,
         "workload": {
           "settings": {
             "variables": [{"name": "experimentName", "value": "protostellarLoadBalancing"},

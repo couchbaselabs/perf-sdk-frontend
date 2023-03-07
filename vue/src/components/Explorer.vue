@@ -185,7 +185,7 @@ export default {
 
   created() {
     if (this.initialInput) {
-      this.selectedCluster = JSON.stringify(this.initialInput.inputs[0].params[0]);
+      this.selectedCluster = JSON.stringify(this.initialInput.cluster);
       this.selectedWorkload = JSON.stringify(this.initialInput.workload);
       this.selectedImpl = JSON.stringify(this.initialInput.impl);
       this.selectedVars = JSON.stringify(this.initialInput.vars);

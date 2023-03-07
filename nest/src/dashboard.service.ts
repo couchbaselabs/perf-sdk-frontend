@@ -1,17 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {DatabaseService, Run, RunPlus} from './database.service';
 import { Filtered } from './app.controller';
-import {v4 as uuidv4} from 'uuid';
 
-// Panels are an abstraction that's not really fully supported that would allow the frontend
-// to retrieve multiple graphs at once.  It needs to be dropped.
-export class Panel {
-  // cluster
-  viewing: string;
-  // [{"env":"AWS","disk":"ssd","nodes":3,"node_size":"m4"},{"env":"GCP","disk":"ssd","nodes":4,"node_size":"x2"}]
-  params: Array<Record<string, unknown>>;
-}
-
+// Query for a single run
 export class Single {
   runId: string;
   display: string; // latency_average_us
@@ -81,8 +72,6 @@ export enum FilterRuns {
 // The main search class from the frontend.  There are a number of different graphs displayed and they are all
 // represented through here.
 export class Input {
-  inputs: Array<Panel>;
-
   // What to display on the x-axis.  E.g. what we're grouping the database results by.
   // Supported options:
   // * "cluster.version"
@@ -275,7 +264,6 @@ export class DashboardService {
     }
 
     return {
-      uuid: uuidv4(),
       type: 'bar',
       runs: runs,
       chosen: comparedJson,
@@ -422,22 +410,11 @@ export class DashboardService {
     }
 
     return {
-      uuid: uuidv4(),
       type: 'line',
       runs: runsPlus,
       data: {
         datasets: datasets,
       },
-    };
-  }
-
-  async genDashboardWrapper(inputs: Input): Promise<any> {
-    return {
-      panels: await this.genPanels(
-        inputs,
-        inputs.inputs[0],
-        inputs.inputs.splice(1),
-      ),
     };
   }
 
@@ -545,76 +522,27 @@ export class DashboardService {
     return out;
   }
 
-  private async genPanels(
+  public async genGraph(
     input: Input,
-    panel: Panel,
-    remaining: Array<Panel>,
-  ): Promise<Array<Record<string, unknown>>> {
-    const panels = [];
+  ): Promise<any> {
+    const comparedJson = {
+      cluster: input.cluster,
+      impl: input.impl,
+      workload: input.workload,
+      vars: input.vars,
+    };
 
-    for (const key in panel.params) {
-      const param = panel.params[key];
-      const graphs = [];
-      let subPanels = [];
-
-      if (input.inputs.length == 1) {
-        const comparedJson = {
-          cluster: input.cluster,
-          impl: input.impl,
-          workload: input.workload,
-          vars: input.vars,
-        };
-
-        switch (panel.viewing) {
-          case 'cluster':
-            comparedJson.cluster = param;
-            break;
-          case 'impl':
-            comparedJson.cluster = param;
-            break;
-          case 'workload':
-            comparedJson.workload = param;
-            break;
-          case 'vars':
-            comparedJson.vars = param;
-            break;
-        }
-
-        if (input.graphType == GraphType.SIMPLIFIED) {
-          const graph = await this.addGraphBar(comparedJson, input);
-          graphs.push(graph);
-        } else {
-          const graph = await this.addGraphLine(comparedJson, input);
-          graphs.push(graph);
-        }
-      } else {
-        subPanels = await this.genPanels(
-          input,
-          remaining[0],
-          remaining.splice(1),
-        );
-      }
-
-      panels.push({
-        uuid: uuidv4(),
-        title: `${panel.viewing} ${JSON.stringify(param)}`,
-        graphs: graphs,
-        panels: subPanels,
-      });
+    if (input.graphType == GraphType.SIMPLIFIED) {
+      return await this.addGraphBar(comparedJson, input);
+    } else {
+      return await this.addGraphLine(comparedJson, input);
     }
-
-    return panels;
   }
 
   public async genSingle(
       input: Single
   ) {
-    return {
-      panels: [{
-        uuid: uuidv4(),
-        graphs: [await this.addGraphLineSingle(input)],
-      }]
-    };
+    return await this.addGraphLineSingle(input);
   }
 
   public async genMetrics(input: MetricsQuery) {
