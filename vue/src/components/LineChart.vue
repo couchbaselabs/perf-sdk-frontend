@@ -30,7 +30,7 @@ export default {
         {
           scaleLabel: {
             display: true,
-            labelString: this.input.display,
+            labelString: this.input.yAxis,
           },
           title: {
             display: true

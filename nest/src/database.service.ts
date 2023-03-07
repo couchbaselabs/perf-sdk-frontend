@@ -172,7 +172,7 @@ export class DatabaseService {
         SELECT buckets.run_id,
                time_bucket('${input.bucketiseSeconds} seconds', time) as datetime,
                min(buckets.time_offset_secs)                     as time_offset_secs,
-               ${mergingOp}(${input.display}) as value 
+               ${mergingOp}(${input.yAxis}) as value 
                ${includeMetrics ? `, metrics.metrics` : ""}
         FROM buckets
           ${includeMetrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
@@ -186,7 +186,7 @@ export class DatabaseService {
         SELECT buckets.run_id,
                time as datetime,
                 buckets.time_offset_secs,
-               ${input.display} as value 
+               ${input.yAxis} as value 
                ${includeMetrics ? `, metrics.metrics` : ""}
         FROM buckets
           ${includeMetrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
@@ -244,7 +244,7 @@ export class DatabaseService {
                    sub.value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
-                         ${mergingOp}(buckets.${input.display}) as value
+                         ${mergingOp}(buckets.${input.yAxis}) as value
                   FROM buckets join runs
                   on buckets.run_id = runs.id
                   WHERE run_id in ('${runIds.join("','")}')
@@ -256,7 +256,7 @@ export class DatabaseService {
       st = `SELECT avg(sub.value) as value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
-                        ${mergingOp}(buckets.${input.display}) as value
+                        ${mergingOp}(buckets.${input.yAxis}) as value
                   FROM buckets join runs
                   on buckets.run_id = runs.id
                   WHERE run_id in ('${runIds.join("','")}')

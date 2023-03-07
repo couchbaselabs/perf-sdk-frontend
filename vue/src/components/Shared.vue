@@ -127,7 +127,7 @@ export const defaultQuery = {
 
   // It's not best practice to display averages - max or p99 would be better - but the test variance is unfortunately
   // too high for that to display useful results.
-  "display": "duration_average_us",
+  "yAxis": "duration_average_us",
 
   // These fields are compared to the database, and are what's most likely to change in each graph.
   "databaseCompare": {

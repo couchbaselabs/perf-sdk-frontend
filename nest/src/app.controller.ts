@@ -31,8 +31,8 @@ export class AppController {
   constructor(private readonly dashboard: DashboardService) {}
 
   @Get('/filtered')
-  async filtered(@Query() query: { groupBy: string }) {
-    return await this.dashboard.getFiltered(query.groupBy);
+  async filtered(@Query() query: { hAxis: string }) {
+    return await this.dashboard.getFiltered(query.hAxis);
   }
 
   @Get('/groupByOptions')

@@ -5,17 +5,17 @@
         <b-form>
           <div class="form-legend">Display configuration:</div>
 
-          <b-form-group label="Display" id="input-group-1" label-for="input-1"
+          <b-form-group label="X-Axis" id="input-group-1" label-for="input-1"
                         description="What field to categorise the data into (e.g. the x-axis on the Simplified graph).  The backend introspects the database JSON and displays all options - not all will be valid.">
             <b-form-select id="input-1" v-model="selectedHAxis" v-on:change="handleGroupByChanged">
-              <option v-for="v in groupBy" :key="JSON.stringify(v)">{{ v }}</option>
+              <option v-for="v in hAxis" :key="JSON.stringify(v)">{{ v }}</option>
             </b-form-select>
           </b-form-group>
 
-          <b-form-group label="Field"
+          <b-form-group label="Y-Axis"
                         description="What value to display on the y-axis.">
-            <b-form-select v-model="selectedDisplay" v-on:change="handleSubmit">
-              <option v-for="v in display" :key="v.id">
+            <b-form-select v-model="selectedYAxis" v-on:change="handleSubmit">
+              <option v-for="v in yAxis" :key="v.id">
                 {{ v.text }}
               </option>
             </b-form-select>
@@ -144,7 +144,7 @@ export default {
   components: {Results},
   props: ['initialInput'],
   data() {
-    const display = [
+    const yAxis = [
       {id: 6, text: `duration_average_us`},
       {id: 4, text: `duration_min_us`},
       {id: 5, text: `duration_max_us`},
@@ -157,9 +157,9 @@ export default {
     ];
 
     return {
-      display: display,
+      yAxis: yAxis,
       initial: ['Loading...'],
-      groupBy: this.initial,
+      hAxis: this.initial,
       clusters: this.initial,
       workloads: this.initial,
       impls: this.initial,
@@ -170,7 +170,7 @@ export default {
       selectedCluster: undefined,
       selectedHAxis: hAxisSdkVersion,
       selectedVars: undefined,
-      selectedDisplay: display[0].text,
+      selectedYAxis: yAxis[0].text,
       selectedGraphType: "Simplified",
       selectedMultipleResultsHandling: "Side-by-side",
       selectedMergingType: "Average",
@@ -190,7 +190,7 @@ export default {
       this.selectedWorkload = JSON.stringify(this.initialInput.workload);
       this.selectedImpl = JSON.stringify(this.initialInput.impl);
       this.selectedVars = JSON.stringify(this.initialInput.vars);
-      this.selectedDisplay = this.initialInput.display;
+      this.selectedYAxis = this.initialInput.display;
       this.selectedHAxis = this.initialInput.groupBy;
       this.selectedGraphType = this.initialInput.graphType;
       this.selectedMultipleResultsHandling = this.initialInput.multipleResultsHandling;
@@ -211,8 +211,8 @@ export default {
       console.info("handle submit");
 
       this.input = {
-        groupBy: this.selectedHAxis,
-        display: this.selectedDisplay,
+        hAxis: this.selectedHAxis,
+        yAxis: this.selectedYAxis,
         compare: {
           cluster: JSON.parse(this.selectedCluster),
           impl: JSON.parse(this.selectedImpl),
@@ -251,7 +251,7 @@ export default {
     fetchGroupByOptions: async function () {
       const url = new URL(`http://${document.location.hostname}:3002/dashboard/groupByOptions`);
       const res = await fetch(url);
-      this.groupBy = await res.json();
+      this.hAxis = await res.json();
     }
   }
 }

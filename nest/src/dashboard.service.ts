@@ -6,7 +6,7 @@ import { versionCompare } from './versions';
 // Query for a single run
 export class Single {
   readonly runId: string;
-  readonly display: string; // latency_average_us
+  readonly yAxis: string; // latency_average_us
   readonly trimmingSeconds: number;
   readonly includeMetrics: boolean;
   readonly mergingType: MergingAlgorithm;
@@ -73,19 +73,14 @@ export enum FilterRuns {
 // The main search class from the frontend.  There are a number of different graphs displayed and they are all
 // represented through here.
 export class Input {
-  // What to display on the x-axis.  E.g. what we're grouping the database results by.
-  // Supported options:
-  // * "cluster.version"
-  // * "variables.<some_tunable>" e.g. "variables.com.couchbase.protostellar.executorMaxThreadCount"
-  // This really wants refactoring into two fields: what 'sort of thing' we're grouping by (e.g. versions, or tunables),
-  // and then what exactly we're grouping by ("cluster.version" or "com.couchbase.protostellar.executorMaxThreadCount").
-  // What we want to display on the horizontal axis
+  // What to display on the x-axis.
   readonly hAxis: HorizontalAxisDynamic;
 
   // What to display on the y-axis, e.g. "latency_average_us".
   // Generally corresponds to a database column in the `buckets` table.
-  readonly display: string;
+  readonly yAxis: string;
 
+  // What runs to look for.
   readonly databaseCompare: DatabaseCompare;
 
   readonly graphType: GraphType;

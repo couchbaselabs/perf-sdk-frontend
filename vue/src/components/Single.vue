@@ -20,7 +20,7 @@ export default {
   data() {
     return {
       input: {
-        display: this.$route.query.display,
+        yAxis: this.$route.query.yAxis,
         runId: this.$route.query.runId,
         trimmingSeconds: 0,
         includeMetrics: true,
