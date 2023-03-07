@@ -1,6 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import {Client} from 'pg';
-import {DatabaseCompare, GroupingType, MergingAlgorithm, Metrics, MetricsQuery} from "./dashboard.service";
+import {DatabaseCompare, MultipleResultsHandling, MergingAlgorithm, Metrics, MetricsQuery} from "./dashboard.service";
 
 const semver = require('semver');
 
@@ -239,13 +239,13 @@ export class DatabaseService {
     groupBy1: string,
     runIds: Array<string>,
     display: string,
-    groupingType: GroupingType,
+    multipleResultsHandling: MultipleResultsHandling,
     merging: MergingAlgorithm,
     trimming_seconds: number): Promise<Array<Result>> {
     const mergingOp = this.mapMerging(merging)
 
     let st;
-    if (groupingType == GroupingType.SIDE_BY_SIDE) {
+    if (multipleResultsHandling == MultipleResultsHandling.SIDE_BY_SIDE) {
       st = `SELECT runs.id,
                    sub.value,
                    ${groupBy1} as grouping
@@ -258,7 +258,7 @@ export class DatabaseService {
                   GROUP BY run_id) as sub
                    JOIN runs ON sub.run_id = runs.id
             ORDER BY grouping, datetime asc`;
-    } else if (groupingType == GroupingType.MERGED) {
+    } else if (multipleResultsHandling == MultipleResultsHandling.MERGED) {
       st = `SELECT avg(sub.value) as value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
@@ -272,7 +272,7 @@ export class DatabaseService {
             GROUP BY grouping
             ORDER BY grouping`;
     } else {
-      throw new Error('Unknown grouping_type ' + groupingType);
+      throw new Error('Unknown grouping_type ' + multipleResultsHandling);
     }
     console.info(st);
     const result = await this.client.query(st);
@@ -291,16 +291,16 @@ export class DatabaseService {
       groupBy: string,
       runIds: Array<string>,
       display: string,
-      groupingType: GroupingType,
+      multipleResultsHandling: MultipleResultsHandling,
       merging: MergingAlgorithm,
       trimmingSeconds: number): Promise<Array<Result>> {
     const mergingOp = this.mapMerging(merging)
 
     let st;
-    if (groupingType == GroupingType.SIDE_BY_SIDE) {
+    if (multipleResultsHandling == MultipleResultsHandling.SIDE_BY_SIDE) {
       // Can get it working later if needed
       throw "Unsupported currently"
-    } else if (groupingType == GroupingType.MERGED) {
+    } else if (multipleResultsHandling == MultipleResultsHandling.MERGED) {
       st = `WITH 
 
         /* We've already found the relevant runs */
@@ -330,7 +330,7 @@ export class DatabaseService {
         SELECT * from joined_with_buckets ORDER BY grouping::int;
         `
     } else {
-      throw new Error('Unknown grouping_type ' + groupingType);
+      throw new Error('Unknown grouping_type ' + multipleResultsHandling);
     }
     console.info(st);
     const result = await this.client.query(st);

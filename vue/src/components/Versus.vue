@@ -39,7 +39,7 @@ export default {
         },
         "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
         "graphType": "Simplified",
-        "groupingType": "Average",
+        "multipleResultsHandling": "Merged",
         "mergingType": "Average",
         "trimmingSeconds": 20,
         "bucketiseSeconds": 0,
@@ -63,7 +63,7 @@ export default {
           "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
         "graphType": "Simplified",
-        "groupingType": "Average",
+        "multipleResultsHandling": "Merged",
         "mergingType": "Average",
         "trimmingSeconds": 20,
         "bucketiseSeconds": 0,
@@ -87,7 +87,7 @@ export default {
           "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20}
         },
         "graphType": "Simplified",
-        "groupingType": "Average",
+        "multipleResultsHandling": "Merged",
         "mergingType": "Average",
         "trimmingSeconds": 20,
         "bucketiseSeconds": 0,
@@ -111,7 +111,7 @@ export default {
           "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1}
         },
         "graphType": "Simplified",
-        "groupingType": "Average",
+        "multipleResultsHandling": "Merged",
         "mergingType": "Average",
         "trimmingSeconds": 20,
         "bucketiseSeconds": 0,
@@ -135,7 +135,7 @@ export default {
           "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1}
         },
         "graphType": "Simplified",
-        "groupingType": "Average",
+        "multipleResultsHandling": "Merged",
         "mergingType": "Average",
         "trimmingSeconds": 20,
         "bucketiseSeconds": 0,
@@ -159,7 +159,7 @@ export default {
           "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1}
         },
         "graphType": "Simplified",
-        "groupingType": "Average",
+        "multipleResultsHandling": "Merged",
         "mergingType": "Average",
         "trimmingSeconds": 20,
         "bucketiseSeconds": 0,

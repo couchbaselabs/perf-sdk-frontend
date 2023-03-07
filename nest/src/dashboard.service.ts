@@ -37,14 +37,14 @@ export enum GraphType {
 }
 
 // If in Simplified mode (bar chart) and we have multiple results for a particular bar, how to display them.
-export enum GroupingType {
+export enum MultipleResultsHandling {
   SIDE_BY_SIDE = "Side-by-Side",
 
-  // ("Average" is a misnomer, but is what the frontend is sending)
-  MERGED = "Average"
+  // How they are merged is controlled by MergingAlgorithm.
+  MERGED = "Merged"
 }
 
-// If in Simplified mode (bar chart) and we have multiple results for a particular bar, and groupingType = MERGED,
+// If in Simplified mode (bar chart) and we have multiple results for a particular bar, and MultipleResultsHandling = MERGED,
 // how do we actually merge them.
 export enum MergingAlgorithm {
   AVERAGE = "Average",
@@ -86,7 +86,7 @@ export class Input {
   databaseCompare: DatabaseCompare;
 
   graphType: GraphType;
-  groupingType: GroupingType;
+  multipleResultsHandling: MultipleResultsHandling;
   mergingType: MergingAlgorithm;
 
   // How many seconds of data to trim off the start of each run, to account for e.g. JVM warmup and general settling.
@@ -229,7 +229,7 @@ export class DashboardService {
             input.groupBy.replace("variables.", ""),
             runIds,
             input.display,
-            input.groupingType,
+            input.multipleResultsHandling,
             input.mergingType,
             input.trimmingSeconds);
       }
@@ -238,7 +238,7 @@ export class DashboardService {
             input.groupBy1(),
             runIds,
             input.display,
-            input.groupingType,
+            input.multipleResultsHandling,
             input.mergingType,
             input.trimmingSeconds);
         buckets.sort((a, b) => a.grouping.localeCompare(b.grouping));

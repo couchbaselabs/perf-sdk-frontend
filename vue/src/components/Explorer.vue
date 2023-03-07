@@ -35,7 +35,7 @@
               <b-col class="pr-0">
                 <b-form-group label="Duplicate handling"
                               description="When duplicate runs exist, how to display them.">
-                  <b-form-select v-model="selectedGroupingType" v-on:change="handleSubmit">
+                  <b-form-select v-model="selectedMultipleResultsHandling" v-on:change="handleSubmit">
                     <option>Side-by-side</option>
                     <option>Average</option>
                   </b-form-select>
@@ -171,7 +171,7 @@ export default {
       selectedVars: undefined,
       selectedDisplay: display[0].text,
       selectedGraphType: "Simplified",
-      selectedGroupingType: "Side-by-side",
+      selectedMultipleResultsHandling: "Side-by-side",
       selectedMergingType: "Average",
       selectedTrimmingSeconds: 20,
       selectedBucketiseSeconds: 0,
@@ -192,7 +192,7 @@ export default {
       this.selectedDisplay = this.initialInput.display;
       this.selectedGroupBy = this.initialInput.groupBy;
       this.selectedGraphType = this.initialInput.graphType;
-      this.selectedGroupingType = this.initialInput.groupingType;
+      this.selectedMultipleResultsHandling = this.initialInput.multipleResultsHandling;
       this.selectedMergingType = this.initialInput.mergingType;
       this.selectedTrimmingSeconds = this.initialInput.trimmingSeconds | 0;
       this.selectedBucketiseSeconds = this.initialInput.selectedBucketiseSeconds | 0;
@@ -219,7 +219,7 @@ export default {
           vars: JSON.parse(this.selectedVars)
         },
         graphType: this.selectedGraphType,
-        groupingType: this.selectedGroupingType,
+        multipleResultsHandling: this.selectedMultipleResultsHandling,
         mergingType: this.selectedMergingType,
         trimmingSeconds: this.selectedTrimmingSeconds,
         bucketiseSeconds: this.selectedBucketiseSeconds,
