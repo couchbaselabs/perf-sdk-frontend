@@ -7,7 +7,7 @@
 
           <b-form-group label="Display" id="input-group-1" label-for="input-1"
                         description="What field to categorise the data into (e.g. the x-axis on the Simplified graph).  The backend introspects the database JSON and displays all options - not all will be valid.">
-            <b-form-select id="input-1" v-model="selectedGroupBy" v-on:change="handleGroupByChanged">
+            <b-form-select id="input-1" v-model="selectedHAxis" v-on:change="handleGroupByChanged">
               <option v-for="v in groupBy" :key="JSON.stringify(v)">{{ v }}</option>
             </b-form-select>
           </b-form-group>
@@ -137,6 +137,7 @@
 
 
 import Results from "@/components/Results";
+import {hAxisSdkVersion} from "./Shared";
 
 export default {
   name: "Explorer",
@@ -167,7 +168,7 @@ export default {
       selectedWorkload: undefined,
       selectedImpl: undefined,
       selectedCluster: undefined,
-      selectedGroupBy: "impl.version",
+      selectedHAxis: hAxisSdkVersion,
       selectedVars: undefined,
       selectedDisplay: display[0].text,
       selectedGraphType: "Simplified",
@@ -190,7 +191,7 @@ export default {
       this.selectedImpl = JSON.stringify(this.initialInput.impl);
       this.selectedVars = JSON.stringify(this.initialInput.vars);
       this.selectedDisplay = this.initialInput.display;
-      this.selectedGroupBy = this.initialInput.groupBy;
+      this.selectedHAxis = this.initialInput.groupBy;
       this.selectedGraphType = this.initialInput.graphType;
       this.selectedMultipleResultsHandling = this.initialInput.multipleResultsHandling;
       this.selectedMergingType = this.initialInput.mergingType;
@@ -210,7 +211,7 @@ export default {
       console.info("handle submit");
 
       this.input = {
-        groupBy: this.selectedGroupBy,
+        groupBy: this.selectedHAxis,
         display: this.selectedDisplay,
         compare: {
           cluster: JSON.parse(this.selectedCluster),
@@ -231,7 +232,7 @@ export default {
 
     handleGroupByChanged: async function () {
       const url = new URL(`http://${document.location.hostname}:3002/dashboard/filtered`);
-      url.searchParams.append("groupBy", this.selectedGroupBy);
+      url.searchParams.append("hAxis", this.selectedHAxis);
       const res = await fetch(url);
       const json = await res.json();
       this.clusters = json.clusters;

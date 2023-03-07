@@ -23,7 +23,7 @@ import {
   defaultWorkloadInserts,
   defaultWorkloadReplaces,
   defaultWorkloadGets,
-    withoutKey
+  hAxisSdkLanguage
 } from "@/components/Shared";
 
 export default {
@@ -32,8 +32,8 @@ export default {
   data() {
     return {
       kvInserts: {
-        ...withoutKey("groupBy", defaultQuery),
-        "groupBy": "impl.language",
+        ...defaultQuery,
+        "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
           "workload": defaultWorkloadInserts,
           "vars": {"docNum": 10000000, ...defaultVars}
@@ -43,7 +43,7 @@ export default {
 
       kvReplaces: {
         ...defaultQuery,
-        "groupBy": "impl.language",
+        "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
           "workload": defaultWorkloadReplaces,
           "vars": {"poolSize": 10000, ...defaultVars}
@@ -53,7 +53,7 @@ export default {
 
       kvGets: {
         ...defaultQuery,
-        "groupBy": "impl.language",
+        "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
           "workload": defaultWorkloadGets,
           "vars": {"poolSize": 10000, ...defaultVars}
@@ -63,7 +63,7 @@ export default {
 
       kvInsertsSingleThreaded: {
         ...defaultQuery,
-        "groupBy": "impl.language",
+        "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
           "workload": defaultWorkloadInserts,
           "vars": {"docNum": 10000000, ...defaultVars, "horizontalScaling": 1}
@@ -73,7 +73,7 @@ export default {
 
       kvReplacesSingleThreaded: {
         ...defaultQuery,
-        "groupBy": "impl.language",
+        "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
           "workload": defaultWorkloadReplaces,
           "vars": {"poolSize": 10000, ...defaultVars, "horizontalScaling": 1}
@@ -83,7 +83,7 @@ export default {
 
       kvGetsSingleThreaded: {
         ...defaultQuery,
-        "groupBy": "impl.language",
+        "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
           "workload": defaultWorkloadGets,
           "vars": {"poolSize": 10000, ...defaultVars, "horizontalScaling": 1}

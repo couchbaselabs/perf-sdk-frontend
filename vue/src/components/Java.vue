@@ -56,7 +56,8 @@ import Shared, {
   defaultVarsWithoutHorizontalScaling,
   protostellarCluster,
   defaultWorkloadGets,
-  withoutKey
+  withoutKey,
+  hAxisSdkLanguage
 } from "@/components/Shared";
 import Results from "@/components/Results";
 
@@ -66,7 +67,10 @@ export default {
     return {
       kvGetsHorizontalScalingAsync: {
         ...defaultQuery,
-        "groupBy": "variables.horizontalScaling",
+        "hAxis": {
+          "type": "dynamic",
+          "variable": "vars.horizontalScaling"
+        },
         "databaseCompare": {
           "impl": {"language": "Java"},
           "workload": defaultWorkloadGets,
@@ -117,49 +121,39 @@ export default {
       },
       stellarNebulaGets: {
         ...defaultQuery,
-        "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
+        "hAxis": {
+          "type": "dynamic",
+          "databaseField": "vars.com.couchbase.protostellar.executorMaxThreadCount",
+          "resultType": "Integer"
+        },
         "databaseCompare": {
           "cluster": protostellarCluster,
           "impl": {"language": "Java", "version": "refs/changes/35/184435/1"},
-          "workload": {
-            ... defaultWorkloadGets,
-            "settings": {
-              "grpc": {"batch": 1000, "compression": true, "flowControl": true},
-              "variables": [{
-                "name": "com.couchbase.protostellar.executorType",
-                "type": "tunable",
-                "value": "ForkJoinPool"
-              }, {
-                "name": "com.couchbase.protostellar.overrideHostname",
-                "type": "tunable",
-                "value": "172.17.0.1"
-              }, {"name": "poolSize", "value": 10000}, {
-                "name": "horizontalScaling",
-                "value": 20
-              }, {"name": "forSeconds", "value": 300}]
-            }
-          },
+          "workload": defaultWorkloadGets,
           "vars": {
             "poolSize": 10000,
             ...defaultVars,
             "com.couchbase.protostellar.executorType": "ForkJoinPool",
-            "com.couchbase.protostellar.overrideHostname": "172.17.0.1",
           }
         },
         "excludeGerrit": false,
       },
       forkJoinPoolExecutorMaxThreadCount: {
         ...defaultQuery,
-        "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
+        "hAxis": {
+          "type": "dynamic",
+          "databaseField": "vars.com.couchbase.protostellar.executorMaxThreadCount",
+          "resultType": "Integer"
+        },
         "databaseCompare": {
           "cluster": protostellarCluster,
-          "workload": {
-            "settings": {
-              "variables": [{"name": "experimentName", "value": "ThreadPool"},
-                {"name": "com.couchbase.protostellar.executorType", "value": "ForkJoinPool"}]
-            },
-          },
-          "vars": {"poolSize": 10000, ...withoutKey("api", defaultVars)}
+          "impl": {"language": "Java"}
+        },
+        "vars": {
+          "poolSize": 10000,
+          "experimentName": "ThreadPool",
+          "com.couchbase.protostellar.executorType": "ForkJoinPool",
+          ...withoutKey("api", defaultVars)
         },
         "excludeGerrit": false,
       },
@@ -168,19 +162,19 @@ export default {
         "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
         "databaseCompare": {
           "cluster": protostellarCluster,
-          "workload": {
-            "settings": {
-              "variables": [{"name": "experimentName", "value": "ThreadPool"},
-                {"name": "com.couchbase.protostellar.executorType", "value": "ThreadPool"}]
-            },
-          },
-          "vars": {"poolSize": 10000, ...withoutKey("api", defaultVars)}
+          "impl": {"language": "Java"}
+        },
+        "vars": {
+          "poolSize": 10000,
+          "experimentName": "ThreadPool",
+          "com.couchbase.protostellar.executorType": "ThreadPool",
+          ...withoutKey("api", defaultVars)
         },
         "excludeGerrit": false,
       },
       coreKvOps: {
-        "groupBy": "impl.language",
         ...defaultQuery,
+        "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
           "impl": {"language": "Java", "version": "refs/changes/07/184307/8"},
           "cluster": defaultCluster,
@@ -195,11 +189,8 @@ export default {
         "groupBy": "variables.com.couchbase.protostellar.reuseStubs",
         "databaseCompare": {
           "cluster": protostellarCluster,
-          "workload": {
-            "settings": {
-              "variables": [{"name": "experimentName", "value": "reuseStubs"}]
-            },
-          }
+          "impl": {"language": "Java"},
+          "vars": {experimentName: "reuseStubs"}
         },
         "excludeGerrit": false,
       },
@@ -208,11 +199,8 @@ export default {
         "groupBy": "variables.com.couchbase.protostellar.numEndpoints",
         "databaseCompare": {
           "cluster": protostellarCluster,
-          "workload": {
-            "settings": {
-              "variables": [{"name": "experimentName", "value": "numEndpoints"}]
-            },
-          }
+          "impl": {"language": "Java"},
+          "vars": {experimentName: "numEndpoints"}
         },
         "excludeGerrit": false,
       },
@@ -221,11 +209,10 @@ export default {
         "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
         "databaseCompare": {
           "cluster": protostellarCluster,
-          "workload": {
-            "settings": {
-              "variables": [{"name": "experimentName", "value": "protostellarLoadBalancing"},
-                {"name": "com.couchbase.protostellar.loadBalancingSingle", "value": "true"}]
-            },
+          "impl": {"language": "Java"},
+          "vars": {
+            experimentName: "protostellarLoadBalancing",
+            "com.couchbase.protostellar.loadBalancingSingle": "true"
           }
         },
         "excludeGerrit": false,
@@ -235,11 +222,10 @@ export default {
         "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
         "databaseCompare": {
           "cluster": protostellarCluster,
-          "workload": {
-            "settings": {
-              "variables": [{"name": "experimentName", "value": "protostellarLoadBalancing"},
-                {"name": "com.couchbase.protostellar.loadBalancingSingle", "value": "false"}]
-            },
+          "impl": {"language": "Java"},
+          "vars": {
+            experimentName: "protostellarLoadBalancing",
+            "com.couchbase.protostellar.loadBalancingSingle": "false"
           }
         },
         "excludeGerrit": false,

@@ -4,7 +4,7 @@
       Exclude snapshots
     </b-form-checkbox>
 
-    <MetricsAlerts :input="{language:language}"></MetricsAlerts>
+<!--    <MetricsAlerts :input="{language:language}"></MetricsAlerts>-->
     <h1>KV Get</h1>
     <Results :input="kvGets"></Results>
     <h1>KV Replace</h1>
@@ -19,10 +19,11 @@
 
 <script>
 import Results from "@/components/Results";
-import MetricsAlerts from "@/components/MetricsAlerts";
+// import MetricsAlerts from "@/components/MetricsAlerts";
 
 export default {
-  components: {Results, MetricsAlerts},
+  // components: {Results, MetricsAlerts},
+  components: {Results},
   props: ['language'],
   computed: {
     kvInserts() {
@@ -67,7 +68,11 @@ export default {
     kvGetsHorizontalScaling() {
       return {
         ... defaultQuery,
-        "groupBy": "variables.horizontalScaling",
+        "hAxis": {
+          "type": "dynamic",
+          "databaseField": "vars.horizontalScaling",
+          "resultType": "Integer"
+        },
         "databaseCompare": {
           "impl": {"language": this.language},
           "workload": defaultWorkloadGets,
@@ -117,8 +122,8 @@ export const protostellarCluster = {
 }
 
 export const defaultQuery = {
-  // We're usually display SDK versions
-  "groupBy": "impl.version",
+  // We're usually displaying SDK versions.
+  "hAxis": hAxisSdkVersion(),
 
   // It's not best practice to display averages - max or p99 would be better - but the test variance is unfortunately
   // too high for that to display useful results.
@@ -201,6 +206,22 @@ export const defaultWorkloadGets = {
     "bounds": {"forSeconds": "$forSeconds"},
     "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
   }]
+}
+
+export function hAxisSdkVersion() {
+  return {
+    "type": "dynamic",
+    "databaseField": "impl.version",
+    "resultType": "VersionSemver"
+  }
+}
+
+export function hAxisSdkLanguage() {
+  return {
+    "type": "dynamic",
+    "databaseField": "impl.version",
+    "resultType": "String"
+  }
 }
 
 // Return a copy of `vars` (a JSON object) with key `key` removed.

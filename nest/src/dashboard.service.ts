@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import {DatabaseService, Run, RunPlus} from './database.service';
+import {DatabaseService, Result, Run, RunPlus} from './database.service';
 import { Filtered } from './app.controller';
+import { versionCompare } from './versions';
 
 // Query for a single run
 export class Single {
@@ -78,14 +79,18 @@ export class Input {
   // * "variables.<some_tunable>" e.g. "variables.com.couchbase.protostellar.executorMaxThreadCount"
   // This really wants refactoring into two fields: what 'sort of thing' we're grouping by (e.g. versions, or tunables),
   // and then what exactly we're grouping by ("cluster.version" or "com.couchbase.protostellar.executorMaxThreadCount").
-  groupBy: string;
+  // What we want to display on the horizontal axis
+  hAxis: HorizontalAxisDynamic;
 
-  // What to display on the y-axis.
-  display: string; // "latency_average_us"
+  // What to display on the y-axis, e.g. "latency_average_us".
+  // Generally corresponds to a database column in the `buckets` table.
+  display: string;
 
   databaseCompare: DatabaseCompare;
 
   graphType: GraphType;
+
+  // These two only apply if graphType == SIMPLIFIED
   multipleResultsHandling: MultipleResultsHandling;
   mergingType: MergingAlgorithm;
 
@@ -107,14 +112,53 @@ export class Input {
 
   // Whether to filter matched runs.  The default is ALL (no filtering).
   filterRuns: FilterRuns;
+}
 
-  // groupBy1 and groupBy2 turn `groupBy` into a form that can be used directly against the database JSON.
-  groupBy1(): string {
-    return `params->'${this.groupBy.replace('.', "'->>'")}'`;
+// This class is a little hard to explain...
+//
+// The original goal was that the backend and to a degree the frontend would have very little idea what specifically
+// was in the json blob that are stored with each run.  The only info that was held is that the JSON contained a few
+// top-level fields - "cluster", "vars", "impl" and "workload".
+// Both backend and frontend would dynamically inspect and display what was in that JSON.  This would allow displaying
+// many sorts of graphs - how the Java SDK performs against multiple versions of the cluster.  How the Kotlin SDK
+// perf changed over various versions of that SDK.  Etc.  And all without having to have multiple endpoints for each of
+// those graphs.
+//
+// This approach does work, to an extent.  It doesn't handle some sorts of graphs like displaying how a metric changes
+// over time, so there are other HorizontalAxis classes for those.
+export interface HorizontalAxisDynamic {
+  type: "dynamic";
+
+  // Can be any database field, though some fields are more likely than others to produce useful results:
+  // "impl.version" - displays SDK versions.  Most useful if the query is limited with `Compare` to one SDK.
+  // "impl.language" - displays SDK languages: "Kotlin", "Scala", etc.
+  // Some fields that _might_ work but haven't been used yet:
+  // "cluster.version" - displays cluster versions: "7.0.0" etc.  Could be useful for seeing how an SDK's performance
+  //       has changed over time vs cluster versions.
+  databaseField: string;
+
+  // Gives some indication what type the results are, which helps with ordering them correctly.
+  resultType: HorizontalAxisType
+}
+
+export enum HorizontalAxisType {
+  // A string version number following semver ordering rules
+  VERSION_SEMVER = "VersionSemver",
+
+  INTEGER = "Integer",
+
+  STRING = "String"
+}
+
+class HorizontalAxisDynamicUtil {
+  // Turns `databaseField` into a form we can use in a SQL query.
+  static databaseRepresentation1(input: HorizontalAxisDynamic): string {
+    return `params->'${input.databaseField.replace('.', "'->>'")}'`;
   }
 
-  groupBy2(): string {
-    const split = this.groupBy.split('.');
+  // Turns `databaseField` into a form we can use in a SQL query... but different!
+  static databaseRepresentation2(input: HorizontalAxisDynamic): string {
+    const split = input.databaseField.split('.');
     return `{${split.join(',')}}`;
   }
 }
@@ -130,9 +174,16 @@ export class Input {
 // code that 'knows' we're dealing with a cluster, or variables, or whatever.  It's handled fairly generically based
 // on the JSON.
 export class DatabaseCompare {
+  // A JSON blob containing info about the cluster that was used for this run.
   cluster?: Record<string, unknown>;
+
+  // A JSON blob containing info about the SDK that was used for this run - language, version, etc.
   impl?: Record<string, unknown>;
+
+  // A JSON blob containing info about the workload that was run - KV inserts, etc.
   workload?: Record<string, unknown>;
+
+  // A JSON blob containing the runtime variables that affected this run.  Number of docs, length of run, etc.
   vars?: Record<string, unknown>;
 }
 
@@ -140,20 +191,6 @@ export class DatabaseCompare {
 export class DashboardService {
   constructor(private readonly database: DatabaseService) {}
 
-  // credit: https://stackoverflow.com/questions/6832596/how-can-i-compare-software-version-number-using-javascript-only-numbers
-  private versionCompare(version1: string, version2: string){
-    const regExStrip0 = /(\.0+)+$/;
-    const segmentsA = version1.replace(regExStrip0, '').split('.');
-    const segmentsB = version2.replace(regExStrip0, '').split('.');
-
-    if(segmentsA > segmentsB) {
-      return 1
-    } else if (segmentsA < segmentsB) {
-      return -1
-    } else{
-      return 0
-    }
-  }
   /**
    * Takes runs from the database and filters them against the requested Input.
    */
@@ -178,7 +215,7 @@ export class DashboardService {
             latestForEachLanguage.set(sdk, version)
           }
           else {
-            if (this.versionCompare(version, currentLatest) > 0) {
+            if (versionCompare(version, currentLatest) > 0) {
               latestForEachLanguage.set(sdk, version)
             }
           }
@@ -212,42 +249,36 @@ export class DashboardService {
    * Builds the Simplified bar graph
    */
   private async addGraphBar(input: Input): Promise<any> {
-    const isVariablesQuery = input.groupBy.startsWith("variables.")
     const labels = [];
     const values = [];
-    const runs = this.filterRuns(await this.database.getRuns(
-      input.databaseCompare,
-      input.groupBy2(),
-    ), input);
-    const runIds = runs.map((v) => v.id);
+    let runs: Run[];
+    let results: Result[];
 
-    if (runIds.length != 0) {
-      let buckets
-      if (isVariablesQuery) {
-        buckets = await this.database.getGroupingsForVariables(
-            input.groupBy1(),
-            input.groupBy.replace("variables.", ""),
+    if (input.hAxis.type == 'dynamic') {
+      const ha = input.hAxis as HorizontalAxisDynamic;
+
+      runs = this.filterRuns(await this.database.getRuns(
+          input.databaseCompare,
+          HorizontalAxisDynamicUtil.databaseRepresentation2(ha),
+      ), input)
+
+      const runIds = runs.map((v) => v.id);
+
+      if (runIds.length > 0) {
+        results = await this.database.getSimplifiedGraph(
+            HorizontalAxisDynamicUtil.databaseRepresentation1(ha),
             runIds,
-            input.display,
-            input.multipleResultsHandling,
-            input.mergingType,
-            input.trimmingSeconds);
+            input);
       }
-      else {
-        buckets = await this.database.getGroupings(
-            input.groupBy1(),
-            runIds,
-            input.display,
-            input.multipleResultsHandling,
-            input.mergingType,
-            input.trimmingSeconds);
-        buckets.sort((a, b) => a.grouping.localeCompare(b.grouping));
-      }
-      buckets.forEach((b) => {
-        labels.push(b.grouping);
-        values.push(b.value);
-      });
     }
+    else {
+      throw Error(`Unknown hAxis type ${input.hAxis}`)
+    }
+
+    results.forEach((b) => {
+      labels.push(b.grouping);
+      values.push(b.value);
+    });
 
     return {
       type: 'bar',
@@ -270,12 +301,19 @@ export class DashboardService {
    * Builds the Full line graph for multiple runs.
    */
   private async addGraphLine(input: Input): Promise<any> {
-    const runs = this.filterRuns(await this.database.getRuns(
-        input.databaseCompare,
-        input.groupBy2(),
-    ), input);
+    if (input.hAxis.type == 'dynamic') {
+      const ha = input.hAxis as HorizontalAxisDynamic;
 
-    return this.addGraphLineShared(runs, input.display, input.trimmingSeconds, input.groupBy, input.includeMetrics, input.mergingType, input.bucketiseSeconds);
+      const runs = this.filterRuns(await this.database.getRuns(
+          input.databaseCompare,
+          HorizontalAxisDynamicUtil.databaseRepresentation2(ha),
+      ), input);
+
+      return this.addGraphLineShared(runs, input);
+    }
+    else {
+      throw Error(`Unknown hAxis type ${input.hAxis}`)
+    }
   }
 
   /**
@@ -285,9 +323,22 @@ export class DashboardService {
       input: Single,
   ): Promise<any> {
     const runs = await this.database.getRunsById([input.runId]);
+    const i: Input = {
+      ...input,
+      hAxis: {
+        type: "dynamic",
+        databaseField: "impl.version",
+        resultType: HorizontalAxisType.VERSION_SEMVER
+      },
+      graphType: GraphType.FULL,
+      databaseCompare: undefined,
+      excludeGerrit: false,
+      excludeSnapshots: false,
+      filterRuns: FilterRuns.ALL,
+      multipleResultsHandling: undefined
+    }
 
-    // TODO fix this hardcoding
-    return this.addGraphLineShared(runs, input.display, input.trimmingSeconds, "impl.version", input.includeMetrics, input.mergingType, input.bucketiseSeconds);
+    return this.addGraphLineShared(runs, i)
   }
 
 
@@ -296,109 +347,102 @@ export class DashboardService {
    */
   private async addGraphLineShared(
     runs: Array<Run>,
-    display: string,
-    trimmingSeconds: number,
-    groupBy: string,
-    includeMetrics: boolean,
-    merging: MergingAlgorithm,
-    bucketiseSeconds?: number
+    input: Input
   ): Promise<any> {
-    const datasets = [];
-    const runIds = runs.map((v) => v.id);
+    if (input.hAxis.type == 'dynamic') {
+      const ha = input.hAxis as HorizontalAxisDynamic;
+      const datasets = [];
+      const runIds = runs.map((v) => v.id);
 
-    const runsWithBuckets = await this.database.getRunsWithBuckets(
-        runIds,
-        display,
-        trimmingSeconds,
-        includeMetrics,
-        merging,
-        bucketiseSeconds
-    );
+      const runsWithBuckets = await this.database.getRunsWithBuckets(runIds, input);
 
-    const shades = [
-      '#E2F0CB',
-      '#B5EAD7',
-      '#C7CEEA',
-      '#FF9AA2',
-      '#FFB7B2',
-      '#FFDAC1',
-    ];
-    let shadeIdx = 0;
+      const shades = [
+        '#E2F0CB',
+        '#B5EAD7',
+        '#C7CEEA',
+        '#FF9AA2',
+        '#FFB7B2',
+        '#FFDAC1',
+      ];
+      let shadeIdx = 0;
 
-    const runsPlus: Array<RunPlus> = runs.map((run: RunPlus) => {
-      const groupedBy = groupBy.split('.');
-      run.groupedBy = DashboardService.parseFrom(run.params, groupedBy);
-      const shade = shades[shadeIdx % shades.length];
-      shadeIdx++;
-      run.color = shade;
-      return run;
-    });
+      const runsPlus: Array<RunPlus> = runs.map((run: RunPlus) => {
+        const groupedBy = ha.databaseField.split('.');
+        run.groupedBy = DashboardService.parseFrom(run.params, groupedBy);
+        const shade = shades[shadeIdx % shades.length];
+        shadeIdx++;
+        run.color = shade;
+        return run;
+      });
 
-    for (const run of runsPlus) {
-      const bucketsForRun = runsWithBuckets.filter((v) => v.runId == run.id);
+      for (const run of runsPlus) {
+        const bucketsForRun = runsWithBuckets.filter((v) => v.runId == run.id);
 
-      // console.info(`For run ${run.id} buckets ${bucketsForRun.length}`);
+        // console.info(`For run ${run.id} buckets ${bucketsForRun.length}`);
 
-      const data = [];
-      const dataMetrics = {};
+        const data = [];
+        const dataMetrics = {};
 
-      bucketsForRun.forEach((b) => {
-        data.push({
-          x: b.timeOffsetSecs,
-          y: b.value,
-          nested: {
-            datetime: b.datetime,
-            runid: b.runId,
-          },
+        bucketsForRun.forEach((b) => {
+          data.push({
+            x: b.timeOffsetSecs,
+            y: b.value,
+            nested: {
+              datetime: b.datetime,
+              runid: b.runId,
+            },
+          });
+
+          if (b.metrics) {
+            const metricsJson = b.metrics;
+            const keys = Object.keys(metricsJson);
+            keys.forEach(key => {
+              // const x = b.run_id + "_" + key;
+              // It's not useful to have multiple runs with metrics on same screen
+              const x = key;
+              const data = {
+                x: b.timeOffsetSecs,
+                y: metricsJson[key]
+              }
+              if (x in dataMetrics) {
+                dataMetrics[x].push(data);
+              } else {
+                dataMetrics[x] = [data];
+              }
+            })
+          }
         });
 
-        if (b.metrics) {
-          const metricsJson = b.metrics;
-          const keys = Object.keys(metricsJson);
-          keys.forEach(key => {
-            // const x = b.run_id + "_" + key;
-            // It's not useful to have multiple runs with metrics on same screen
-            const x = key;
-            const data = {
-              x: b.timeOffsetSecs,
-              y: metricsJson[key]
-            }
-            if (x in dataMetrics) {
-              dataMetrics[x].push(data);
-            }
-            else {
-              dataMetrics[x] = [data];
-            }
-          })
-        }
-      });
-
-      datasets.push({
-        label: run.groupedBy,
-        data: data,
-        fill: false,
-        backgroundColor: run.color,
-        borderColor: run.color,
-      });
-
-      for (const [k, v] of Object.entries(dataMetrics)) {
         datasets.push({
-          label: k,
-          data: v,
-          hidden: true,
+          label: run.groupedBy,
+          data: data,
           fill: false,
-          borderColor: shades[(shadeIdx++) % shades.length]
+          backgroundColor: run.color,
+          borderColor: run.color,
         });
-      }
-    }
 
-    return {
-      type: 'line',
-      runs: runsPlus,
-      data: {
-        datasets: datasets,
-      },
-    };
+        for (const [k, v] of Object.entries(dataMetrics)) {
+          datasets.push({
+            label: k,
+            data: v,
+            hidden: true,
+            fill: false,
+            borderColor: shades[(shadeIdx++) % shades.length]
+          });
+        }
+      }
+
+      return {
+        type: 'line',
+        runs: runsPlus,
+        data: {
+          datasets: datasets,
+        },
+      };
+    }
+    else {
+      throw Error(`Unknown hAxis type ${input.hAxis}`)
+    }
   }
 
   public async getFiltered(groupBy: string): Promise<Filtered> {

@@ -1,8 +1,7 @@
 import {Injectable} from '@nestjs/common';
 import {Client} from 'pg';
-import {DatabaseCompare, MultipleResultsHandling, MergingAlgorithm, Metrics, MetricsQuery} from "./dashboard.service";
-
-const semver = require('semver');
+import {DatabaseCompare, MultipleResultsHandling, MergingAlgorithm, Metrics, MetricsQuery, Input, HorizontalAxisType, HorizontalAxisDynamic} from "./dashboard.service";
+import {versionCompare} from "./versions";
 
 export class Run {
   params: Record<string, unknown>;
@@ -65,7 +64,7 @@ export interface RunPlus extends Run {
   color: string; // '#E2F0CB'
 }
 
-class Result {
+export class Result {
   grouping: string;
   value: number;
 
@@ -156,31 +155,29 @@ export class DatabaseService {
   }
 
   /**
-   * Returns all runs that match, together with the bucket data for each.
+   * Returns all runs that match `runIds`, together with the bucket data for each.
    * Used for building the Full line graph.
+   * `input.databaseCompare` is NOT used here.
    */
   async getRunsWithBuckets(
     runIds: Array<string>,
-    display: string,
-    trimmingSeconds: number,
-    includeMetrics: boolean,
-    merging: MergingAlgorithm,
-    bucketiseSeconds?: number): Promise<Array<RunBucketPair>> {
+    input: Input): Promise<Array<RunBucketPair>> {
     let st;
-    if (bucketiseSeconds != null && bucketiseSeconds > 1) {
+    let includeMetrics = input.includeMetrics
+    if (input.bucketiseSeconds > 1) {
       // Not sure how to group the metrics, would require some complex JSON processing
       includeMetrics = false
-      const mergingOp = this.mapMerging(merging)
+      const mergingOp = this.mapMerging(input.mergingType)
       st = `
         SELECT buckets.run_id,
-               time_bucket('${bucketiseSeconds} seconds', time) as datetime,
+               time_bucket('${input.bucketiseSeconds} seconds', time) as datetime,
                min(buckets.time_offset_secs)                     as time_offset_secs,
-               ${mergingOp}(${display}) as value 
+               ${mergingOp}(${input.display}) as value 
                ${includeMetrics ? `, metrics.metrics` : ""}
         FROM buckets
           ${includeMetrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
         WHERE buckets.run_id in ('${runIds.join("','")}')
-          AND buckets.time_offset_secs >= ${trimmingSeconds}
+          AND buckets.time_offset_secs >= ${input.trimmingSeconds}
         GROUP BY run_id, datetime
         ORDER BY datetime ASC;`
     }
@@ -189,12 +186,12 @@ export class DatabaseService {
         SELECT buckets.run_id,
                time as datetime,
                 buckets.time_offset_secs,
-               ${display} as value 
+               ${input.display} as value 
                ${includeMetrics ? `, metrics.metrics` : ""}
         FROM buckets
           ${includeMetrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
         WHERE buckets.run_id in ('${runIds.join("','")}')
-          AND buckets.time_offset_secs >= ${trimmingSeconds}
+          AND buckets.time_offset_secs >= ${input.trimmingSeconds}
         ORDER BY datetime ASC;`
     }
 
@@ -235,106 +232,76 @@ export class DatabaseService {
   /**
    * The Simplified display.
    */
-  async getGroupings(
+  async getSimplifiedGraph(
     groupBy1: string,
     runIds: Array<string>,
-    display: string,
-    multipleResultsHandling: MultipleResultsHandling,
-    merging: MergingAlgorithm,
-    trimming_seconds: number): Promise<Array<Result>> {
-    const mergingOp = this.mapMerging(merging)
+    input: Input): Promise<Array<Result>> {
+    const mergingOp = this.mapMerging(input.mergingType)
 
     let st;
-    if (multipleResultsHandling == MultipleResultsHandling.SIDE_BY_SIDE) {
+    if (input.multipleResultsHandling == MultipleResultsHandling.SIDE_BY_SIDE) {
       st = `SELECT runs.id,
                    sub.value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
-                         ${mergingOp}(buckets.${display}) as value
+                         ${mergingOp}(buckets.${input.display}) as value
                   FROM buckets join runs
                   on buckets.run_id = runs.id
                   WHERE run_id in ('${runIds.join("','")}')
-                    AND buckets.time_offset_secs >= ${trimming_seconds}
+                    AND buckets.time_offset_secs >= ${input.trimmingSeconds}
                   GROUP BY run_id) as sub
                    JOIN runs ON sub.run_id = runs.id
             ORDER BY grouping, datetime asc`;
-    } else if (multipleResultsHandling == MultipleResultsHandling.MERGED) {
+    } else if (input.multipleResultsHandling == MultipleResultsHandling.MERGED) {
       st = `SELECT avg(sub.value) as value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
-                        ${mergingOp}(buckets.${display}) as value
+                        ${mergingOp}(buckets.${input.display}) as value
                   FROM buckets join runs
                   on buckets.run_id = runs.id
                   WHERE run_id in ('${runIds.join("','")}')
-                    AND buckets.time_offset_secs >= ${trimming_seconds}
+                    AND buckets.time_offset_secs >= ${input.trimmingSeconds}
                   GROUP BY run_id) as sub
                    JOIN runs ON sub.run_id = runs.id
             GROUP BY grouping
             ORDER BY grouping`;
     } else {
-      throw new Error('Unknown grouping_type ' + multipleResultsHandling);
+      throw new Error('Unknown grouping_type ' + input.multipleResultsHandling);
     }
     console.info(st);
     const result = await this.client.query(st);
-    return result.map((x) => new Result(x.grouping, x.value));
+    return DatabaseService.sort(result.map((x) => new Result(x.grouping, x.value)), input)
   }
 
-  /**
-   * The Simplified display for group_by = variables.com.couchbase.protostellar.executorMaxThreadCount.
-   *
-   * params.workload.settings.variables is an array so we have to do some non-trivial JSON fiddling to find the specific variable.
-   * Would be easier if it was an object and might make that change in future.
-   * That could also possibly allow removing this special case get_groupings_for_variables.
-   */
-  async getGroupingsForVariables(
-      groupBy1: string,
-      groupBy: string,
-      runIds: Array<string>,
-      display: string,
-      multipleResultsHandling: MultipleResultsHandling,
-      merging: MergingAlgorithm,
-      trimmingSeconds: number): Promise<Array<Result>> {
-    const mergingOp = this.mapMerging(merging)
-
-    let st;
-    if (multipleResultsHandling == MultipleResultsHandling.SIDE_BY_SIDE) {
-      // Can get it working later if needed
-      throw "Unsupported currently"
-    } else if (multipleResultsHandling == MultipleResultsHandling.MERGED) {
-      st = `WITH 
-
-        /* We've already found the relevant runs */
-        relevant_runs AS (SELECT * FROM runs WHERE id in ('${runIds.join("','")}')),
-        
-        /* Expand the variables array */
-        expanded_variables AS (SELECT id, json_array_elements(params::json->'workload'->'settings'->'variables') AS var FROM relevant_runs),
-        
-        /* Find the correct variable from the variables array */
-        correct_variable_selected AS (SELECT id, var from expanded_variables WHERE var->>'name'='${groupBy}'),
-        
-        /* Extract the value */
-        extracted_value AS (SELECT id, var->>'value' as value FROM correct_variable_selected),
-        
-        /* Join with buckets */
-        joined_with_buckets AS (SELECT ${mergingOp}(buckets.${display}) AS value,
-                                /* Handle true/false tests, convert to int */
-                                (CASE WHEN extracted_value.value = 'true' THEN 1
-                                    WHEN extracted_value.value = 'false' THEN 0
-                                    ELSE extracted_value.value::integer
-                                END) AS grouping
-                          FROM buckets JOIN extracted_value ON buckets.run_id = extracted_value.id
-                          WHERE buckets.time_offset_secs >= ${trimmingSeconds}
-                          GROUP BY value, grouping)
-
-        /* Cannot group by ::int as it breaks on true/false tests */
-        SELECT * from joined_with_buckets ORDER BY grouping::int;
-        `
-    } else {
-      throw new Error('Unknown grouping_type ' + multipleResultsHandling);
+  private static sort(results: Result[], input: Input): Result[] {
+    let resultType: HorizontalAxisType
+    if (input.hAxis.type == 'dynamic') {
+      const ha = input.hAxis as HorizontalAxisDynamic
+      resultType = ha.resultType
     }
-    console.info(st);
-    const result = await this.client.query(st);
-    return result.map((x) => new Result(x.grouping, x.value));
+
+    results.sort((x, y) => {
+      const a = x.grouping
+      const b = y.grouping
+      let out
+      if (resultType == HorizontalAxisType.INTEGER) {
+        out = Number.parseInt(a) - Number.parseInt(b)
+      }
+      else if (resultType == HorizontalAxisType.STRING) {
+        out = (a as string).localeCompare(b as string)
+      }
+      else if (resultType == HorizontalAxisType.VERSION_SEMVER) {
+        out = versionCompare(a as string, b as string)
+      }
+
+      console.info(`${a} vs ${b} with ${resultType} = ${out}`)
+
+      return out
+    })
+
+    // results.forEach(v => console.info(`Post-sort: ${v.grouping} = ${v.value}`))
+
+    return results
   }
 
   // cast (metrics::json->>'threadCount' as integer) > 100
