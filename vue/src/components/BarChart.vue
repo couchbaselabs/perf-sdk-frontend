@@ -16,7 +16,7 @@ export default {
           {
             scaleLabel: {
               display: true,
-              labelString: this.input.yAxis.column,
+              labelString: this.input.yAxis.column ?? this.input.yAxis.metric,
             },
             ticks: {
               beginAtZero: true
