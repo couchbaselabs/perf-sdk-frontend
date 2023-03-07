@@ -161,7 +161,7 @@ export default {
         path: `/single`,
         query: {
           runId: runId,
-          yAxis: this.input.yAxis,
+          yAxis: this.input.yAxis.column,
           mergingType: this.input.merging_type,
           bucketiseSeconds: this.input.bucketise_seconds
         }

@@ -6,7 +6,7 @@ import { versionCompare } from './versions';
 // Query for a single run
 export class Single {
   readonly runId: string;
-  readonly yAxis: string; // latency_average_us
+  readonly yAxis: VerticalAxisBucketsColumn;
   readonly trimmingSeconds: number;
   readonly includeMetrics: boolean;
   readonly mergingType: MergingAlgorithm;
@@ -76,9 +76,8 @@ export class Input {
   // What to display on the x-axis.
   readonly hAxis: HorizontalAxisDynamic;
 
-  // What to display on the y-axis, e.g. "latency_average_us".
-  // Generally corresponds to a database column in the `buckets` table.
-  readonly yAxis: string;
+  // What to display on the y-axis.
+  readonly yAxis: VerticalAxisBucketsColumn | VerticalAxisMetric;
 
   // What runs to look for.
   readonly databaseCompare: DatabaseCompare;
@@ -119,8 +118,8 @@ export class Input {
 // perf changed over various versions of that SDK.  Etc.  And all without having to have multiple endpoints for each of
 // those graphs.
 //
-// This approach does work, to an extent.  It doesn't handle some sorts of graphs like displaying how a metric changes
-// over time, so there are other HorizontalAxis classes for those.
+// This approach does work, to an extent.  As we try and display more complex graphs we may hit against its limits,
+// which could be handled with a new HorizontalAxis type.
 export interface HorizontalAxisDynamic {
   readonly type: "dynamic";
 
@@ -133,10 +132,26 @@ export interface HorizontalAxisDynamic {
   readonly databaseField: string;
 
   // Gives some indication what type the results are, which helps with ordering them correctly.
-  readonly resultType: HorizontalAxisType
+  readonly resultType: ResultType
 }
 
-export enum HorizontalAxisType {
+// Allows displaying a column from the `buckets` table.
+export interface VerticalAxisBucketsColumn {
+  readonly type: "buckets";
+
+  // "latency_average_us"
+  readonly column: string;
+}
+
+// Allows displaying a metric from the metrics table.
+export interface VerticalAxisMetric {
+  readonly type: "metric";
+
+  // "systemCPU"
+  readonly metric: string;
+}
+
+export enum ResultType {
   // A string version number following semver ordering rules
   VERSION_SEMVER = "VersionSemver",
 
@@ -252,18 +267,33 @@ export class DashboardService {
     if (input.hAxis.type == 'dynamic') {
       const ha = input.hAxis as HorizontalAxisDynamic;
 
-      runs = this.filterRuns(await this.database.getRuns(
-          input.databaseCompare,
-          HorizontalAxisDynamicUtil.databaseRepresentation2(ha),
-      ), input)
+      if (input.yAxis.type == 'buckets') {
+        const va = input.yAxis as VerticalAxisBucketsColumn;
 
-      const runIds = runs.map((v) => v.id);
+        runs = this.filterRuns(await this.database.getRuns(
+            input.databaseCompare,
+            HorizontalAxisDynamicUtil.databaseRepresentation2(ha),
+        ), input)
 
-      if (runIds.length > 0) {
-        results = await this.database.getSimplifiedGraph(
-            HorizontalAxisDynamicUtil.databaseRepresentation1(ha),
-            runIds,
-            input);
+        const runIds = runs.map((v) => v.id);
+
+        if (runIds.length > 0) {
+          results = await this.database.getSimplifiedGraph(
+              HorizontalAxisDynamicUtil.databaseRepresentation1(ha),
+              runIds,
+              input,
+              va);
+        }
+      } else if (input.yAxis.type == 'metric') {
+        const va = input.yAxis as VerticalAxisMetric;
+
+        runs = this.filterRuns(await this.database.getRuns(input.databaseCompare, "{}",), input)
+
+        const runIds = runs.map((v) => v.id);
+
+        if (runIds.length > 0) {
+          results = await this.database.getSimplifiedGraphForMetric(runIds, ha, va, input);
+        }
       }
     }
     else {
@@ -323,7 +353,7 @@ export class DashboardService {
       hAxis: {
         type: "dynamic",
         databaseField: "impl.version",
-        resultType: HorizontalAxisType.VERSION_SEMVER
+        resultType: ResultType.VERSION_SEMVER
       },
       graphType: GraphType.FULL,
       databaseCompare: undefined,
@@ -346,10 +376,11 @@ export class DashboardService {
   ): Promise<any> {
     if (input.hAxis.type == 'dynamic') {
       const ha = input.hAxis as HorizontalAxisDynamic;
+      const va = input.yAxis as VerticalAxisBucketsColumn;
       const datasets = [];
       const runIds = runs.map((v) => v.id);
 
-      const runsWithBuckets = await this.database.getRunsWithBuckets(runIds, input);
+      const runsWithBuckets = await this.database.getRunsWithBuckets(runIds, input, va);
 
       const shades = [
         '#E2F0CB',

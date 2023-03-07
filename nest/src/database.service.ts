@@ -1,6 +1,16 @@
 import {Injectable} from '@nestjs/common';
 import {Client} from 'pg';
-import {DatabaseCompare, MultipleResultsHandling, MergingAlgorithm, Metrics, MetricsQuery, Input, HorizontalAxisType, HorizontalAxisDynamic} from "./dashboard.service";
+import {
+  DatabaseCompare,
+  MultipleResultsHandling,
+  MergingAlgorithm,
+  Metrics,
+  MetricsQuery,
+  Input,
+  ResultType,
+  HorizontalAxisDynamic,
+  VerticalAxisMetric, VerticalAxisBucketsColumn
+} from "./dashboard.service";
 import {versionCompare} from "./versions";
 
 export class Run {
@@ -161,7 +171,8 @@ export class DatabaseService {
    */
   async getRunsWithBuckets(
     runIds: Array<string>,
-    input: Input): Promise<Array<RunBucketPair>> {
+    input: Input,
+    yAxis: VerticalAxisBucketsColumn): Promise<Array<RunBucketPair>> {
     let st;
     let includeMetrics = input.includeMetrics
     if (input.bucketiseSeconds > 1) {
@@ -172,7 +183,7 @@ export class DatabaseService {
         SELECT buckets.run_id,
                time_bucket('${input.bucketiseSeconds} seconds', time) as datetime,
                min(buckets.time_offset_secs)                     as time_offset_secs,
-               ${mergingOp}(${input.yAxis}) as value 
+               ${mergingOp}(${yAxis.column}) as value 
                ${includeMetrics ? `, metrics.metrics` : ""}
         FROM buckets
           ${includeMetrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
@@ -186,7 +197,7 @@ export class DatabaseService {
         SELECT buckets.run_id,
                time as datetime,
                 buckets.time_offset_secs,
-               ${input.yAxis} as value 
+               ${yAxis.column} as value 
                ${includeMetrics ? `, metrics.metrics` : ""}
         FROM buckets
           ${includeMetrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
@@ -235,7 +246,8 @@ export class DatabaseService {
   async getSimplifiedGraph(
     groupBy1: string,
     runIds: Array<string>,
-    input: Input): Promise<Array<Result>> {
+    input: Input,
+    yAxis: VerticalAxisBucketsColumn): Promise<Array<Result>> {
     const mergingOp = this.mapMerging(input.mergingType)
 
     let st;
@@ -244,7 +256,7 @@ export class DatabaseService {
                    sub.value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
-                         ${mergingOp}(buckets.${input.yAxis}) as value
+                         ${mergingOp}(buckets.${yAxis.column}) as value
                   FROM buckets join runs
                   on buckets.run_id = runs.id
                   WHERE run_id in ('${runIds.join("','")}')
@@ -256,7 +268,7 @@ export class DatabaseService {
       st = `SELECT avg(sub.value) as value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
-                        ${mergingOp}(buckets.${input.yAxis}) as value
+                        ${mergingOp}(buckets.${yAxis.column}) as value
                   FROM buckets join runs
                   on buckets.run_id = runs.id
                   WHERE run_id in ('${runIds.join("','")}')
@@ -273,8 +285,38 @@ export class DatabaseService {
     return DatabaseService.sort(result.map((x) => new Result(x.grouping, x.value)), input)
   }
 
+  async getSimplifiedGraphForMetric(runIds: readonly string[],
+                                    hAxis: HorizontalAxisDynamic,
+                                    yAxis: VerticalAxisMetric,
+                                    input: Input): Promise<Array<Result>> {
+    const mergingOp = this.mapMerging(input.mergingType)
+
+    let st;
+    if (input.multipleResultsHandling == MultipleResultsHandling.SIDE_BY_SIDE) {
+      // Can get it working later if needed
+      throw "Unsupported currently"
+    } else if (input.multipleResultsHandling == MultipleResultsHandling.MERGED) {
+      st = `WITH 
+
+        /* We've already found the relevant runs */
+        r AS (SELECT * FROM runs WHERE id in ('${runIds.join("','")}')),
+
+        /* Join with metrics.  Should really be driven by hAxis but have just hardcoded it to return SDK versions for now. */
+        joined AS (SELECT params::jsonb->'impl'->>'version' AS groupBy, CAST(metrics.metrics::jsonb->>'${yAxis.metric}' AS FLOAT) AS metric FROM metrics JOIN r ON metrics.run_id = r.id)
+
+        /* Group for the h-axis */
+        SELECT groupBy AS grouping, ${mergingOp}(metric) AS value FROM joined GROUP BY groupBy;
+        `
+    } else {
+      throw new Error('Unknown grouping_type ' + input.multipleResultsHandling);
+    }
+    console.info(st);
+    const result = await this.client.query(st);
+    return DatabaseService.sort(result.map((x) => new Result(x.grouping, x.value)), input);
+  }
+
   private static sort(results: Result[], input: Input): Result[] {
-    let resultType: HorizontalAxisType
+    let resultType: ResultType
     if (input.hAxis.type == 'dynamic') {
       const ha = input.hAxis as HorizontalAxisDynamic
       resultType = ha.resultType
@@ -284,17 +326,17 @@ export class DatabaseService {
       const a = x.grouping
       const b = y.grouping
       let out
-      if (resultType == HorizontalAxisType.INTEGER) {
+      if (resultType == ResultType.INTEGER) {
         out = Number.parseInt(a) - Number.parseInt(b)
       }
-      else if (resultType == HorizontalAxisType.STRING) {
+      else if (resultType == ResultType.STRING) {
         out = (a as string).localeCompare(b as string)
       }
-      else if (resultType == HorizontalAxisType.VERSION_SEMVER) {
+      else if (resultType == ResultType.VERSION_SEMVER) {
         out = versionCompare(a as string, b as string)
       }
 
-      console.info(`${a} vs ${b} with ${resultType} = ${out}`)
+      // console.info(`${a} vs ${b} with ${resultType} = ${out}`)
 
       return out
     })

@@ -4,7 +4,7 @@
       Exclude snapshots
     </b-form-checkbox>
 
-<!--    <MetricsAlerts :input="{language:language}"></MetricsAlerts>-->
+    <MetricsAlerts :input="{language:language}"></MetricsAlerts>
     <h1>KV Get</h1>
     <Results :input="kvGets"></Results>
     <h1>KV Replace</h1>
@@ -122,12 +122,16 @@ export const protostellarCluster = {
 }
 
 export const defaultQuery = {
-  // We're usually displaying SDK versions.
+  // We're usually displaying SDK versions as the h-axis.
   "hAxis": hAxisSdkVersion(),
 
+  // We're usually display duration_average_us from the buckets table as the y-axis.
   // It's not best practice to display averages - max or p99 would be better - but the test variance is unfortunately
   // too high for that to display useful results.
-  "yAxis": "duration_average_us",
+  "yAxis": {
+    type: "buckets",
+    column: "duration_average_us",
+  },
 
   // These fields are compared to the database, and are what's most likely to change in each graph.
   "databaseCompare": {

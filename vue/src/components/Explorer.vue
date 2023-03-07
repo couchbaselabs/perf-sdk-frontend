@@ -168,7 +168,7 @@ export default {
       selectedWorkload: undefined,
       selectedImpl: undefined,
       selectedCluster: undefined,
-      selectedHAxis: hAxisSdkVersion,
+      selectedHAxis: hAxisSdkVersion().databaseField,
       selectedVars: undefined,
       selectedYAxis: yAxis[0].text,
       selectedGraphType: "Simplified",
@@ -211,8 +211,14 @@ export default {
       console.info("handle submit");
 
       this.input = {
-        hAxis: this.selectedHAxis,
-        yAxis: this.selectedYAxis,
+        hAxis: {
+          type: "dynamic",
+          databaseField: this.selectedHAxis
+        },
+        yAxis: {
+          type: "buckets",
+          column: this.selectedYAxis
+        },
         compare: {
           cluster: JSON.parse(this.selectedCluster),
           impl: JSON.parse(this.selectedImpl),
