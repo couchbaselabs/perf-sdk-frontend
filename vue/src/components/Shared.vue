@@ -1,6 +1,6 @@
 <template>
   <b-container>
-    <b-form-checkbox v-model="exclude_snapshots">
+    <b-form-checkbox v-model="excludeSnapshots">
       Exclude snapshots
     </b-form-checkbox>
 
@@ -43,7 +43,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.version",
+        "groupBy": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": this.language},
         "workload": {
@@ -54,14 +54,14 @@ export default {
           }]
         },
         "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_snapshots": this.exclude_snapshots,
-        "exclude_gerrit": this.exclude_gerrit || true,
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeSnapshots": this.excludeSnapshots,
+        "excludeGerrit": this.excludeGerrit || true,
       }
     },
 
@@ -83,7 +83,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.version",
+        "groupBy": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": this.language},
         "workload": {
@@ -94,14 +94,14 @@ export default {
           }]
         },
         "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": this.exclude_gerrit || true,
-        "exclude_snapshots": this.exclude_snapshots,
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": this.excludeGerrit || true,
+        "excludeSnapshots": this.excludeSnapshots,
       }
     },
 
@@ -123,7 +123,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.version",
+        "groupBy": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": this.language},
         "workload": {
@@ -134,14 +134,14 @@ export default {
           }]
         },
         "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": this.exclude_gerrit || true,
-        "exclude_snapshots": this.exclude_snapshots || false,
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": this.excludeGerrit || true,
+        "excludeSnapshots": this.excludeSnapshots || false,
       }
     },
 
@@ -163,7 +163,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "variables.horizontalScaling",
+        "groupBy": "variables.horizontalScaling",
         "display": "duration_average_us",
         "impl": {"language": this.language},
         "workload": {
@@ -181,22 +181,22 @@ export default {
           "experimentName": "horizontalScaling",
           "api":"DEFAULT",
         },
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": true,
-        "exclude_snapshots": this.exclude_snapshots || false,
-        "filter_runs": "Latest"
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": true,
+        "excludeSnapshots": this.excludeSnapshots || false,
+        "filterRuns": "Latest"
       }
     }
   },
   data() {
     return {
-      exclude_snapshots: false,
-      exclude_gerrit: true,
+      excludeSnapshots: false,
+      excludeGerrit: true,
     }
   }
 }

@@ -15,7 +15,7 @@
         <div class="graph" v-for="graph in panel.graphs" :key="graph.uuid">
           <b-container class="mb-3">
 
-            <BarChart v-if="graph.type === 'bar'" class="chart" :chartdata="graph.data" :options="graph.options" :input="input"/>
+            <BarChart v-if="graph.type === 'bar'" class="chart" :chartData="graph.data" :options="graph.options" :input="input"/>
             <div v-if="graph.type === 'line'">
               <LineChart class="chartLine" :chartdata="graph.data" :options="graph.options" :input="input"/>
               <div>

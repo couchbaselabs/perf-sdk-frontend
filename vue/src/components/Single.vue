@@ -2,8 +2,8 @@
   <b-container>
     <div class="mb-5">
       Showing run {{$route.query.runId}} and displaying {{$route.query.display}}.
-      <div v-if="input.bucketise_seconds">
-        Re-bucketised into {{input.bucketise_seconds}} second buckets, merged with {{input.merging_type}}.
+      <div v-if="input.bucketiseSeconds">
+        Re-bucketised into {{input.bucketiseSeconds}} second buckets, merged with {{input.mergingType}}.
         <b-alert variant="danger" show>Currently if re-bucketising data, metrics are disabled as re-bucketising the JSON-based metrics is non-trivial.</b-alert>
       </div>
     </div>
@@ -21,11 +21,11 @@ export default {
     return {
       input: {
         display: this.$route.query.display,
-        runid: this.$route.query.runId,
-        trimming_seconds: 0,
-        include_metrics: true,
-        merging_type: this.$route.query.mergingType,
-        bucketise_seconds: this.$route.query.bucketiseSeconds,
+        runId: this.$route.query.runId,
+        trimmingSeconds: 0,
+        includeMetrics: true,
+        mergingType: this.$route.query.mergingType,
+        bucketiseSeconds: this.$route.query.bucketiseSeconds,
       }
     }
   }

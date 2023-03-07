@@ -73,7 +73,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "variables.horizontalScaling",
+        "groupBy": "variables.horizontalScaling",
         "display": "duration_average_us",
         "impl": {"language": "Java"},
         "workload": {
@@ -91,14 +91,14 @@ export default {
           "experimentName": "horizontalScaling",
           "api": "ASYNC",
         },
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": true,
-        "exclude_snapshots": this.exclude_snapshots || false
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": true,
+        "excludeSnapshots": this.exclude_snapshots || false
       },
 
       kvGetsBlocking: {
@@ -118,7 +118,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.version",
+        "groupBy": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": "Java"},
         "workload": {
@@ -136,14 +136,14 @@ export default {
           "horizontalScaling": 20,
           api: "DEFAULT"
         },
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": true,
-        "exclude_snapshots": this.exclude_snapshots || false,
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": true,
+        "excludeSnapshots": this.exclude_snapshots || false,
       },
       kvGetsReactive: {
         "inputs": [{
@@ -162,7 +162,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.version",
+        "groupBy": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": "Java"},
         "workload": {
@@ -180,13 +180,13 @@ export default {
           "horizontalScaling": 20,
           api: "ASYNC"
         },
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": true
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": true
       },
       transactions: {
         "inputs": [{
@@ -205,7 +205,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.version",
+        "groupBy": "impl.version",
         "display": "duration_average_us",
         "impl": {"language": "Java"},
         "workload": {
@@ -219,14 +219,14 @@ export default {
           }]
         },
         "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": true,
-        "exclude_snapshots": this.exclude_snapshots || false
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": true,
+        "excludeSnapshots": this.exclude_snapshots || false
       },
       stellarNebulaGets: {
         "inputs": [{
@@ -247,7 +247,7 @@ export default {
             "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
           }]
         }],
-        "group_by": "variables.com.couchbase.protostellar.executorMaxThreadCount",
+        "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
         "display": "duration_average_us",
         "impl": {"language": "Java", "version": "refs/changes/35/184435/1"},
         "workload": {
@@ -281,14 +281,14 @@ export default {
           "com.couchbase.protostellar.executorType": "ForkJoinPool",
           "com.couchbase.protostellar.overrideHostname": "172.17.0.1",
         },
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": false,
-        "exclude_snapshots": false
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": false,
+        "excludeSnapshots": false
       },
       forkJoinPoolExecutorMaxThreadCount: {
         "inputs": [{
@@ -310,7 +310,7 @@ export default {
           }]
         }],
         "display": "duration_average_us",
-        "group_by": "variables.com.couchbase.protostellar.executorMaxThreadCount",
+        "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
         "workload": {
           "settings": {
             "variables": [{"name": "experimentName", "value": "ThreadPool"},
@@ -324,14 +324,14 @@ export default {
           "performerVer": 1,
           "horizontalScaling": 20
         },
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": false,
-        "exclude_snapshots": false
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": false,
+        "excludeSnapshots": false
       },
       threadPoolExecutorMaxThreadCount: {
         "inputs": [{
@@ -353,7 +353,7 @@ export default {
           }]
         }],
         "display": "duration_average_us",
-        "group_by": "variables.com.couchbase.protostellar.executorMaxThreadCount",
+        "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
         "workload": {
           "settings": {
             "variables": [{"name": "experimentName", "value": "ThreadPool"},
@@ -367,14 +367,14 @@ export default {
           "performerVer": 1,
           "horizontalScaling": 20
         },
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": false,
-        "exclude_snapshots": false
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": false,
+        "excludeSnapshots": false
       },
       coreKvOps: {
         "inputs": [{
@@ -393,7 +393,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.language",
+        "groupBy": "impl.language",
         "display": "duration_average_us",
         "impl": {"language": "Java", "version": "refs/changes/07/184307/8"},
         "workload": {
@@ -404,14 +404,14 @@ export default {
           }]
         },
         "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": this.exclude_gerrit || false,
-        "exclude_snapshots": this.exclude_snapshots || false,
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": this.exclude_gerrit || false,
+        "excludeSnapshots": this.exclude_snapshots || false,
       },
       reuseStubs: {
         "inputs": [{
@@ -433,20 +433,20 @@ export default {
           }]
         }],
         "display": "duration_average_us",
-        "group_by": "variables.com.couchbase.protostellar.reuseStubs",
+        "groupBy": "variables.com.couchbase.protostellar.reuseStubs",
         "workload": {
           "settings": {
             "variables": [{"name": "experimentName", "value": "reuseStubs"}]
           },
         },
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": false,
-        "exclude_snapshots": false
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": false,
+        "excludeSnapshots": false
       },
       numEndpoints: {
         "inputs": [{
@@ -468,20 +468,20 @@ export default {
           }]
         }],
         "display": "duration_average_us",
-        "group_by": "variables.com.couchbase.protostellar.numEndpoints",
+        "groupBy": "variables.com.couchbase.protostellar.numEndpoints",
         "workload": {
           "settings": {
             "variables": [{"name": "experimentName", "value": "numEndpoints"}]
           },
         },
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": false,
-        "exclude_snapshots": false
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": false,
+        "excludeSnapshots": false
       },
       protostellarLoadBalancingSingle: {
         "inputs": [{
@@ -503,21 +503,21 @@ export default {
           }]
         }],
         "display": "duration_average_us",
-        "group_by": "variables.com.couchbase.protostellar.loadBalancing",
+        "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
         "workload": {
           "settings": {
             "variables": [{"name": "experimentName", "value": "protostellarLoadBalancing"},
               {"name": "com.couchbase.protostellar.loadBalancingSingle", "value": "true"}]
           },
         },
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": false,
-        "exclude_snapshots": false
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": false,
+        "excludeSnapshots": false
       },
       protostellarLoadBalancingNotSingle: {
         "inputs": [{
@@ -539,21 +539,21 @@ export default {
           }]
         }],
         "display": "duration_average_us",
-        "group_by": "variables.com.couchbase.protostellar.loadBalancing",
+        "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
         "workload": {
           "settings": {
             "variables": [{"name": "experimentName", "value": "protostellarLoadBalancing"},
               {"name": "com.couchbase.protostellar.loadBalancingSingle", "value": "false"}]
           },
         },
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": false,
-        "exclude_snapshots": false
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": false,
+        "excludeSnapshots": false
       },
     }
   }

@@ -40,7 +40,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.language",
+        "groupBy": "impl.language",
         "display": "duration_average_us",
         "workload": {
           "operations": [{
@@ -50,14 +50,14 @@ export default {
           }]
         },
         "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": true,
-        "filter_runs": "Latest"
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": true,
+        "filterRuns": "Latest"
       },
 
       kvReplaces: {
@@ -77,7 +77,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.language",
+        "groupBy": "impl.language",
         "display": "duration_average_us",
         "workload": {
           "operations": [{
@@ -87,14 +87,14 @@ export default {
           }]
         },
         "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": true,
-        "filter_runs": "Latest"
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": true,
+        "filterRuns": "Latest"
       },
 
       kvGets: {
@@ -114,7 +114,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.language",
+        "groupBy": "impl.language",
         "display": "duration_average_us",
         "workload": {
           "operations": [{
@@ -124,14 +124,14 @@ export default {
           }]
         },
         "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 20},
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": true,
-        "filter_runs": "Latest"
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": true,
+        "filterRuns": "Latest"
       },
 
       kvInsertsSingleThreaded: {
@@ -151,7 +151,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.language",
+        "groupBy": "impl.language",
         "display": "duration_average_us",
         "workload": {
           "operations": [{
@@ -161,14 +161,14 @@ export default {
           }]
         },
         "vars": {"docNum": 10000000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1},
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": true,
-        "filter_runs": "Latest"
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": true,
+        "filterRuns": "Latest"
       },
 
       kvReplacesSingleThreaded: {
@@ -188,7 +188,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.language",
+        "groupBy": "impl.language",
         "display": "duration_average_us",
         "workload": {
           "operations": [{
@@ -198,14 +198,14 @@ export default {
           }]
         },
         "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1},
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": true,
-        "filter_runs": "Latest"
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": true,
+        "filterRuns": "Latest"
       },
 
       kvGetsSingleThreaded: {
@@ -225,7 +225,7 @@ export default {
             "compaction": "disabled"
           }]
         }],
-        "group_by": "impl.language",
+        "groupBy": "impl.language",
         "display": "duration_average_us",
         "workload": {
           "operations": [{
@@ -235,14 +235,14 @@ export default {
           }]
         },
         "vars": {"poolSize": 10000, "driverVer": 6, "forSeconds": 300, "performerVer": 1, "horizontalScaling": 1},
-        "graph_type": "Simplified",
-        "grouping_type": "Average",
-        "merging_type": "Average",
-        "trimming_seconds": 20,
-        "bucketise_seconds": 0,
-        "include_metrics": false,
-        "exclude_gerrit": true,
-        "filter_runs": "Latest"
+        "graphType": "Simplified",
+        "groupingType": "Average",
+        "mergingType": "Average",
+        "trimmingSeconds": 20,
+        "bucketiseSeconds": 0,
+        "includeMetrics": false,
+        "excludeGerrit": true,
+        "filterRuns": "Latest"
       }
 
     }

@@ -13,12 +13,12 @@ export class Panel {
 }
 
 export class Single {
-  runid: string;
+  runId: string;
   display: string; // latency_average_us
-  trimming_seconds: number;
-  include_metrics: boolean;
-  merging_type: MergingAlgorithm;
-  bucketise_seconds?: number;
+  trimmingSeconds: number;
+  includeMetrics: boolean;
+  mergingType: MergingAlgorithm;
+  bucketiseSeconds?: number;
 }
 
 export class MetricsQuery {
@@ -89,7 +89,7 @@ export class Input {
   // * "variables.<some_tunable>" e.g. "variables.com.couchbase.protostellar.executorMaxThreadCount"
   // This really wants refactoring into two fields: what 'sort of thing' we're grouping by (e.g. versions, or tunables),
   // and then what exactly we're grouping by ("cluster.version" or "com.couchbase.protostellar.executorMaxThreadCount").
-  group_by: string;
+  groupBy: string;
 
   // What to display on the y-axis.
   display: string; // "latency_average_us"
@@ -108,35 +108,36 @@ export class Input {
   workload?: Record<string, unknown>;
   vars?: Record<string, unknown>;
 
-  graph_type: GraphType;
-  grouping_type: GroupingType;
-  merging_type: MergingAlgorithm;
+  graphType: GraphType;
+  groupingType: GroupingType;
+  mergingType: MergingAlgorithm;
 
   // How many seconds of data to trim off the start of each run, to account for e.g. JVM warmup and general settling.
-  trimming_seconds: number;
+  trimmingSeconds: number;
 
   // Whether the metrics table data should be fetched and included.
-  include_metrics: boolean;
+  includeMetrics: boolean;
 
   // It's too expensive to draw large line graphs of 1 second buckets, so re-bucketise into larger buckets if this is
   // set.
-  bucketise_seconds?: number;
+  bucketiseSeconds?: number;
 
   // Whether to exclude interim/snapshot versions ("3.4.0-20221020.123751-26")
-  exclude_snapshots: boolean;
+  excludeSnapshots: boolean;
 
   // Whether to exclude Gerrit versions ("refs/changes/19/183619/30")
-  exclude_gerrit: boolean;
+  excludeGerrit: boolean;
 
   // Whether to filter matched runs.  The default is ALL (no filtering).
-  filter_runs: FilterRuns;
+  filterRuns: FilterRuns;
 
+  // groupBy1 and groupBy2 turn `groupBy` into a form that can be used directly against the database JSON.
   groupBy1(): string {
-    return `params->'${this.group_by.replace('.', "'->>'")}'`;
+    return `params->'${this.groupBy.replace('.', "'->>'")}'`;
   }
 
   groupBy2(): string {
-    const split = this.group_by.split('.');
+    const split = this.groupBy.split('.');
     return `{${split.join(',')}}`;
   }
 }
@@ -181,7 +182,7 @@ export class DashboardService {
   private filterRuns(runs: Run[], input: Input): Run[] {
     const latestForEachLanguage = new Map<string, string>()
 
-    if (input.filter_runs == FilterRuns.LATEST || input.filter_runs == FilterRuns.LATEST_NON_SNAPSHOT) {
+    if (input.filterRuns == FilterRuns.LATEST || input.filterRuns == FilterRuns.LATEST_NON_SNAPSHOT) {
       runs.forEach(run => {
         const sdk = run.impl["language"] as string
         const version = run.impl["version"] as string
@@ -190,7 +191,7 @@ export class DashboardService {
         const currentLatest = latestForEachLanguage.get(sdk)
         let skip = isGerrit
 
-        if (isSnapshot && input.filter_runs == FilterRuns.LATEST_NON_SNAPSHOT) {
+        if (isSnapshot && input.filterRuns == FilterRuns.LATEST_NON_SNAPSHOT) {
           skip = true
         }
 
@@ -214,14 +215,14 @@ export class DashboardService {
       const version = run.impl["version"] as string
       const isGerrit = version.startsWith("refs/")
       const isSnapshot = version.includes("-")
-      if (input.exclude_gerrit && isGerrit) {
+      if (input.excludeGerrit && isGerrit) {
         return false
       }
-      if (input.exclude_snapshots && isSnapshot) {
+      if (input.excludeSnapshots && isSnapshot) {
         return false
       }
 
-      if (input.filter_runs == FilterRuns.LATEST || input.filter_runs == FilterRuns.LATEST_NON_SNAPSHOT) {
+      if (input.filterRuns == FilterRuns.LATEST || input.filterRuns == FilterRuns.LATEST_NON_SNAPSHOT) {
         return latestForEachLanguage.get(sdk) == version
       }
 
@@ -236,7 +237,7 @@ export class DashboardService {
     comparedJson: Record<string, unknown>,
     input: Input,
   ): Promise<any> {
-    const isVariablesQuery = input.group_by.startsWith("variables.")
+    const isVariablesQuery = input.groupBy.startsWith("variables.")
     const labels = [];
     const values = [];
     const runs = this.filterRuns(await this.database.getRuns(
@@ -250,21 +251,21 @@ export class DashboardService {
       if (isVariablesQuery) {
         buckets = await this.database.getGroupingsForVariables(
             input.groupBy1(),
-            input.group_by.replace("variables.", ""),
+            input.groupBy.replace("variables.", ""),
             runIds,
             input.display,
-            input.grouping_type,
-            input.merging_type,
-            input.trimming_seconds);
+            input.groupingType,
+            input.mergingType,
+            input.trimmingSeconds);
       }
       else {
         buckets = await this.database.getGroupings(
             input.groupBy1(),
             runIds,
             input.display,
-            input.grouping_type,
-            input.merging_type,
-            input.trimming_seconds);
+            input.groupingType,
+            input.mergingType,
+            input.trimmingSeconds);
         buckets.sort((a, b) => a.grouping.localeCompare(b.grouping));
       }
       buckets.forEach((b) => {
@@ -303,7 +304,7 @@ export class DashboardService {
         input.groupBy2(),
     ), input);
 
-    return this.addGraphLineShared(runs, input.display, input.trimming_seconds, input.group_by, input.include_metrics, input.merging_type, input.bucketise_seconds);
+    return this.addGraphLineShared(runs, input.display, input.trimmingSeconds, input.groupBy, input.includeMetrics, input.mergingType, input.bucketiseSeconds);
   }
 
   /**
@@ -312,10 +313,10 @@ export class DashboardService {
   private async addGraphLineSingle(
       input: Single,
   ): Promise<any> {
-    const runs = await this.database.getRunsById([input.runid]);
+    const runs = await this.database.getRunsById([input.runId]);
 
     // TODO fix this hardcoding
-    return this.addGraphLineShared(runs, input.display, input.trimming_seconds, "impl.version", input.include_metrics, input.merging_type, input.bucketise_seconds);
+    return this.addGraphLineShared(runs, input.display, input.trimmingSeconds, "impl.version", input.includeMetrics, input.mergingType, input.bucketiseSeconds);
   }
 
 
@@ -440,7 +441,7 @@ export class DashboardService {
     };
   }
 
-  public async getFiltered(group_by: string): Promise<Filtered> {
+  public async getFiltered(groupBy: string): Promise<Filtered> {
     const runs = await this.database.getRunsRaw();
 
     const clusters = new Set<string>();
@@ -449,7 +450,7 @@ export class DashboardService {
     const varsAll = new Set<string>();
     const varsByWorkload = new Map<string, Set<string>>();
 
-    const groupBySplit = group_by.split('.');
+    const groupBySplit = groupBy.split('.');
 
     runs.forEach((runRaw) => {
       const run = runRaw['params'] as Record<string, unknown>;
@@ -579,7 +580,7 @@ export class DashboardService {
             break;
         }
 
-        if (input.graph_type == 'Simplified') {
+        if (input.graphType == GraphType.SIMPLIFIED) {
           const graph = await this.addGraphBar(comparedJson, input);
           graphs.push(graph);
         } else {

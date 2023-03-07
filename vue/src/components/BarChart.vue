@@ -4,7 +4,7 @@ import {Bar} from 'vue-chartjs'
 export default {
   extends: Bar,
   mounted() {
-    this.renderChart(this.chartdata, {
+    this.renderChart(this.chartData, {
       legend: {
         display: false
       },
@@ -40,14 +40,10 @@ export default {
     input: {
       type: Object
     },
-    chartdata: {
+    chartData: {
       type: Object,
       default: null
     },
-    // options: {
-    //   type: Object,
-    //   // default:
-    // }
   }
 }
 </script>
