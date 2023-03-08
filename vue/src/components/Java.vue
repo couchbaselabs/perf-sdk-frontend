@@ -207,7 +207,11 @@ export default {
       },
       threadPoolExecutorMaxThreadCount: {
         ...defaultQuery,
-        "groupBy": "variables.com.couchbase.protostellar.executorMaxThreadCount",
+        "hAxis": {
+          "type": "dynamic",
+          "databaseField": "vars.com.couchbase.protostellar.executorMaxThreadCount",
+          "resultType": "Integer"
+        },
         "databaseCompare": {
           "cluster": protostellarCluster,
           "impl": {"language": "Java"}
