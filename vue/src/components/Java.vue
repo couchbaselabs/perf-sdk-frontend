@@ -195,13 +195,13 @@ export default {
         },
         "databaseCompare": {
           "cluster": protostellarCluster,
-          "impl": {"language": "Java"}
-        },
-        "vars": {
-          "poolSize": 10000,
-          "experimentName": "ThreadPool",
-          "com.couchbase.protostellar.executorType": "ForkJoinPool",
-          ...withoutKey("api", defaultVars)
+          "impl": {"language": "Java"},
+          "vars": {
+            "poolSize": 10000,
+            "experimentName": "ThreadPool",
+            "com.couchbase.protostellar.executorType": "ForkJoinPool",
+            ...withoutKey("api", defaultVars)
+          },
         },
         "excludeGerrit": false,
       },
@@ -214,14 +214,15 @@ export default {
         },
         "databaseCompare": {
           "cluster": protostellarCluster,
-          "impl": {"language": "Java"}
+          "impl": {"language": "Java"},
+          "vars": {
+            "poolSize": 10000,
+            "experimentName": "ThreadPool",
+            "com.couchbase.protostellar.executorType": "ThreadPool",
+            ...withoutKey("api", defaultVars)
+          },
         },
-        "vars": {
-          "poolSize": 10000,
-          "experimentName": "ThreadPool",
-          "com.couchbase.protostellar.executorType": "ThreadPool",
-          ...withoutKey("api", defaultVars)
-        },
+
         "excludeGerrit": false,
       },
       coreKvOps: {
@@ -233,12 +234,16 @@ export default {
           "workload": defaultWorkloadGets,
           "vars": {...defaultVars},
         },
-        "excludeGerrit": true,
+        "excludeGerrit": false,
         "excludeSnapshots": this.excludeSnapshots || false,
       },
       reuseStubs: {
         ...defaultQuery,
-        "groupBy": "variables.com.couchbase.protostellar.reuseStubs",
+        "hAxis": {
+          "type": "dynamic",
+          "databaseField": "vars.com.couchbase.protostellar.reuseStubs",
+          "resultType": "Integer"
+        },
         "databaseCompare": {
           "cluster": protostellarCluster,
           "impl": {"language": "Java"},
@@ -248,7 +253,11 @@ export default {
       },
       numEndpoints: {
         ...defaultQuery,
-        "groupBy": "variables.com.couchbase.protostellar.numEndpoints",
+        "hAxis": {
+          "type": "dynamic",
+          "databaseField": "vars.com.couchbase.protostellar.numEndpoints",
+          "resultType": "Integer"
+        },
         "databaseCompare": {
           "cluster": protostellarCluster,
           "impl": {"language": "Java"},
@@ -258,7 +267,11 @@ export default {
       },
       protostellarLoadBalancingSingle: {
         ...defaultQuery,
-        "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
+        "hAxis": {
+          "type": "dynamic",
+          "databaseField": "vars.com.couchbase.protostellar.loadBalancing",
+          "resultType": "Integer"
+        },
         "databaseCompare": {
           "cluster": protostellarCluster,
           "impl": {"language": "Java"},
@@ -271,7 +284,11 @@ export default {
       },
       protostellarLoadBalancingNotSingle: {
         ...defaultQuery,
-        "groupBy": "variables.com.couchbase.protostellar.loadBalancing",
+        "hAxis": {
+          "type": "dynamic",
+          "databaseField": "vars.com.couchbase.protostellar.loadBalancing",
+          "resultType": "Integer"
+        },
         "databaseCompare": {
           "cluster": protostellarCluster,
           "impl": {"language": "Java"},

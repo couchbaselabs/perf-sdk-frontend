@@ -262,7 +262,7 @@ export class DashboardService {
     const labels = [];
     const values = [];
     let runs: Run[];
-    let results: Result[];
+    let results: Result[] = [];
 
     if (input.hAxis.type == 'dynamic') {
       const ha = input.hAxis as HorizontalAxisDynamic;
@@ -270,10 +270,13 @@ export class DashboardService {
       if (input.yAxis.type == 'buckets') {
         const va = input.yAxis as VerticalAxisBucketsColumn;
 
-        runs = this.filterRuns(await this.database.getRuns(
+        const initial = await this.database.getRuns(
             input.databaseCompare,
             HorizontalAxisDynamicUtil.databaseRepresentation2(ha),
-        ), input)
+        )
+        runs = this.filterRuns(initial, input)
+
+        console.info(`Matched ${initial.length} runs, filtered to ${runs.length}`)
 
         const runIds = runs.map((v) => v.id);
 
@@ -288,6 +291,8 @@ export class DashboardService {
         const va = input.yAxis as VerticalAxisMetric;
 
         runs = this.filterRuns(await this.database.getRuns(input.databaseCompare, "{}",), input)
+
+        console.info(`Matched ${runs.length} runs`)
 
         const runIds = runs.map((v) => v.id);
 

@@ -222,7 +222,7 @@ export function hAxisSdkVersion() {
 export function hAxisSdkLanguage() {
   return {
     "type": "dynamic",
-    "databaseField": "impl.version",
+    "databaseField": "impl.language",
     "resultType": "String"
   }
 }
