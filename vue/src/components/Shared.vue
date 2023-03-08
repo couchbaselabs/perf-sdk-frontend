@@ -177,7 +177,7 @@ export const defaultVarsWithoutHorizontalScaling = {
   "api": "DEFAULT",
 
   // undefined is not yet supported - when it is, we will usually not want to include experiments.
-  // "experimentName": undefined
+  "experimentName": null,
 }
 
 export const defaultVars = {
