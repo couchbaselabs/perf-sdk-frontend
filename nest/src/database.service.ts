@@ -250,8 +250,6 @@ export class DatabaseService {
    */
   private findAndRemoveUndefined(record: Record<string, unknown>): Array<string> {
     let res = []
-    record.forEach
-
     for (let key in record) {
       if (record[key] === null) {
         res.push(key)
