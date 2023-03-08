@@ -5,9 +5,17 @@
       {{ JSON.stringify(input) }}
     </div>
 
-    <div v-if="!results">
+    <div v-if="!results && !errors">
       <b-spinner small variant="primary" label="Spinning"></b-spinner>
       Fetching...
+    </div>
+
+    <div v-if="errors">
+      <b-card bg-variant="danger" text-variant="white" title="Error">
+        <b-card-text>
+          {{errors}}
+        </b-card-text>
+      </b-card>
     </div>
 
     <div v-if="results" class="graph">
@@ -91,6 +99,7 @@ export default {
     return {
       lastInput: undefined,
       results: undefined,
+      errors: undefined,
       display: false
     }
   },
@@ -125,7 +134,11 @@ export default {
               body: JSON.stringify(input)
             })
 
-        this.results = await res.json();
+        if (res.status.toString().startsWith('2')) {
+          this.results = await res.json();
+        } else {
+          this.errors = await res.json()
+        }
       } else {
         console.info("Skipping fetch")
       }

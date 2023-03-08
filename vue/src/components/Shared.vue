@@ -19,11 +19,10 @@
 
 <script>
 import Results from "@/components/Results";
-// import MetricsAlerts from "@/components/MetricsAlerts";
+import MetricsAlerts from "@/components/MetricsAlerts";
 
 export default {
-  // components: {Results, MetricsAlerts},
-  components: {Results},
+  components: {Results, MetricsAlerts},
   props: ['language'],
   computed: {
     kvInserts() {

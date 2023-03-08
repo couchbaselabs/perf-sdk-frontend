@@ -1,21 +1,7 @@
 <template>
   <b-container>
     <Shared :language="'Java'"></Shared>
-
-    <h1>Metrics</h1>
-    All these tests are doing KV gets in 20 threads.
-
-    <h2>Memory</h2>
-    Measures the maximum heap memory used in MB by the performer+SDK.
-    <Results :input="memHeapUsedMB"></Results>
-
-    <h2>Thread Count</h2>
-    Measures the maximum thread count used by the performer+SDK.
-    <Results :input="threadCount"></Results>
-
-    <h2>Process CPU</h2>
-    Measures the average process CPU used by the performer+SDK, in %.
-    <Results :input="processCPU"></Results>
+    <Metrics :language="'Java'"></Metrics>
 
     <h1>Horizontal Scaling (Reactive)</h1>
     Tests how the SDK scales with parallelism, using KV gets and the reactive API.
@@ -75,9 +61,10 @@ import Shared, {
   hAxisSdkLanguage
 } from "@/components/Shared";
 import Results from "@/components/Results";
+import Metrics from "@/components/Metrics";
 
 export default {
-  components: {Shared, Results},
+  components: {Metrics, Shared, Results},
   data() {
     return {
       processCPU: {
