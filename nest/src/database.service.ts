@@ -98,6 +98,8 @@ class Impl {
   }
 }
 
+// This class holds the keys of the fields which runs should not have (i.e. Runs which have these fields will be exluded)
+// Currently we use the value `null' to mark fields that should be excluded. This could change in the future. 
 class ExcludedDatabaseCompareFields {
   // An array containing the names of the cluster fields to be excluded
   cluster?: Array<string>;
@@ -120,7 +122,7 @@ export class DatabaseService {
    * Used for both the Simplified and Full graphs.
    */
   async getRuns(compare: DatabaseCompare, groupBy: string): Promise<Array<Run>> {
-    console.info("Database Compare Vars = " + JSON.stringify(compare.vars))
+    console.info("Database Compare Vars = " + compare.vars)
 
     let excludedFields = this.findAndRemoveExcluded(compare);
 
@@ -245,10 +247,10 @@ export class DatabaseService {
   }
 
   /**
-   * Given a record, it finds all entries where the value is undefined, removes them and returns
+   * Given a record, it finds all entries where the value is null, removes them and returns
    * an array containing the keys of those entries
    */
-  private findAndRemoveUndefined(record: Record<string, unknown>): Array<string> {
+  private findAndRemoveNull(record: Record<string, unknown>): Array<string> {
     let res = []
     for (let key in record) {
       if (record[key] === null) {
@@ -266,16 +268,16 @@ export class DatabaseService {
     let res = new ExcludedDatabaseCompareFields()
 
     if (compare?.cluster) {
-      res.cluster = this.findAndRemoveUndefined(compare.cluster)
+      res.cluster = this.findAndRemoveNull(compare.cluster)
     }
     if (compare?.impl) {
-      res.impl = this.findAndRemoveUndefined(compare.impl)
+      res.impl = this.findAndRemoveNull(compare.impl)
     }
     if (compare?.vars) {
-      res.vars = this.findAndRemoveUndefined(compare.vars)
+      res.vars = this.findAndRemoveNull(compare.vars)
     }
     if (compare?.workload) {
-      res.workload = this.findAndRemoveUndefined(compare.workload)
+      res.workload = this.findAndRemoveNull(compare.workload)
     }
     return res
   }
