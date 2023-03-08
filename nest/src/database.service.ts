@@ -15,20 +15,20 @@ import {versionCompare} from "./versions";
 
 export class Run {
   params: Record<string, unknown>;
-  cluster: string;
+  cluster: Record<string, unknown>;
   impl: Record<string, unknown>;
-  workload: string;
-  vars: string;
+  workload: Record<string, unknown>;
+  vars: Record<string, unknown>;
   other: string;
   id: string;
   datetime: string;
 
   constructor(
     params: Record<string, unknown>,
-    cluster: string,
+    cluster: Record<string, unknown>,
     impl: Record<string, unknown>,
-    workload: string,
-    vars: string,
+    workload: Record<string, unknown>,
+    vars: Record<string, unknown>,
     other: string,
     id: string,
     datetime: string,
@@ -98,6 +98,22 @@ class Impl {
   }
 }
 
+// This class holds the keys of the fields which runs should not have (i.e. Runs which have these fields will be exluded)
+// Currently we use the value `null' to mark fields that should be excluded. This could change in the future. 
+class ExcludedDatabaseCompareFields {
+  // An array containing the names of the cluster fields to be excluded
+  cluster?: Array<string>;
+
+  // An array containing the names of the implementation fields to be excluded
+  impl?: Array<string>;
+
+  // An array containing the names of the workload fields ot be excluded
+  workload?: Array<string>;
+
+  // An array containing the names of the variables to be excluded
+  vars?: Array<string>;
+}
+
 @Injectable()
 export class DatabaseService {
   constructor(private client: Client) {}
@@ -106,6 +122,10 @@ export class DatabaseService {
    * Used for both the Simplified and Full graphs.
    */
   async getRuns(compare: DatabaseCompare, groupBy: string): Promise<Array<Run>> {
+    console.info("Database Compare Vars = " + compare.vars)
+
+    let excludedFields = this.findAndRemoveExcluded(compare);
+
     const st = `SELECT
                         params as params,
                         params->'cluster' as cluster,
@@ -122,7 +142,7 @@ export class DatabaseService {
                         )}'::jsonb #- '${groupBy}')`;
     console.info(st);
     const rows = await this.client.query(st);
-    return rows.map((x) => {
+    let runs = rows.map((x) => {
       return new Run(
           x.params,
           x.cluster,
@@ -134,6 +154,8 @@ export class DatabaseService {
           x.datetime,
       );
     });
+
+    return runs.filter((x) => {return !this.containsExcludedFields(x, excludedFields)});
   }
 
   async getRunsById(runIds: Array<string>): Promise<Array<Run>> {
@@ -222,6 +244,69 @@ export class DatabaseService {
   async getRunsRaw(): Promise<Array<Record<string, unknown>>> {
     const st = `SELECT params::json FROM runs`;
     return await this.client.query(st);
+  }
+
+  /**
+   * Given a record, it finds all entries where the value is null, removes them and returns
+   * an array containing the keys of those entries
+   */
+  private findAndRemoveNull(record: Record<string, unknown>): Array<string> {
+    let res = []
+    for (let key in record) {
+      if (record[key] === null) {
+        res.push(key)
+      }
+    }
+    res.forEach((key) => {delete record[key]})
+    return res
+  }
+
+  /**
+   * Finds and removes the fields that are required to be excluded
+   */
+  private findAndRemoveExcluded(compare: DatabaseCompare): ExcludedDatabaseCompareFields {
+    let res = new ExcludedDatabaseCompareFields()
+
+    if (compare?.cluster) {
+      res.cluster = this.findAndRemoveNull(compare.cluster)
+    }
+    if (compare?.impl) {
+      res.impl = this.findAndRemoveNull(compare.impl)
+    }
+    if (compare?.vars) {
+      res.vars = this.findAndRemoveNull(compare.vars)
+    }
+    if (compare?.workload) {
+      res.workload = this.findAndRemoveNull(compare.workload)
+    }
+    return res
+  }
+
+  /**
+   * Checks if the given run contains any of the excluded fields
+   */
+  private containsExcludedFields(run: Run, excluded: ExcludedDatabaseCompareFields): boolean {
+    if (excluded?.cluster && this.containsAnyKey(run.cluster, excluded.cluster)) {
+      return true
+    }
+    if (excluded?.impl && this.containsAnyKey(run.impl, excluded.impl)) {
+      return true
+    }
+    if (excluded?.vars && this.containsAnyKey(run.vars, excluded.vars)) {
+      return true
+    }
+    if (excluded?.workload && this.containsAnyKey(run.workload, excluded.workload)) {
+      return true
+    }
+
+    return false
+  }
+
+  /**
+   * Checks if the record contains any of the keys in the given array
+   */
+  private containsAnyKey(record: Record<string, unknown>, keys: Array<string>) {
+    return keys.some((k) => k in record)
   }
 
   private mapMerging(merging: MergingAlgorithm): string {

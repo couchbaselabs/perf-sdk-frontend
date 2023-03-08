@@ -176,8 +176,9 @@ export const defaultVarsWithoutHorizontalScaling = {
   // Mainly affects Java - if there are multiple APIs, just use the default one.
   "api": "DEFAULT",
 
-  // undefined is not yet supported - when it is, we will usually not want to include experiments.
-  // "experimentName": undefined
+  // We usually don't want to include experiments. The value `null` here means that runs where the field "experimentName" is defined
+  // should be excluded. The value that marks a field that should be excluded might change in the future
+  "experimentName": null,
 }
 
 export const defaultVars = {
