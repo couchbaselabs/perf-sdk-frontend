@@ -30,7 +30,7 @@ export default {
         {
           scaleLabel: {
             display: true,
-            labelString: this.input.yAxis.column,
+            labelString: (this.input?.yAxes[0]?.column) ?? "unknown",
           },
           title: {
             display: true
@@ -52,6 +52,9 @@ export default {
         callbacks: {
           label: function(tooltipItem, data) {
             const x = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+            if (x.tooltip) {
+              return x.tooltip
+            }
             return `${x.nested.datetime}   seconds since start=${x.x}   value=${x.y}   runid=${x.nested.runid}`;
           }
         }

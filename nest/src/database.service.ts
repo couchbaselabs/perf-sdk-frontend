@@ -51,7 +51,9 @@ class RunBucketPair {
   runId: string;
   datetime: string;
   timeOffsetSecs: number;
-  value: number;
+  value?: number;
+  // Format: {"document_exists (105)": 4, "unambiguous_timeout (14)": 19}
+  errors?: Record<string, unknown>;
   metrics?: string;
 
   constructor(
@@ -59,12 +61,14 @@ class RunBucketPair {
     datetime: string,
     timeOffsetSecs: number,
     value: number,
+    errors?: Record<string, unknown>,
     metrics?: string
   ) {
     this.runId = runId;
     this.datetime = datetime;
     this.timeOffsetSecs = timeOffsetSecs;
     this.value = value;
+    this.errors = errors;
     this.metrics = metrics;
   }
 }
@@ -84,22 +88,8 @@ export class Result {
   }
 }
 
-class Impl {
-  language: string;
-  version: string;
-  semver: any;
-  json: Record<string, unknown>;
-
-  constructor(language: string, version: string, semver: any, json: Record<string, unknown>) {
-    this.language = language;
-    this.version = version;
-    this.semver = semver;
-    this.json = json;
-  }
-}
-
 // This class holds the keys of the fields which runs should not have (i.e. Runs which have these fields will be exluded)
-// Currently we use the value `null' to mark fields that should be excluded. This could change in the future. 
+// Currently we use the value `null' to mark fields that should be excluded. This could change in the future.
 class ExcludedDatabaseCompareFields {
   // An array containing the names of the cluster fields to be excluded
   cluster?: Array<string>;
@@ -194,9 +184,10 @@ export class DatabaseService {
   async getRunsWithBuckets(
     runIds: Array<string>,
     input: Input,
-    yAxis: VerticalAxisBucketsColumn): Promise<Array<RunBucketPair>> {
+    includeDataColumn: string,
+    includeMetrics: boolean,
+    includeErrors: boolean): Promise<Array<RunBucketPair>> {
     let st;
-    let includeMetrics = input.includeMetrics
     if (input.bucketiseSeconds > 1) {
       // Not sure how to group the metrics, would require some complex JSON processing
       includeMetrics = false
@@ -204,8 +195,9 @@ export class DatabaseService {
       st = `
         SELECT buckets.run_id,
                time_bucket('${input.bucketiseSeconds} seconds', time) as datetime,
-               min(buckets.time_offset_secs)                     as time_offset_secs,
-               ${mergingOp}(${yAxis.column}) as value 
+               min(buckets.time_offset_secs)                     as time_offset_secs
+               ${includeDataColumn ? `, ${mergingOp}(${includeDataColumn}) as value` : ""} 
+               ${includeErrors ? `, errors` : ""}
                ${includeMetrics ? `, metrics.metrics` : ""}
         FROM buckets
           ${includeMetrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
@@ -218,8 +210,9 @@ export class DatabaseService {
       st = `
         SELECT buckets.run_id,
                time as datetime,
-                buckets.time_offset_secs,
-               ${yAxis.column} as value 
+                buckets.time_offset_secs
+               ${includeDataColumn ? `, ${includeDataColumn} as value` : ""}
+               ${includeErrors ? `, errors` : ""}
                ${includeMetrics ? `, metrics.metrics` : ""}
         FROM buckets
           ${includeMetrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
@@ -236,6 +229,7 @@ export class DatabaseService {
         x.datetime,
         parseInt(x.time_offset_secs),
         x.value,
+        x.errors,
         x.metrics
       );
     });

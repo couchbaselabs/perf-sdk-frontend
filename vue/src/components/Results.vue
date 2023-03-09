@@ -19,7 +19,7 @@
     </div>
 
     <div v-if="results" class="graph">
-      <b-container class="mb-3">
+<!--      <b-container class="mb-3">-->
 
         <BarChart v-if="results.type === 'bar'" class="chart" :chartData="results.data" :options="results.options"
                   :input="input"/>
@@ -31,7 +31,7 @@
           </div>
         </div>
 
-      </b-container>
+<!--      </b-container>-->
 
       <div>
         <b-button class="mr-2" v-on:click="showInExplorer" variant="outline-primary">
@@ -168,15 +168,10 @@ export default {
     },
 
     runClicked: function (runId) {
-      // window.history.pushState(null, '', `/single/${runId}/${this.input.display}`);
-
       this.$router.push({
         path: `/single`,
         query: {
-          runId: runId,
-          yAxis: this.input.yAxis,
-          mergingType: this.input.mergingType,
-          bucketiseSeconds: this.input.bucketiseSeconds
+          runId: runId
         }
       })
     }

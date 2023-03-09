@@ -67,50 +67,6 @@ export default {
   components: {Metrics, Shared, Results},
   data() {
     return {
-      processCPU: {
-        ...defaultQuery,
-        "yAxis": {
-          "type": "metric",
-          "metric": "processCpu",
-        },
-        mergingType: "Average",
-        "databaseCompare": {
-          "impl": {"language": "Java"},
-          "workload": defaultWorkloadGets,
-          "vars": {...defaultVars}
-        },
-        "excludeSnapshots": this.excludeSnapshots || false
-      },
-
-      memHeapUsedMB: {
-        ...defaultQuery,
-        "yAxis": {
-          "type": "metric",
-          "metric": "memHeapUsedMB",
-        },
-        mergingType: "Maximum",
-        "databaseCompare": {
-          "impl": {"language": "Java"},
-          "workload": defaultWorkloadGets,
-          "vars": {...defaultVars}
-        },
-        "excludeSnapshots": this.excludeSnapshots || false
-      },
-
-      threadCount: {
-        ...defaultQuery,
-        "yAxis": {
-          "type": "metric",
-          "metric": "threadCount",
-        },
-        mergingType: "Maximum",
-        "databaseCompare": {
-          "impl": {"language": "Java"},
-          "workload": defaultWorkloadGets,
-          "vars": {...defaultVars}
-        },
-        "excludeSnapshots": this.excludeSnapshots || false
-      },
 
       kvGetsHorizontalScalingAsync: {
         ...defaultQuery,

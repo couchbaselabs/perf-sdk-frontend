@@ -44,10 +44,10 @@ export default {
     processCpu() {
       return {
         ...sharedQuery(this.language),
-        "yAxis": {
+        "yAxes": [{
           "type": "metric",
           "metric": "processCpu",
-        },
+        }],
         mergingType: "Average",
       }
     },
@@ -55,10 +55,10 @@ export default {
     memHeapUsedMB() {
       return {
         ...sharedQuery(this.language),
-        "yAxis": {
+        "yAxes": [{
           "type": "metric",
           "metric": "memHeapUsedMB",
-        },
+        }],
         mergingType: "Maximum",
       }
     },
@@ -66,10 +66,10 @@ export default {
     threadCount() {
       return {
         ...sharedQuery(this.language),
-        "yAxis": {
+        "yAxes": [{
           "type": "metric",
           "metric": "threadCount",
-        },
+        }],
         mergingType: "Maximum",
       }
     }

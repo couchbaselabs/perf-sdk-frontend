@@ -12,7 +12,7 @@
     <h1>KV Insert</h1>
     <Results :input="kvInserts"></Results>
     <h1>Horizontal Scaling</h1>
-    Tests how the SDK scales with parallelism, using KV gets.
+    Tests how the SDK scales with parallelism, using KV gets.  The SDK's default numKvConnections setting is used (and is likely to be a bottleneck).
     <Results :input="kvGetsHorizontalScaling"></Results>
   </b-container>
 </template>
@@ -127,10 +127,10 @@ export const defaultQuery = {
   // We're usually display duration_average_us from the buckets table as the y-axis.
   // It's not best practice to display averages - max or p99 would be better - but the test variance is unfortunately
   // too high for that to display useful results.
-  "yAxis": {
+  "yAxes": [{
     type: "buckets",
     column: "duration_average_us",
-  },
+  }],
 
   // These fields are compared to the database, and are what's most likely to change in each graph.
   "databaseCompare": {

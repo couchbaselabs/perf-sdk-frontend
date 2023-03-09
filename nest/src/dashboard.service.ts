@@ -6,7 +6,7 @@ import { versionCompare } from './versions';
 // Query for a single run
 export class Single {
   readonly runId: string;
-  readonly yAxis: VerticalAxisBucketsColumn;
+  readonly yAxes: Array<YAxis>;
   readonly trimmingSeconds: number;
   readonly includeMetrics: boolean;
   readonly mergingType: MergingAlgorithm;
@@ -70,14 +70,18 @@ export enum FilterRuns {
   LATEST_NON_SNAPSHOT = "LatestNonSnapshot"
 }
 
+type YAxis = VerticalAxisBucketsColumn | VerticalAxisMetric | VerticalAxisMetrics | VerticalAxisErrors;
+
+
 // The main search class from the frontend.  There are a number of different graphs displayed and they are all
 // represented through here.
 export class Input {
-  // What to display on the x-axis.
+  // What to display on the x-axis, e.g. SDK versions.
   readonly hAxis: HorizontalAxisDynamic;
 
-  // What to display on the y-axis.
-  readonly yAxis: VerticalAxisBucketsColumn | VerticalAxisMetric;
+  // What to display on the y-axis, e.g. operation duration or throughput.
+  // This might me more correctly named "datasets" or similar.
+  readonly yAxes: Array<YAxis>;
 
   // What runs to look for.
   readonly databaseCompare: DatabaseCompare;
@@ -90,9 +94,6 @@ export class Input {
 
   // How many seconds of data to trim off the start of each run, to account for e.g. JVM warmup and general settling.
   readonly trimmingSeconds: number;
-
-  // Whether the metrics table data should be fetched and included.
-  readonly includeMetrics: boolean;
 
   // It's too expensive to draw large line graphs of 1 second buckets, so re-bucketise into larger buckets if this is
   // set.
@@ -143,13 +144,24 @@ export interface VerticalAxisBucketsColumn {
   readonly column: string;
 }
 
-// Allows displaying a metric from the metrics table.
+// Allows displaying a specific metric from the metrics table.
 export interface VerticalAxisMetric {
   readonly type: "metric";
 
   // "systemCPU"
   readonly metric: string;
 }
+
+// Allows displaying all available metrics for these run(s) from the metrics table.
+export interface VerticalAxisMetrics {
+  readonly type: "metrics";
+}
+
+// Allows displaying errors from the `buckets` table.
+export interface VerticalAxisErrors {
+  readonly type: "errors";
+}
+
 
 export enum ResultType {
   // A string version number following semver ordering rules
@@ -267,8 +279,14 @@ export class DashboardService {
     if (input.hAxis.type == 'dynamic') {
       const ha = input.hAxis as HorizontalAxisDynamic;
 
-      if (input.yAxis.type == 'buckets') {
-        const va = input.yAxis as VerticalAxisBucketsColumn;
+      if (input.yAxes.length != 1) {
+        throw Error("Only one yaxis dataset is supported on Simplified graphs")
+      }
+
+      const yAxis = input.yAxes[0];
+
+      if (yAxis.type == 'buckets') {
+        const va = yAxis as VerticalAxisBucketsColumn;
 
         const initial = await this.database.getRuns(
             input.databaseCompare,
@@ -287,8 +305,8 @@ export class DashboardService {
               input,
               va);
         }
-      } else if (input.yAxis.type == 'metric') {
-        const va = input.yAxis as VerticalAxisMetric;
+      } else if (yAxis.type == 'metric') {
+        const va = yAxis as VerticalAxisMetric;
 
         runs = this.filterRuns(await this.database.getRuns(input.databaseCompare, "{}",), input)
 
@@ -299,6 +317,10 @@ export class DashboardService {
         if (runIds.length > 0) {
           results = await this.database.getSimplifiedGraphForMetric(runIds, ha, va, input);
         }
+      }
+      else {
+        // Not all yAxes make sense in Simplified mode - e.g. displaying all metrics
+        throw Error(`Unsupported yAxis type ${JSON.stringify(yAxis)}`)
       }
     }
     else {
@@ -379,23 +401,20 @@ export class DashboardService {
     runs: Array<Run>,
     input: Input
   ): Promise<any> {
+    const datasets = [];
+    const runIds = runs.map((v) => v.id);
+    const shades = [
+      '#E2F0CB',
+      '#B5EAD7',
+      '#C7CEEA',
+      '#FF9AA2',
+      '#FFB7B2',
+      '#FFDAC1',
+    ];
+    let shadeIdx = 0;
+
     if (input.hAxis.type == 'dynamic') {
       const ha = input.hAxis as HorizontalAxisDynamic;
-      const va = input.yAxis as VerticalAxisBucketsColumn;
-      const datasets = [];
-      const runIds = runs.map((v) => v.id);
-
-      const runsWithBuckets = await this.database.getRunsWithBuckets(runIds, input, va);
-
-      const shades = [
-        '#E2F0CB',
-        '#B5EAD7',
-        '#C7CEEA',
-        '#FF9AA2',
-        '#FFB7B2',
-        '#FFDAC1',
-      ];
-      let shadeIdx = 0;
 
       const runsPlus: Array<RunPlus> = runs.map((run: RunPlus) => {
         const groupedBy = ha.databaseField.split('.');
@@ -406,61 +425,27 @@ export class DashboardService {
         return run;
       });
 
-      for (const run of runsPlus) {
-        const bucketsForRun = runsWithBuckets.filter((v) => v.runId == run.id);
-
-        // console.info(`For run ${run.id} buckets ${bucketsForRun.length}`);
-
-        const data = [];
-        const dataMetrics = {};
-
-        bucketsForRun.forEach((b) => {
-          data.push({
-            x: b.timeOffsetSecs,
-            y: b.value,
-            nested: {
-              datetime: b.datetime,
-              runid: b.runId,
-            },
-          });
-
-          if (b.metrics) {
-            const metricsJson = b.metrics;
-            const keys = Object.keys(metricsJson);
-            keys.forEach(key => {
-              // const x = b.run_id + "_" + key;
-              // It's not useful to have multiple runs with metrics on same screen
-              const x = key;
-              const data = {
-                x: b.timeOffsetSecs,
-                y: metricsJson[key]
-              }
-              if (x in dataMetrics) {
-                dataMetrics[x].push(data);
-              } else {
-                dataMetrics[x] = [data];
-              }
-            })
-          }
-        });
-
-        datasets.push({
-          label: run.groupedBy,
-          data: data,
-          fill: false,
-          backgroundColor: run.color,
-          borderColor: run.color,
-        });
-
-        for (const [k, v] of Object.entries(dataMetrics)) {
-          datasets.push({
-            label: k,
-            data: v,
-            hidden: true,
-            fill: false,
-            borderColor: shades[(shadeIdx++) % shades.length]
-          });
+      for (const yAxis of input.yAxes) {
+        // Note this isn't the most efficient way of hitting the database, especially for the single-chart
+        // display.  This will hit the database multiple times for the same run.  But, it's efficient
+        // enough, and makes the logic easier to follow.
+        if (yAxis.type == 'buckets') {
+          const va = yAxis as VerticalAxisBucketsColumn;
+          const ds = await this.getVerticalAxisBucketsColumn(runsPlus, input, va);
+          ds.forEach(d => datasets.push(d))
         }
+        else if (yAxis.type == "metrics") {
+          const va = yAxis as VerticalAxisMetrics;
+          const ds = await this.getVerticalAxisMetrics(runsPlus, input, va);
+          ds.forEach(d => datasets.push(d))
+        }
+        else if (yAxis.type == "errors") {
+          const va = yAxis as VerticalAxisErrors;
+          const ds = await this.getVerticalAxisErrors(runsPlus, input, va);
+          ds.forEach(d => datasets.push(d))
+        }
+        // VerticalAxisMetric _could_ be supported, but doesn't seem that useful when VerticalAxisMetrics is a superset of it
+        else throw Error(`Unsupported yAxis type ${yAxis}`)
       }
 
       return {
@@ -474,6 +459,146 @@ export class DashboardService {
     else {
       throw Error(`Unknown hAxis type ${input.hAxis}`)
     }
+  }
+
+  private async getVerticalAxisBucketsColumn(runs: Array<RunPlus>,
+                                             input: Input,
+                                             va: VerticalAxisBucketsColumn): Promise<Array<Record<string, unknown>>> {
+    const runIds = runs.map((v) => v.id);
+    const datasets = [];
+
+    const runsWithBuckets = await this.database.getRunsWithBuckets(runIds, input, va.column, false, false);
+
+    for (const run of runs) {
+      const bucketsForRun = runsWithBuckets.filter((v) => v.runId == run.id);
+
+      // console.info(`For run ${run.id} buckets ${bucketsForRun.length}`);
+
+      const data = [];
+
+      bucketsForRun.forEach((b) => {
+        data.push({
+          x: b.timeOffsetSecs,
+          y: b.value,
+          nested: {
+            datetime: b.datetime,
+            runid: b.runId,
+          },
+        });
+
+      });
+
+      datasets.push({
+        label: run.groupedBy,
+        data: data,
+        fill: false,
+        backgroundColor: run.color,
+        borderColor: run.color,
+      });
+    }
+
+    return datasets;
+  }
+
+  private async getVerticalAxisErrors(runs: Array<RunPlus>,
+                                             input: Input,
+                                             va: VerticalAxisErrors): Promise<Array<Record<string, unknown>>> {
+    const runIds = runs.map((v) => v.id);
+    const datasets = [];
+
+    const dataErrors = [];
+
+    const runsWithBuckets = await this.database.getRunsWithBuckets(runIds, input, undefined, false, true);
+
+    for (const run of runs) {
+      const bucketsForRun = runsWithBuckets.filter((v) => v.runId == run.id);
+
+      bucketsForRun.forEach((b) => {
+        const tooltip = b.timeOffsetSecs + "s " + new Date(b.datetime).toISOString()
+
+        if (b.errors) {
+          let totalErrors = 0;
+          Object.keys(b.errors).forEach(errorName => {
+            const errorCount = b.errors[errorName] as number
+            totalErrors += errorCount
+          })
+
+          dataErrors.push({
+            x: b.timeOffsetSecs,
+            y: totalErrors,
+            tooltip: tooltip + " " + JSON.stringify(b.errors)
+          });
+        } else {
+          dataErrors.push({
+            x: b.timeOffsetSecs,
+            y: 0,
+            tooltip: tooltip
+          });
+        }
+      })
+
+      datasets.push({
+        label: run.groupedBy + " errors",
+        data: dataErrors,
+        fill: false,
+        backgroundColor: '#e88873',
+        borderColor: '#e88873',
+      });
+    }
+
+    return datasets;
+  }
+
+  private async getVerticalAxisMetrics(runs: Array<RunPlus>,
+                                      input: Input,
+                                      va: VerticalAxisMetrics): Promise<Array<Record<string, unknown>>> {
+    const runIds = runs.map((v) => v.id);
+    const datasets = [];
+
+    const dataMetrics = {};
+
+    const runsWithBuckets = await this.database.getRunsWithBuckets(runIds, input, undefined, true, false);
+
+    for (const run of runs) {
+      const bucketsForRun = runsWithBuckets.filter((v) => v.runId == run.id);
+
+      // console.info(`For run ${run.id} buckets ${bucketsForRun.length}`);
+
+      bucketsForRun.forEach((b) => {
+        const tooltip = b.timeOffsetSecs + "s " + new Date(b.datetime).toISOString()
+
+        if (b.metrics) {
+          const metricsJson = b.metrics;
+          const keys = Object.keys(metricsJson);
+          keys.forEach(key => {
+            // const x = b.run_id + "_" + key;
+            // It's not useful to have multiple runs with metrics on same screen
+            const x = key;
+            const data = {
+              x: b.timeOffsetSecs,
+              y: metricsJson[key]
+            }
+            if (x in dataMetrics) {
+              dataMetrics[x].push(data);
+            } else {
+              dataMetrics[x] = [data];
+            }
+          })
+        }
+      })
+    }
+
+    for (const [k, v] of Object.entries(dataMetrics)) {
+      datasets.push({
+        label: k,
+        data: v,
+        hidden: true,
+        fill: false
+        // borderColor: shades[(shadeIdx++) % shades.length]
+      });
+    }
+
+    return datasets;
   }
 
   public async getFiltered(groupBy: string): Promise<Filtered> {
