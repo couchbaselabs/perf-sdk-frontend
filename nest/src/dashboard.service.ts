@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {DatabaseService, Result, Run, RunPlus} from './database.service';
 import { Filtered } from './app.controller';
 import { versionCompare } from './versions';
+import {ShadeProvider} from "./shade_provider";
 
 // Query for a single run
 export class Single {
@@ -136,8 +137,13 @@ export interface HorizontalAxisDynamic {
   readonly resultType: ResultType
 }
 
+export interface VerticalAxis {
+  // The ChartJS y-axis to plot this on
+  yAxisID: string
+}
+
 // Allows displaying a column from the `buckets` table.
-export interface VerticalAxisBucketsColumn {
+export interface VerticalAxisBucketsColumn extends VerticalAxis {
   readonly type: "buckets";
 
   // "latency_average_us"
@@ -145,7 +151,7 @@ export interface VerticalAxisBucketsColumn {
 }
 
 // Allows displaying a specific metric from the metrics table.
-export interface VerticalAxisMetric {
+export interface VerticalAxisMetric extends VerticalAxis {
   readonly type: "metric";
 
   // "systemCPU"
@@ -153,12 +159,12 @@ export interface VerticalAxisMetric {
 }
 
 // Allows displaying all available metrics for these run(s) from the metrics table.
-export interface VerticalAxisMetrics {
+export interface VerticalAxisMetrics extends VerticalAxis {
   readonly type: "metrics";
 }
 
 // Allows displaying errors from the `buckets` table.
-export interface VerticalAxisErrors {
+export interface VerticalAxisErrors extends VerticalAxis {
   readonly type: "errors";
 }
 
@@ -402,16 +408,7 @@ export class DashboardService {
     input: Input
   ): Promise<any> {
     const datasets = [];
-    const runIds = runs.map((v) => v.id);
-    const shades = [
-      '#E2F0CB',
-      '#B5EAD7',
-      '#C7CEEA',
-      '#FF9AA2',
-      '#FFB7B2',
-      '#FFDAC1',
-    ];
-    let shadeIdx = 0;
+    const sp = new ShadeProvider()
 
     if (input.hAxis.type == 'dynamic') {
       const ha = input.hAxis as HorizontalAxisDynamic;
@@ -419,9 +416,7 @@ export class DashboardService {
       const runsPlus: Array<RunPlus> = runs.map((run: RunPlus) => {
         const groupedBy = ha.databaseField.split('.');
         run.groupedBy = DashboardService.parseFrom(run.params, groupedBy);
-        const shade = shades[shadeIdx % shades.length];
-        shadeIdx++;
-        run.color = shade;
+        run.color = sp.nextShade();
         return run;
       });
 
@@ -431,17 +426,17 @@ export class DashboardService {
         // enough, and makes the logic easier to follow.
         if (yAxis.type == 'buckets') {
           const va = yAxis as VerticalAxisBucketsColumn;
-          const ds = await this.getVerticalAxisBucketsColumn(runsPlus, input, va);
+          const ds = await this.getVerticalAxisBucketsColumn(runsPlus, input, va, sp);
           ds.forEach(d => datasets.push(d))
         }
         else if (yAxis.type == "metrics") {
           const va = yAxis as VerticalAxisMetrics;
-          const ds = await this.getVerticalAxisMetrics(runsPlus, input, va);
+          const ds = await this.getVerticalAxisMetrics(runsPlus, input, va, sp);
           ds.forEach(d => datasets.push(d))
         }
         else if (yAxis.type == "errors") {
           const va = yAxis as VerticalAxisErrors;
-          const ds = await this.getVerticalAxisErrors(runsPlus, input, va);
+          const ds = await this.getVerticalAxisErrors(runsPlus, input, va, sp);
           ds.forEach(d => datasets.push(d))
         }
         // VerticalAxisMetric _could_ be supported, but doesn't seem that useful when VerticalAxisMetrics is a superset of it
@@ -463,7 +458,8 @@ export class DashboardService {
 
   private async getVerticalAxisBucketsColumn(runs: Array<RunPlus>,
                                              input: Input,
-                                             va: VerticalAxisBucketsColumn): Promise<Array<Record<string, unknown>>> {
+                                             va: VerticalAxisBucketsColumn,
+                                             sp: ShadeProvider): Promise<Array<Record<string, unknown>>> {
     const runIds = runs.map((v) => v.id);
     const datasets = [];
 
@@ -489,11 +485,11 @@ export class DashboardService {
       });
 
       datasets.push({
-        label: run.groupedBy,
+        yAxisID: va.yAxisID,
+        label: run.groupedBy + " " + va.column,
         data: data,
         fill: false,
-        backgroundColor: run.color,
-        borderColor: run.color,
+        borderColor: sp.nextShade(),
       });
     }
 
@@ -501,8 +497,9 @@ export class DashboardService {
   }
 
   private async getVerticalAxisErrors(runs: Array<RunPlus>,
-                                             input: Input,
-                                             va: VerticalAxisErrors): Promise<Array<Record<string, unknown>>> {
+                                      input: Input,
+                                      va: VerticalAxisErrors,
+                                      sp: ShadeProvider): Promise<Array<Record<string, unknown>>> {
     const runIds = runs.map((v) => v.id);
     const datasets = [];
 
@@ -538,6 +535,7 @@ export class DashboardService {
       })
 
       datasets.push({
+        yAxisID: va.yAxisID,
         label: run.groupedBy + " errors",
         data: dataErrors,
         fill: false,
@@ -550,8 +548,9 @@ export class DashboardService {
   }
 
   private async getVerticalAxisMetrics(runs: Array<RunPlus>,
-                                      input: Input,
-                                      va: VerticalAxisMetrics): Promise<Array<Record<string, unknown>>> {
+                                       input: Input,
+                                       va: VerticalAxisMetrics,
+                                       sp: ShadeProvider): Promise<Array<Record<string, unknown>>> {
     const runIds = runs.map((v) => v.id);
     const datasets = [];
 
@@ -590,11 +589,12 @@ export class DashboardService {
 
     for (const [k, v] of Object.entries(dataMetrics)) {
       datasets.push({
+        yAxisID: va.yAxisID,
         label: k,
         data: v,
         hidden: true,
-        fill: false
-        // borderColor: shades[(shadeIdx++) % shades.length]
+        fill: false,
+        borderColor: sp.nextShade()
       });
     }
 

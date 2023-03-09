@@ -26,11 +26,27 @@ export default {
       }
     }
 
-    const y =
+    const yAxisLeft =
         {
+          id: "left",
           scaleLabel: {
             display: true,
             labelString: (this.input?.yAxes[0]?.column) ?? "unknown",
+          },
+          title: {
+            display: true
+          },
+          ticks: {
+            beginAtZero: true
+          }
+        }
+
+    const yAxisRight =
+        {
+          id: "right",
+          position: "right",
+          scaleLabel: {
+            display: true,
           },
           title: {
             display: true
@@ -61,9 +77,7 @@ export default {
       },
       scales: {
         xAxes: [x],
-        x: [x],
-        y: [y],
-        yAxes: [y]
+        yAxes: [yAxisLeft, yAxisRight]
       },
       responsive: true,
       maintainAspectRatio: false

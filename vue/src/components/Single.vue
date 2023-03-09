@@ -22,12 +22,25 @@ export default {
   data() {
     return {
       input: {
-        yAxes: this.$route.query.yAxis ?? [{
-          type: "buckets",
-          column: "operations_total",
-        },
-          {type: "errors"},
-          {type: "metrics"}
+        yAxes: this.$route.query.yAxis ?? [
+          {
+            type: "buckets",
+            yAxisID: "left",
+            column: "operations_total",
+          },
+          {
+            type: "buckets",
+            yAxisID: "right",
+            column: "duration_average_us",
+          },
+          {
+            type: "errors",
+            yAxisID: "right",
+          },
+          {
+            type: "metrics",
+            yAxisID: "right",
+          }
         ],
         runId: this.$route.query.runId,
         trimmingSeconds: 0,
