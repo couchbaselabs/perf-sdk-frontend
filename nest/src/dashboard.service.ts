@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {DatabaseService, Result, Run, RunPlus} from './database.service';
+import {DatabaseService, Result, Run, RunPlus, SituationalRun, SituationalRunResults} from './database.service';
 import { Filtered } from './app.controller';
 import { versionCompare } from './versions';
 import {ShadeProvider} from "./shade_provider";
@@ -9,7 +9,6 @@ export class Single {
   readonly runId: string;
   readonly yAxes: Array<YAxis>;
   readonly trimmingSeconds: number;
-  readonly includeMetrics: boolean;
   readonly mergingType: MergingAlgorithm;
   readonly bucketiseSeconds?: number;
 }
@@ -81,12 +80,14 @@ export class Input {
   readonly hAxis: HorizontalAxisDynamic;
 
   // What to display on the y-axis, e.g. operation duration or throughput.
-  // This might me more correctly named "datasets" or similar.
+  // This might be more correctly named "datasets" or similar.
   readonly yAxes: Array<YAxis>;
 
-  // What runs to look for.
+  // What runs to look for.  This will control what ends up on h-axis.
   readonly databaseCompare: DatabaseCompare;
 
+  // Currently the whole graph is bar (simplified) or line (full) - we can't have different yAxes (datasets) displaying
+  // different graph types.
   readonly graphType: GraphType;
 
   // These two only apply if graphType == SIMPLIFIED
@@ -108,6 +109,9 @@ export class Input {
 
   // Whether to filter matched runs.  The default is ALL (no filtering).
   readonly filterRuns: FilterRuns;
+
+  // Annotations are lines, labels etc. that are overlaid on the chart.  They are only supported if graphType==FULL.
+  // readonly annotations: Array<AnnotationsAtTime>;
 }
 
 // This class is a little hard to explain...
@@ -135,6 +139,11 @@ export interface HorizontalAxisDynamic {
 
   // Gives some indication what type the results are, which helps with ordering them correctly.
   readonly resultType: ResultType
+}
+
+// Displays any at-time annotations for any of the runs displayed.
+export interface AnnotationsAtTime {
+  readonly type: "at-time";
 }
 
 export interface VerticalAxis {
@@ -213,6 +222,11 @@ export class DatabaseCompare {
 
   // A JSON blob containing the runtime variables that affected this run.  Number of docs, length of run, etc.
   readonly vars?: Record<string, unknown>;
+}
+
+// Getting top-level results page for a particular situational run.
+export class SituationalRunQuery {
+  readonly situationalRunId: string;
 }
 
 @Injectable()
@@ -442,6 +456,14 @@ export class DashboardService {
         // VerticalAxisMetric _could_ be supported, but doesn't seem that useful when VerticalAxisMetrics is a superset of it
         else throw Error(`Unsupported yAxis type ${yAxis}`)
       }
+
+      // input.annotations.forEach(ann => {
+      //   if (ann.type == 'at-time') {
+      //     const an = ann as AnnotationsAtTime;
+      //     await this.database.getRunsWithBuckets()
+      //   }
+      //   else throw Error(`Unsupported annotation type ${JSON.stringify(ann)}`)
+      // })
 
       return {
         type: 'line',
@@ -742,5 +764,13 @@ export class DashboardService {
     console.info(`${out.length} total alerts`)
 
     return out
+  }
+
+  public async genSituationalRuns(): Promise<SituationalRun[]> {
+    return await this.database.getSituationalRuns()
+  }
+
+  public async genSituationalRun(input: SituationalRunQuery): Promise<SituationalRunResults> {
+    return await this.database.getSituationalRun(input)
   }
 }

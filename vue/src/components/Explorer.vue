@@ -230,7 +230,6 @@ export default {
         mergingType: this.selectedMergingType,
         trimmingSeconds: this.selectedTrimmingSeconds,
         bucketiseSeconds: this.selectedBucketiseSeconds,
-        includeMetrics: false,
         excludeGerrit: this.excludeGerrit,
         excludeSnapshots: this.excludeSnapshots,
       }

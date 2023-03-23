@@ -11,6 +11,8 @@ import Single from './components/Single.vue'
 import Versus from './components/Versus.vue'
 import Dotnet from './components/Dotnet.vue'
 import Go from './components/Go.vue'
+import SituationalRun from './components/SituationalRun.vue'
+import SituationalRuns from './components/SituationalRuns.vue'
 
 Vue.use(VueRouter)
 
@@ -60,6 +62,14 @@ const routes = [
     {
         path: "/cpp",
         component: CPP,
+    },
+    {
+        path: "/situationalRun",
+        component: SituationalRun,
+    },
+    {
+        path: "/situationalRuns",
+        component: SituationalRuns,
     },
     {
         // path: "/single/:runId/:display",

@@ -149,7 +149,6 @@ export const defaultQuery = {
 
   // Not used in the Simplified graph.
   "bucketiseSeconds": 0,
-  "includeMetrics": false,
 
   // Generally want to include snapshot (interim) releases.
   "excludeSnapshots": false,

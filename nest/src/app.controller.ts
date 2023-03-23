@@ -1,5 +1,5 @@
 import {Body, Controller, Get, Post, Query} from '@nestjs/common';
-import {DashboardService, Input, MetricsQuery, Single} from './dashboard.service';
+import {DashboardService, Input, MetricsQuery, Single, SituationalRunQuery} from './dashboard.service';
 
 // Returns what's available filtered by display option
 export class Filtered {
@@ -59,5 +59,17 @@ export class AppController {
     console.info(JSON.stringify(query));
     const input = Object.assign(new MetricsQuery(), query);
     return await this.dashboard.genMetrics(input);
+  }
+
+  @Post('/situationalRun')
+  async situationalRun(@Body() query: SituationalRunQuery) {
+    console.info(JSON.stringify(query));
+    const input = Object.assign(new SituationalRunQuery(), query);
+    return await this.dashboard.genSituationalRun(input);
+  }
+
+  @Get('/situationalRuns')
+  async situationalRuns() {
+    return await this.dashboard.genSituationalRuns();
   }
 }

@@ -9,7 +9,7 @@ import {
   Input,
   ResultType,
   HorizontalAxisDynamic,
-  VerticalAxisMetric, VerticalAxisBucketsColumn
+  VerticalAxisMetric, VerticalAxisBucketsColumn, SituationalRunQuery
 } from "./dashboard.service";
 import {versionCompare} from "./versions";
 
@@ -452,6 +452,94 @@ export class DatabaseService {
     const result = await this.client.query(st);
     console.info(`Got ${result.length} alerts`)
     return result.map((x) => new MetricsResult(x.run_id, x.datetime, x.message, x.version, input.language));
+  }
+
+  async getSituationalRuns(): Promise<SituationalRun[]> {
+    const st = `
+        WITH
+
+            /* Get all situational runs */
+            sr AS (SELECT id, datetime FROM situational_runs ORDER BY datetime DESC),
+
+            /* Join the situational runs with its runs.  So this table will have multiple rows per situational run */
+            joined AS (SELECT srj.situational_run_id,
+                              srj.params as situational_run_params,
+                              r.id       as run_id,
+                              r.datetime,
+                              r.params   as run_params
+                       FROM runs AS r
+                                LEFT OUTER JOIN situational_run_join AS srj ON srj.run_id = r.id),
+
+
+            /* Get the number of runs for each situational run, and details of any one of those runs.
+               We only need one of the runs for most things as most info should be the same - SDK, version, etc. */
+            out AS (SELECT j.situational_run_id,
+                           min(j.datetime)                 as started,
+                           count(*)                        as num_runs,
+                           min(cast(j.run_params as text))::jsonb as details_of_any_run
+                    FROM joined AS j
+                    GROUP BY j.situational_run_id)
+
+        SELECT *
+        FROM out;
+    `
+
+    console.info(st);
+    const result = await this.client.query(st);
+    return result.map(x => new SituationalRun(x.situational_run_id, x.started, 0, x.num_runs, x.details_of_any_run))
+  }
+
+  async getSituationalRun(query: SituationalRunQuery): Promise<SituationalRunResults> {
+    const st = `
+        SELECT r.id,
+               r.datetime,
+               r.params
+        FROM runs AS r
+                 LEFT OUTER JOIN situational_run_join AS srj ON srj.run_id = r.id
+        WHERE srj.situational_run_id = '${query.situationalRunId}';    `
+
+    console.info(st);
+    const result = await this.client.query(st);
+    const mapped = result.map(x => new RunAndSituationalScore(x.id, x.datetime, x.params))
+    return new SituationalRunResults(query.situationalRunId, mapped);
+  }
+}
+
+export class SituationalRun {
+  readonly situationalRunId: string;
+  readonly started: string;
+  readonly score: number;
+  readonly numRuns: number;
+  readonly detailsOfAnyRun: Record<string, unknown>;
+
+  constructor(situationalRunId: string, started: string, score: number, numRuns: number, detailsOfAnyRun: Record<string, unknown>) {
+    this.situationalRunId = situationalRunId;
+    this.started = started;
+    this.score = score;
+    this.numRuns = numRuns;
+    this.detailsOfAnyRun = detailsOfAnyRun;
+  }
+}
+
+class RunAndSituationalScore {
+  readonly runId: string;
+  readonly started: string;
+  readonly params: Record<string, unknown>;
+
+  constructor(runId: string, started: string, params: Record<string, unknown>) {
+    this.runId = runId;
+    this.started = started;
+    this.params = params;
+  }
+}
+
+export class SituationalRunResults {
+  readonly situationalRunId: string;
+  readonly runs: RunAndSituationalScore[];
+
+  constructor(situationalRunId: string, runs: RunAndSituationalScore[]) {
+    this.situationalRunId = situationalRunId;
+    this.runs = runs;
   }
 }
 
