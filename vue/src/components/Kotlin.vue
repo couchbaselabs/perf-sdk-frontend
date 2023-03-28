@@ -6,8 +6,8 @@
 </template>
 
 <script>
-import Shared from "@/components/Shared";
-import Metrics from "./Metrics";
+import Shared from "@/components/Shared.vue";
+import Metrics from "./Metrics.vue";
 
 export default {
   components: {Shared,Metrics}

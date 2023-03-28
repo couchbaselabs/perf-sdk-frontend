@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import Results from "@/components/Results";
+import Results from "@/components/Results.vue";
 import {
   defaultQuery,
   defaultVars,
@@ -24,7 +24,7 @@ import {
   defaultWorkloadReplaces,
   defaultWorkloadGets,
   hAxisSdkLanguage
-} from "@/components/Shared";
+} from "@/components/Shared.vue";
 
 export default {
   components: {Results},

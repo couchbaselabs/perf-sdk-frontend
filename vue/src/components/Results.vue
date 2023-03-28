@@ -21,10 +21,9 @@
     <div v-if="results" class="graph">
 <!--      <b-container class="mb-3">-->
 
-        <BarChart v-if="results.type === 'bar'" class="chart" :chartData="results.data" :options="results.options"
-                  :input="input"/>
+        <BarChart v-if="results.type === 'bar'" class="chart" :chartData="results.data"/>
         <div v-if="results.type === 'line'">
-          <LineChart class="chartLine" :chartdata="results.data" :options="results.options" :input="input"/>
+          <LineChart class="chartLine" :chartData="results.data"/>
           <div>
             Time: All runs are shown starting from time '0' to allow them to be displayed together. Mouseover points
             to see the wallclock times.
@@ -88,13 +87,14 @@
 </template>
 
 <script>
-import BarChart from "./BarChart";
-import LineChart from "./LineChart";
+import BarChartSimple from "./BarChartSimple.vue";
+import BarChart from "./BarChart.vue";
+import LineChart from "./LineChart.vue";
 import router from '../router.ts'
 
 export default {
   name: "Results",
-  components: {BarChart, LineChart},
+  components: {BarChart, LineChart, BarChartSimple},
   data() {
     return {
       lastInput: undefined,
@@ -110,13 +110,13 @@ export default {
       this.fetchQuery(this.input)
     }
   },
-  updated() {
-    // Need this component to refetch data when the `input` prop changes.  The approach used here doesn't seem slick
-    // but is the only solution that worked.
-    if (!this.single && this.lastInput !== this.input) {
-      this.fetchQuery(this.input)
-    }
-  },
+  // updated() {
+  //   // Need this component to refetch data when the `input` prop changes.  The approach used here doesn't seem slick
+  //   // but is the only solution that worked.
+  //   if (!this.single && this.lastInput !== this.input) {
+  //     this.fetchQuery(this.input)
+  //   }
+  // },
   methods: {
     fetchQuery: async function (input) {
       if (input !== undefined) {

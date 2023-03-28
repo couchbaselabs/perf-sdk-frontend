@@ -18,8 +18,8 @@
 </template>
 
 <script>
-import Results from "@/components/Results";
-import MetricsAlerts from "@/components/MetricsAlerts";
+import Results from "@/components/Results.vue";
+import MetricsAlerts from "@/components/MetricsAlerts.vue";
 
 export default {
   components: {Results, MetricsAlerts},

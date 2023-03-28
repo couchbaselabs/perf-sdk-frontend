@@ -22,8 +22,8 @@ import Shared, {
   defaultQuery,
   defaultVars,
   defaultWorkloadGets
-} from "@/components/Shared";
-import Results from "@/components/Results";
+} from "@/components/Shared.vue";
+import Results from "@/components/Results.vue";
 
 function sharedQuery(language) {
   return {

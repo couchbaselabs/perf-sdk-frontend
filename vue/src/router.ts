@@ -1,5 +1,5 @@
-import Vue from 'vue';
-import VueRouter from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router'
+
 import Explorer from './components/Explorer.vue'
 import Java from './components/Java.vue'
 import Python from './components/Python.vue'
@@ -14,8 +14,6 @@ import Dotnet from './components/Dotnet.vue'
 import Go from './components/Go.vue'
 import SituationalRun from './components/SituationalRun.vue'
 import SituationalRuns from './components/SituationalRuns.vue'
-
-Vue.use(VueRouter)
 
 const routes = [
     {
@@ -85,8 +83,8 @@ const routes = [
     },
 ]
 
-const router = new VueRouter({
-    mode: 'history',
+const router = createRouter({
+    history: createWebHistory(import.meta.env.BASE_URL),
     routes // short for `routes: routes`
 })
 

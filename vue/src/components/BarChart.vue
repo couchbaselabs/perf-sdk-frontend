@@ -1,19 +1,29 @@
+<template>
+  <Bar
+      :options="chartOptions"
+      :data="chartData"
+  />
+</template>
+
 <script>
 import {Bar} from 'vue-chartjs'
+import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 export default {
-  extends: Bar,
-  mounted() {
-    this.renderChart(this.chartData, {
-      legend: {
-        display: false
-      },
-      title: {
-        display: false
-      },
-      scales: {
-        yAxes: [
-          {
+  name: 'BarChart',
+  components: { Bar },
+  data() {
+    return {
+      chartOptions: {
+        plugins: {
+          legend: {
+            display: false
+          },
+        },
+        scales: {
+          y: {
             scaleLabel: {
               display: true,
               labelString: this.input?.yAxes[0]?.column ?? this.input?.yAxes[0]?.metric ?? "unknown",
@@ -21,12 +31,13 @@ export default {
             ticks: {
               beginAtZero: true
             }
-          }]
-      },
-      onClick: this.barClicked,
-      responsive: true,
-      maintainAspectRatio: false
-    })
+          }
+        },
+        onClick: this.barClicked,
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    }
   },
   methods: {
     barClicked: function(event, arr) {
@@ -47,7 +58,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-</style>

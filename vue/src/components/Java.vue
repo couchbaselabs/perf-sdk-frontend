@@ -59,9 +59,9 @@ import Shared, {
   defaultWorkloadGets,
   withoutKey,
   hAxisSdkLanguage
-} from "@/components/Shared";
-import Results from "@/components/Results";
-import Metrics from "@/components/Metrics";
+} from "@/components/Shared.vue";
+import Results from "@/components/Results.vue";
+import Metrics from "@/components/Metrics.vue";
 
 export default {
   components: {Metrics, Shared, Results},

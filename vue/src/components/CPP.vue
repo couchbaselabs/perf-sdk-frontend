@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import Shared from "@/components/Shared";
+import Shared from "@/components/Shared.vue";
 
 export default {
   components: {Shared}

@@ -136,8 +136,8 @@
 <script>
 
 
-import Results from "@/components/Results";
-import {hAxisSdkVersion} from "./Shared";
+import Results from "@/components/Results.vue";
+import {hAxisSdkVersion} from "./Shared.vue";
 
 export default {
   name: "Explorer",

@@ -24,6 +24,8 @@
     </b-navbar>
 
     <b-container fluid class="main">
+      <!-- route outlet -->
+      <!-- component matched by the route will render here -->
       <router-view class="view"></router-view>
     </b-container>
   </div>
