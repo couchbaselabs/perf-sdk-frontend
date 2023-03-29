@@ -112,8 +112,6 @@ export class DatabaseService {
    * Used for both the Simplified and Full graphs.
    */
   async getRuns(compare: DatabaseCompare, groupBy: string): Promise<Array<Run>> {
-    console.info("Database Compare Vars = " + compare.vars)
-
     let excludedFields = this.findAndRemoveExcluded(compare);
 
     const st = `SELECT
