@@ -7,6 +7,7 @@ import Node from './components/Node.vue'
 import Scala from './components/Scala.vue'
 import Kotlin from './components/Kotlin.vue'
 import CPP from './components/CPP.vue'
+import Ruby from './components/Ruby.vue'
 import Single from './components/Single.vue'
 import Versus from './components/Versus.vue'
 import Dotnet from './components/Dotnet.vue'
@@ -54,6 +55,10 @@ const routes = [
     {
         path: "/go",
         component: Go,
+    },
+    {
+        path: "/ruby",
+        component: Ruby,
     },
     {
         path: "/versus",
