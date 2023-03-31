@@ -14,6 +14,7 @@ import Dotnet from './components/Dotnet.vue'
 import Go from './components/Go.vue'
 import SituationalRun from './components/SituationalRun.vue'
 import SituationalRuns from './components/SituationalRuns.vue'
+import SituationalSingle from './components/SituationalSingle.vue'
 
 const routes = [
     {
@@ -67,6 +68,13 @@ const routes = [
         component: CPP,
     },
     {
+        // path: "/single/:runId/:display",
+        path: "/single",
+        name: "Single",
+        component: Single,
+        props: true
+    },
+    {
         path: "/situationalRun",
         component: SituationalRun,
     },
@@ -75,10 +83,8 @@ const routes = [
         component: SituationalRuns,
     },
     {
-        // path: "/single/:runId/:display",
-        path: "/single",
-        name: "Single",
-        component: Single,
+        path: "/situationalSingle",
+        component: SituationalSingle,
         props: true
     },
 ]

@@ -9,7 +9,7 @@ import {
   Input,
   ResultType,
   HorizontalAxisDynamic,
-  VerticalAxisMetric, VerticalAxisBucketsColumn, SituationalRunQuery
+  VerticalAxisMetric, VerticalAxisBucketsColumn, SituationalRunQuery, SituationalRunAndRunQuery
 } from "./dashboard.service";
 import {versionCompare} from "./versions";
 
@@ -457,7 +457,7 @@ export class DatabaseService {
         WITH
 
             /* Get all situational runs */
-            sr AS (SELECT id, datetime FROM situational_runs ORDER BY datetime DESC),
+            sr AS (SELECT id, datetime FROM situational_runs),
 
             /* Join the situational runs with its runs.  So this table will have multiple rows per situational run */
             joined AS (SELECT srj.situational_run_id,
@@ -466,7 +466,7 @@ export class DatabaseService {
                               r.datetime,
                               r.params   as run_params
                        FROM runs AS r
-                                LEFT OUTER JOIN situational_run_join AS srj ON srj.run_id = r.id),
+                                JOIN situational_run_join AS srj ON srj.run_id = r.id),
 
 
             /* Get the number of runs for each situational run, and details of any one of those runs.
@@ -474,9 +474,11 @@ export class DatabaseService {
             out AS (SELECT j.situational_run_id,
                            min(j.datetime)                 as started,
                            count(*)                        as num_runs,
-                           min(cast(j.run_params as text))::jsonb as details_of_any_run
+                           min(cast(j.run_params as text))::jsonb as details_of_any_run,
+                           SUM(cast(situational_run_params::jsonb->>'score' as integer)) as score
                     FROM joined AS j
-                    GROUP BY j.situational_run_id)
+                    GROUP BY j.situational_run_id
+                    ORDER BY started DESC)
 
         SELECT *
         FROM out;
@@ -484,22 +486,65 @@ export class DatabaseService {
 
     console.info(st);
     const result = await this.client.query(st);
-    return result.map(x => new SituationalRun(x.situational_run_id, x.started, 0, x.num_runs, x.details_of_any_run))
+    return result.map(x => new SituationalRun(x.situational_run_id, x.started, x.score, x.num_runs, x.details_of_any_run))
   }
 
   async getSituationalRun(query: SituationalRunQuery): Promise<SituationalRunResults> {
     const st = `
         SELECT r.id,
                r.datetime,
-               r.params
+               r.params as run_params,
+               srj.params as srj_params
         FROM runs AS r
                  LEFT OUTER JOIN situational_run_join AS srj ON srj.run_id = r.id
         WHERE srj.situational_run_id = '${query.situationalRunId}';    `
 
     console.info(st);
     const result = await this.client.query(st);
-    const mapped = result.map(x => new RunAndSituationalScore(x.id, x.datetime, x.params))
+    const mapped = result.map(x => new RunAndSituationalScore(x.id, x.datetime, x.run_params, x.srj_params))
     return new SituationalRunResults(query.situationalRunId, mapped);
+  }
+
+  async getSituationalRunRun(query: SituationalRunAndRunQuery): Promise<SituationalRunResults> {
+    const st = `
+        SELECT r.id,
+               r.datetime,
+               r.params as run_params,
+               srj.params as srj_params
+        FROM runs AS r
+                 LEFT OUTER JOIN situational_run_join AS srj ON srj.run_id = r.id
+        WHERE srj.situational_run_id = '${query.situationalRunId}'
+        AND r.id = '${query.runId}';    `
+
+    console.info(st);
+    const result = await this.client.query(st);
+    const mapped = result.map(x => new RunAndSituationalScore(x.id, x.datetime, x.run_params, x.srj_params))
+    return new SituationalRunResults(query.situationalRunId, mapped);
+  }
+
+  async getEvents(runId: string): Promise<RunEvent[]> {
+    const st = `
+        SELECT r.datetime,
+               EXTRACT(EPOCH FROM (r.datetime - (SELECT time FROM buckets WHERE run_id = '${runId}' ORDER BY time LIMIT 1))) AS time_offset_secs,
+               r.params
+        FROM run_events AS r
+        WHERE r.run_id = '${runId}';`
+
+    console.info(st);
+    const result = await this.client.query(st);
+    return result.map(x => new RunEvent(x.datetime, x.time_offset_secs, x.params))
+  }
+}
+
+export class RunEvent {
+  readonly datetime: string;
+  readonly timeOffsetSecs: number;
+  readonly params: Record<string, unknown>;
+
+  constructor(datetime: string, timeOffsetSecs: number, params: Record<string, unknown>) {
+    this.datetime = datetime;
+    this.timeOffsetSecs = timeOffsetSecs;
+    this.params = params;
   }
 }
 
@@ -522,12 +567,16 @@ export class SituationalRun {
 class RunAndSituationalScore {
   readonly runId: string;
   readonly started: string;
-  readonly params: Record<string, unknown>;
+  // Params related to the run, e.g. "{"impl": {"version": "3.4.4", "language": "Java"}"
+  readonly runParams: Record<string, unknown>;
+  // Params related to this run+situational run, e.g. {"score": 100}
+  readonly srjParams: Record<string, unknown>;
 
-  constructor(runId: string, started: string, params: Record<string, unknown>) {
+  constructor(runId: string, started: string, runParams: Record<string, unknown>, srjParams: Record<string, unknown>) {
     this.runId = runId;
     this.started = started;
-    this.params = params;
+    this.runParams = runParams;
+    this.srjParams = srjParams;
   }
 }
 

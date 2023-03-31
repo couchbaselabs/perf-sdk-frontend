@@ -3,6 +3,7 @@ import {DatabaseService, Result, Run, RunPlus, SituationalRun, SituationalRunRes
 import { Filtered } from './app.controller';
 import { versionCompare } from './versions';
 import {ShadeProvider} from "./shade_provider";
+import { v4 as uuidv4 } from 'uuid';
 
 // Query for a single run
 export class Single {
@@ -11,6 +12,7 @@ export class Single {
   readonly trimmingSeconds: number;
   readonly mergingType: MergingAlgorithm;
   readonly bucketiseSeconds?: number;
+  readonly annotations: Array<AnnotationsRunEvents>;
 }
 
 export class MetricsQuery {
@@ -111,7 +113,7 @@ export class Input {
   readonly filterRuns: FilterRuns;
 
   // Annotations are lines, labels etc. that are overlaid on the chart.  They are only supported if graphType==FULL.
-  // readonly annotations: Array<AnnotationsAtTime>;
+  readonly annotations: Array<AnnotationsRunEvents>;
 }
 
 // This class is a little hard to explain...
@@ -141,9 +143,9 @@ export interface HorizontalAxisDynamic {
   readonly resultType: ResultType
 }
 
-// Displays any at-time annotations for any of the runs displayed.
-export interface AnnotationsAtTime {
-  readonly type: "at-time";
+// Displays any at-time annotations from the run_events table for any of the runs displayed.
+export interface AnnotationsRunEvents {
+  readonly type: "run-events";
 }
 
 export interface VerticalAxis {
@@ -227,6 +229,12 @@ export class DatabaseCompare {
 // Getting top-level results page for a particular situational run.
 export class SituationalRunQuery {
   readonly situationalRunId: string;
+}
+
+// Getting top-level results page for a particular run inside a situational run.
+export class SituationalRunAndRunQuery {
+  readonly situationalRunId: string;
+  readonly runId: string;
 }
 
 @Injectable()
@@ -422,6 +430,7 @@ export class DashboardService {
     input: Input
   ): Promise<any> {
     const datasets = [];
+    const annotations = {};
     const sp = new ShadeProvider()
 
     if (input.hAxis.type == 'dynamic') {
@@ -457,19 +466,37 @@ export class DashboardService {
         else throw Error(`Unsupported yAxis type ${yAxis}`)
       }
 
-      // input.annotations.forEach(ann => {
-      //   if (ann.type == 'at-time') {
-      //     const an = ann as AnnotationsAtTime;
-      //     await this.database.getRunsWithBuckets()
-      //   }
-      //   else throw Error(`Unsupported annotation type ${JSON.stringify(ann)}`)
-      // })
+      for (const ann of input.annotations) {
+        if (ann.type == 'run-events') {
+          for (const run of runs) {
+            const events = await this.database.getEvents(run.id)
+            for (let i = 0; i < events.length; i++){
+              const event = events[i];
+              const x = event.timeOffsetSecs;
+
+              annotations[uuidv4()] = {
+                type: "line",
+                label: {
+                  display: true,
+                  content: event.params.description ?? event.params.type,
+                  yAdjust: i * 40
+                },
+                xMin: x,
+                xMax: x
+              }
+            }
+          }
+
+        }
+        else throw Error(`Unsupported annotation type ${JSON.stringify(ann)}`)
+      }
 
       return {
         type: 'line',
         runs: runsPlus,
         data: {
           datasets: datasets,
+          annotations: annotations,
         },
       };
     }
@@ -772,5 +799,9 @@ export class DashboardService {
 
   public async genSituationalRun(input: SituationalRunQuery): Promise<SituationalRunResults> {
     return await this.database.getSituationalRun(input)
+  }
+
+  public async genSituationalRunRun(input: SituationalRunAndRunQuery): Promise<SituationalRunResults> {
+    return await this.database.getSituationalRunRun(input)
   }
 }

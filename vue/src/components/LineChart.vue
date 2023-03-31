@@ -6,9 +6,12 @@
 </template>
 
 <script>
+import annotationPlugin from 'chartjs-plugin-annotation';
 import {Bar, Line} from 'vue-chartjs'
 import 'chartjs-adapter-luxon';
-import 'chart.js/auto'
+import Chart from "chart.js/auto";
+Chart.register(annotationPlugin);
+
 
 export default {
   name: 'LineChart',
@@ -33,6 +36,9 @@ export default {
               }
             }
           },
+          annotation: {
+            annotations: this.chartData.annotations
+          }
         },
         scales: {
           x: {

@@ -33,8 +33,8 @@
             </a>
           </td>
           <td>{{ r.started }}</td>
-          <td>{{ r.params?.workload?.situational }}</td>
-          <td>{{ r.params?.score ?? "N/A" }}</td>
+          <td>{{ r.runParams?.workload?.situational }}</td>
+          <td>{{ r.srjParams?.score ?? "N/A" }}</td>
         </tr>
       </table>
 
@@ -80,8 +80,9 @@ export default {
 
     runClicked: function (runId) {
       this.$router.push({
-        path: `/single`,
+        path: `/situationalSingle`,
         query: {
+          situationalRunId: this.$route.query.situationalRunId,
           runId: runId
         }
       })
