@@ -8,6 +8,9 @@ import { BootstrapVueNextResolver } from 'unplugin-vue-components/resolvers'
 const path = require("path");
 
 export default defineConfig({
+    server: {
+        port: 8080,
+    },
     plugins: [
         vue(),
         Components({
