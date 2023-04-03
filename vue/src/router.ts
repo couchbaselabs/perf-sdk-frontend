@@ -19,7 +19,7 @@ import SituationalSingle from './components/SituationalSingle.vue'
 const routes = [
     {
         path: "/",
-        component: Java,
+        redirect: "/scala",
     },
     {
         path: "/explorer",
