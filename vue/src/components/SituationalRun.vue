@@ -16,7 +16,7 @@
     <div v-if="results">
 <!--      {{JSON.stringify(results)}}-->
 
-      <table class="text-left table-striped table-sm table-responsive mt-5">
+      <table class="table text-left table-striped table-sm table-responsive mt-5">
         <thead class="font-weight-bold">
         <tr>
           <td>Run</td>

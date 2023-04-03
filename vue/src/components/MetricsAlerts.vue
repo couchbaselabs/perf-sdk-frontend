@@ -9,7 +9,7 @@
     </div>
 
     <div v-if="results && results.length > 0" class="scrollable">
-      <table class="text-left table-striped table-bordered table-sm table-responsive mt-5">
+      <table class="table text-left table-striped table-bordered table-sm table-responsive mt-5">
         <thead class="font-weight-bold">
         <tr>
           <td>Run</td>
