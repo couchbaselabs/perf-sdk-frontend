@@ -35,13 +35,14 @@ export default {
           },
           {
             type: "errors",
-            yAxisID: "right",
+            yAxisID: "left",
           },
           {
             type: "metrics",
             yAxisID: "right",
           }
         ],
+        annotations: [],
         runId: this.$route.query.runId,
         trimmingSeconds: 0,
         mergingType: this.$route.query.mergingType ?? "Average",

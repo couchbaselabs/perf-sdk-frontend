@@ -522,13 +522,14 @@ export class DatabaseService {
     return new SituationalRunResults(query.situationalRunId, mapped);
   }
 
-  async getEvents(runId: string): Promise<RunEvent[]> {
+  async getEvents(runId: string, displayOnGraphOnly: boolean): Promise<RunEvent[]> {
     const st = `
         SELECT r.datetime,
                EXTRACT(EPOCH FROM (r.datetime - (SELECT time FROM buckets WHERE run_id = '${runId}' ORDER BY time LIMIT 1))) AS time_offset_secs,
                r.params
         FROM run_events AS r
-        WHERE r.run_id = '${runId}';`
+        WHERE r.run_id = '${runId}'
+            ${displayOnGraphOnly ? ` AND cast(params::jsonb->>'displayOnGraph' as bool) = true` : ''};`
 
     console.info(st);
     const result = await this.client.query(st);

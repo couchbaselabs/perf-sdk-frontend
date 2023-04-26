@@ -1,5 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import {DatabaseService, Result, Run, RunPlus, SituationalRun, SituationalRunResults} from './database.service';
+import {
+  DatabaseService,
+  Result,
+  Run,
+  RunEvent,
+  RunPlus,
+  SituationalRun,
+  SituationalRunResults
+} from './database.service';
 import { Filtered } from './app.controller';
 import { versionCompare } from './versions';
 import {ShadeProvider} from "./shade_provider";
@@ -237,6 +245,16 @@ export class SituationalRunAndRunQuery {
   readonly runId: string;
 }
 
+export class ErrorSummary {
+  readonly first: Record<string, unknown>;
+  readonly count: number;
+
+  constructor(first: Record<string, unknown>, count: number) {
+    this.first = first;
+    this.count = count;
+  }
+}
+
 @Injectable()
 export class DashboardService {
   constructor(private readonly database: DatabaseService) {}
@@ -469,7 +487,7 @@ export class DashboardService {
       for (const ann of input.annotations) {
         if (ann.type == 'run-events') {
           for (const run of runs) {
-            const events = await this.database.getEvents(run.id)
+            const events = await this.database.getEvents(run.id, true)
             for (let i = 0; i < events.length; i++){
               const event = events[i];
               const x = event.timeOffsetSecs;
@@ -803,5 +821,30 @@ export class DashboardService {
 
   public async genSituationalRunRun(input: SituationalRunAndRunQuery): Promise<SituationalRunResults> {
     return await this.database.getSituationalRunRun(input)
+  }
+
+  public async genSituationalRunRunEvents(input: SituationalRunAndRunQuery): Promise<RunEvent[]> {
+    return await this.database.getEvents(input.runId, false)
+  }
+
+  public async genSituationalRunRunErrorsSummary(input: SituationalRunAndRunQuery): Promise<ErrorSummary[]> {
+    const events = await this.database.getEvents(input.runId, false)
+    const errors = events.filter(event => event.params["type"] == "situation-sdk-error")
+    const errorMap = new Map<string, [any, number]>()
+    errors.forEach(error => {
+      const name = error.params["name"] as string
+      const v = errorMap.get(name)
+      if (v != undefined) {
+        v[1] += 1
+      }
+      else {
+        errorMap.set(name, [error.params["exception"], 1])
+      }
+    })
+    const out: ErrorSummary[] = []
+    for (const key of errorMap) {
+      out.push(new ErrorSummary(key[1][0], key[1][1]))
+    }
+    return out
   }
 }

@@ -87,4 +87,18 @@ export class AppController {
     return await this.dashboard.genSituationalRunRun(input);
   }
 
+  @Post('/situationalRunRunEvents')
+  async situationalRunRunEvents(@Body() query: SituationalRunAndRunQuery) {
+    console.info(JSON.stringify(query));
+    const input = Object.assign(new SituationalRunAndRunQuery(), query);
+    return await this.dashboard.genSituationalRunRunEvents(input);
+  }
+
+  @Post('/situationalRunRunErrorsSummary')
+  async situationalRunRunErrorsSummary(@Body() query: SituationalRunAndRunQuery) {
+    console.info(JSON.stringify(query));
+    const input = Object.assign(new SituationalRunAndRunQuery(), query);
+    return await this.dashboard.genSituationalRunRunErrorsSummary(input);
+  }
+
 }

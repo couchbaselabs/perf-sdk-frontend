@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <b-navbar toggleable="lg" type="dark" variant="info">
+    <b-navbar toggleable="lg" variant="info" class="primary">
       <b-navbar-brand href="#">SDK Performance</b-navbar-brand>
 
       <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
@@ -18,7 +18,6 @@
           <li class="nav-item"><router-link to="/cpp" class="nav-link">C++</router-link></li>
           <li class="nav-item"><router-link to="/ruby" class="nav-link">Ruby</router-link></li>
           <li class="nav-item"><router-link to="/versus" class="nav-link">Versus</router-link></li>
-          <li class="nav-item"><router-link to="/situationalRuns" class="nav-link">Situational</router-link></li>
         </b-navbar-nav>
       </b-collapse>
     </b-navbar>
@@ -53,5 +52,9 @@ export default {
 
 .main {
   padding: 1rem
+}
+
+.nav-item {
+  color: white !important;
 }
 </style>
