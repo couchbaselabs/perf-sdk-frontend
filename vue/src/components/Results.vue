@@ -93,7 +93,7 @@ import router from '../router.ts'
 
 export default {
   name: "Results",
-  components: {BarChart, LineChart, BarChartSimple},
+  components: {BarChart, LineChart},
   data() {
     return {
       lastInput: undefined,
