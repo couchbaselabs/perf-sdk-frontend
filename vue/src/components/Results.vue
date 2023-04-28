@@ -87,7 +87,6 @@
 </template>
 
 <script>
-import BarChartSimple from "./BarChartSimple.vue";
 import BarChart from "./BarChart.vue";
 import LineChart from "./LineChart.vue";
 import router from '../router.ts'
