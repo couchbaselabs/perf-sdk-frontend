@@ -14,20 +14,35 @@
     <Results :single="input" :input="input"></Results>
 
     <div v-if="results">
-      {{JSON.stringify(results?.runs[0]?.srjParams)}}
+      <b-card title="Scoring" class="mb-2">
+        <b-card-text>Total score: {{results.runs[0].srjParams.score}}</b-card-text>
+
+        <ul>
+          <li v-for="x in results.runs[0].srjParams.reasons" :key="JSON.stringify(x)">{{x}}</li>
+        </ul>
+      </b-card>
     </div>
 
     <div v-if="errorsSummary">
-      <table>
-        <thead>
-        <th>Count</th>
-        <th>First Error</th>
-        </thead>
-        <tr v-for="x in errorsSummary" :key="JSON.stringify(x)">
-          <td>{{x.count}}</td>
-          <td><pre>{{JSON.stringify(x.first, null, '\t')}}</pre></td>
-        </tr>
-      </table>
+      <b-card title="Errors Summary" class="mb-2">
+        <div v-if="errorsSummary.length === 0">
+          <b-card-text>No errors seen!</b-card-text>
+        </div>
+        <div v-else>
+          <table>
+            <thead>
+            <th>Count</th>
+            <th>First Error</th>
+            </thead>
+            <tr v-for="x in errorsSummary" :key="JSON.stringify(x)">
+              <td>{{ x.count }}</td>
+              <td>
+                <pre>{{ JSON.stringify(x.first, null, '\t') }}</pre>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </b-card>
     </div>
 
     <b-button class="mr-2" v-if="!this.hideEventsButton" v-on:click="() => this.hideEventsButton = true && this.fetchAlLEvents()" variant="outline-primary">
@@ -53,9 +68,10 @@
 
 <script>
 import Results from "@/components/Results.vue";
+import {BCard} from "bootstrap-vue-next";
 
 export default {
-  components: {Results},
+  components: {BCard, Results},
   data() {
     return {
       results: undefined,

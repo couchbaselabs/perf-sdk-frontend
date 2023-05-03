@@ -1,7 +1,7 @@
 <template>
-  <b-container fluid>
+  <b-container fluid class="top">
     <b-row>
-      <b-col>
+      <b-col sm="9">
         <Line
             :options="chartOptions"
             :data="chartData"
@@ -213,3 +213,6 @@ export default {
   }
 }
 </script>
+
+<style>
+</style>
