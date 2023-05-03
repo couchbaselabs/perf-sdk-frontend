@@ -13,41 +13,53 @@
 
     <Results :single="input" :input="input"></Results>
 
-    <div v-if="results">
-      <b-card title="Scoring" class="mb-2">
-        <b-card-text>Total score: {{results.runs[0].srjParams.score}}</b-card-text>
+    <b-row class="mb-2">
+      <b-col>
+        <div v-if="results">
+          <b-card title="Scoring" class="mb-1">
+            <b-card-text><b>Total score: {{ results.runs[0].srjParams.score }}</b></b-card-text>
 
-        <ul>
-          <li v-for="x in results.runs[0].srjParams.reasons" :key="JSON.stringify(x)">{{x}}</li>
-        </ul>
-      </b-card>
-    </div>
+            <ul>
+              <li v-for="x in results.runs[0].srjParams.reasons" :key="JSON.stringify(x)">{{ x }}</li>
+            </ul>
+          </b-card>
 
-    <div v-if="errorsSummary">
-      <b-card title="Errors Summary" class="mb-2">
-        <div v-if="errorsSummary.length === 0">
-          <b-card-text>No errors seen!</b-card-text>
+          <b-card title="Debug">
+            <ul>
+              <li>{{JSON.stringify(results.runs[0])}}</li>
+              <li>{{results.runs[0].runParams?.debug?.ciUrl}}</li>
+              <li><a :href="results.runs[0].runParams?.debug?.ciUrl">CI job</a></li>
+              <li>OpenShift project/namespace: {{results.runs[0].runParams?.debug?.openShiftProject}}</li>
+            </ul>
+          </b-card>
         </div>
-        <div v-else>
-          <table>
-            <thead>
-            <th>Count</th>
-            <th>First Error</th>
-            </thead>
-            <tr v-for="x in errorsSummary" :key="JSON.stringify(x)">
-              <td>{{ x.count }}</td>
-              <td>
-                <pre>{{ JSON.stringify(x.first, null, '\t') }}</pre>
-              </td>
-            </tr>
-          </table>
-        </div>
-      </b-card>
-    </div>
+      </b-col>
 
-    <b-button class="mr-2" v-if="!this.hideEventsButton" v-on:click="() => this.hideEventsButton = true && this.fetchAlLEvents()" variant="outline-primary">
-      Show All Events
-    </b-button>
+      <b-col>
+        <div v-if="errorsSummary">
+          <b-card title="Errors Summary" class="mb-2">
+            <div v-if="errorsSummary.length === 0">
+              <b-card-text>No errors seen!</b-card-text>
+            </div>
+            <div v-else>
+              <table>
+                <tr v-for="x in errorsSummary" :key="JSON.stringify(x)">
+                  <td>{{ x.count }}</td>
+                  <td>
+                    <pre>{{ JSON.stringify(x.first, null, '\t') }}</pre>
+                  </td>
+                </tr>
+              </table>
+
+              <b-button class="mr-2" v-if="!this.hideEventsButton"
+                        v-on:click="() => this.hideEventsButton = true && this.fetchAlLEvents()" variant="outline-primary">
+                Show All Events
+              </b-button>
+            </div>
+          </b-card>
+        </div>
+      </b-col>
+    </b-row>
 
     <div v-if="events">
       <table>
@@ -57,9 +69,11 @@
         <th>Event</th>
         </thead>
         <tr v-for="x in events" :key="x.datetime">
-          <td>{{x.datetime}}</td>
-          <td>{{x.timeOffsetSecs}}</td>
-          <td><pre>{{JSON.stringify(x.params, null, '\t')}}</pre></td>
+          <td>{{ x.datetime }}</td>
+          <td>{{ x.timeOffsetSecs }}</td>
+          <td>
+            <pre>{{ JSON.stringify(x.params, null, '\t') }}</pre>
+          </td>
         </tr>
       </table>
     </div>
@@ -184,10 +198,10 @@ export default {
 
 <style>
 pre {
-  white-space: pre-wrap;       /* css-3 */
-  white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
-  white-space: -pre-wrap;      /* Opera 4-6 */
-  white-space: -o-pre-wrap;    /* Opera 7 */
-  word-wrap: break-word;       /* Internet Explorer 5.5+ */
+  white-space: pre-wrap; /* css-3 */
+  white-space: -moz-pre-wrap; /* Mozilla, since 1999 */
+  white-space: -pre-wrap; /* Opera 4-6 */
+  white-space: -o-pre-wrap; /* Opera 7 */
+  word-wrap: break-word; /* Internet Explorer 5.5+ */
 }
 </style>
