@@ -178,3 +178,13 @@ export default {
   props: ['input', 'single']
 }
 </script>
+
+<style scoped>
+.chart {
+  max-height: 200px !important;
+}
+
+.chartLine {
+  max-height: 600px !important;
+}
+</style>
