@@ -1,7 +1,11 @@
 <template>
   <div>
     <div class="mb-5">
-      Showing run {{ $route.query.runId }}.
+      <div v-if="results">
+        <h1>{{results.runs[0].runParams?.workload?.situational}}</h1>
+      </div>
+
+      <a href="#" v-on:click="this.situationalRunClicked()">Back to situational results</a>
 
       <div v-if="input.bucketiseSeconds">
         Re-bucketised into {{ input.bucketiseSeconds }} second buckets, merged with {{ input.mergingType }}.
@@ -26,8 +30,8 @@
 
           <b-card title="Debug">
             <ul>
-              <li>{{JSON.stringify(results.runs[0])}}</li>
-              <li>{{results.runs[0].runParams?.debug?.ciUrl}}</li>
+              <li>Situational run id: {{$route.query.situationalRunId}}</li>
+              <li>Run id: {{$route.query.runId}}</li>
               <li><a :href="results.runs[0].runParams?.debug?.ciUrl">CI job</a></li>
               <li>OpenShift project/namespace: {{results.runs[0].runParams?.debug?.openShiftProject}}</li>
             </ul>
@@ -191,6 +195,16 @@ export default {
       } else {
         this.errors = await res.json()
       }
+    },
+
+    situationalRunClicked: function () {
+      console.info("Moving...")
+      this.$router.push({
+        path: `/situationalRun`,
+        query: {
+          situationalRunId: this.$route.query.situationalRunId
+        }
+      })
     },
   }
 }
