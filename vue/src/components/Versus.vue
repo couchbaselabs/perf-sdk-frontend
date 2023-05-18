@@ -25,6 +25,7 @@ import {
   defaultWorkloadGets,
   hAxisSdkLanguage
 } from "@/components/Shared.vue";
+import {defaultCluster} from "@/components/Shared.vue";
 
 export default {
   components: {Results},
@@ -35,6 +36,7 @@ export default {
         ...defaultQuery,
         "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
+          "cluster": defaultCluster,
           "workload": defaultWorkloadInserts,
           "vars": {"docNum": 10000000, ...defaultVars}
         },
@@ -45,6 +47,7 @@ export default {
         ...defaultQuery,
         "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
+          "cluster": defaultCluster,
           "workload": defaultWorkloadReplaces,
           "vars": {"poolSize": 10000, ...defaultVars}
         },
@@ -55,6 +58,7 @@ export default {
         ...defaultQuery,
         "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
+          "cluster": defaultCluster,
           "workload": defaultWorkloadGets,
           "vars": {"poolSize": 10000, ...defaultVars}
         },
@@ -65,6 +69,7 @@ export default {
         ...defaultQuery,
         "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
+          "cluster": defaultCluster,
           "workload": defaultWorkloadInserts,
           "vars": {"docNum": 10000000, ...defaultVars, "horizontalScaling": 1}
         },
@@ -75,6 +80,7 @@ export default {
         ...defaultQuery,
         "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
+          "cluster": defaultCluster,
           "workload": defaultWorkloadReplaces,
           "vars": {"poolSize": 10000, ...defaultVars, "horizontalScaling": 1}
         },
@@ -85,6 +91,7 @@ export default {
         ...defaultQuery,
         "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
+          "cluster": defaultCluster,
           "workload": defaultWorkloadGets,
           "vars": {"poolSize": 10000, ...defaultVars, "horizontalScaling": 1}
         },

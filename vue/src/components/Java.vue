@@ -3,6 +3,14 @@
     <Shared :language="'Java'"></Shared>
     <Metrics :language="'Java'"></Metrics>
 
+    <h1>KV Gets (OpenShift + Protostellar + CNG)</h1>
+    Going from HQ to OpenShift cluster, both in us-west-1, over Protostellar to a CNG ingress node.
+
+    With 20 threads:
+    <Results :input="kvGetsOpenShift20Threads"></Results>
+    With 1 thread:
+    <Results :input="kvGetsOpenShift1Thread"></Results>
+
     <h1>Horizontal Scaling (Reactive)</h1>
     Tests how the SDK scales with parallelism, using KV gets and the reactive API.
     <Results :input="kvGetsHorizontalScalingAsync"></Results>
@@ -62,6 +70,7 @@ import Shared, {
 } from "@/components/Shared.vue";
 import Results from "@/components/Results.vue";
 import Metrics from "@/components/Metrics.vue";
+import {openShiftCluster} from "@/components/Shared.vue";
 
 export default {
   components: {Metrics, Shared, Results},
@@ -76,6 +85,7 @@ export default {
           resultType: "Integer"
         },
         "databaseCompare": {
+          "cluster": defaultCluster,
           "impl": {"language": "Java"},
           "workload": defaultWorkloadGets,
           "vars": {
@@ -90,6 +100,7 @@ export default {
       kvGetsBlocking: {
         ...defaultQuery,
         "databaseCompare": {
+          "cluster": defaultCluster,
           "impl": {"language": "Java"},
           "workload": defaultWorkloadGets,
           "vars": {"poolSize": 10000, ...defaultVars, api: "DEFAULT"}
@@ -99,15 +110,37 @@ export default {
       kvGetsReactive: {
         ...defaultQuery,
         "databaseCompare": {
+          "cluster": defaultCluster,
           "impl": {"language": "Java"},
           "workload": defaultWorkloadGets,
           "vars": {"poolSize": 10000, ...defaultVars, api: "ASYNC"}
         },
         "excludeSnapshots": this.excludeSnapshots || false,
       },
+      kvGetsOpenShift20Threads: {
+        ...defaultQuery,
+        "databaseCompare": {
+          "cluster": openShiftCluster,
+          "impl": {"language": "Java"},
+          "workload": defaultWorkloadGets,
+          "vars": {"poolSize": 10000, ...defaultVarsWithoutHorizontalScaling, "horizontalScaling": 20, api: "DEFAULT"}
+        },
+        "excludeSnapshots": this.excludeSnapshots || false,
+      },
+      kvGetsOpenShift1Thread: {
+        ...defaultQuery,
+        "databaseCompare": {
+          "cluster": openShiftCluster,
+          "impl": {"language": "Java"},
+          "workload": defaultWorkloadGets,
+          "vars": {"poolSize": 10000, ...defaultVarsWithoutHorizontalScaling, "horizontalScaling": 1, api: "DEFAULT"}
+        },
+        "excludeSnapshots": this.excludeSnapshots || false,
+      },
       transactions: {
         ...defaultQuery,
         "databaseCompare": {
+          "cluster": defaultCluster,
           "impl": {"language": "Java"},
           "workload": {
             "operations": [{
@@ -185,8 +218,8 @@ export default {
         ...defaultQuery,
         "hAxis": hAxisSdkLanguage(),
         "databaseCompare": {
-          "impl": {"language": "Java", "version": "refs/changes/07/184307/8"},
           "cluster": defaultCluster,
+          "impl": {"language": "Java", "version": "refs/changes/07/184307/8"},
           "workload": defaultWorkloadGets,
           "vars": {...defaultVars},
         },

@@ -29,6 +29,7 @@ export default {
       return {
         ... defaultQuery,
         "databaseCompare": {
+          "cluster": defaultCluster,
           "impl": {"language": this.language},
           "workload": defaultWorkloadInserts,
           "vars": {"docNum": 10000000, ... defaultVars}
@@ -42,6 +43,7 @@ export default {
       return {
         ... defaultQuery,
         "databaseCompare": {
+          "cluster": defaultCluster,
           "impl": {"language": this.language},
           "workload": defaultWorkloadReplaces,
           "vars": {... defaultVars}
@@ -55,6 +57,7 @@ export default {
       return {
         ... defaultQuery,
         "databaseCompare": {
+          "cluster": defaultCluster,
           "impl": {"language": this.language},
           "workload": defaultWorkloadGets,
           "vars": {... defaultVars}
@@ -73,6 +76,7 @@ export default {
           "resultType": "Integer"
         },
         "databaseCompare": {
+          "cluster": defaultCluster,
           "impl": {"language": this.language},
           "workload": defaultWorkloadGets,
           "vars": {"poolSize": 10000, ... defaultVarsWithoutHorizontalScaling, "experimentName": "horizontalScaling" }
@@ -101,9 +105,11 @@ export const defaultCluster = {
   "replicas": 0,
   "topology": "A",
   "nodeCount": 1,
-  "compaction": "disabled"
+  "compaction": "disabled",
+  "connectionString": "couchbase://localhost"
 }
 
+// This is localhost CNG.
 export const protostellarCluster = {
   "type": "unmanaged",
   "memory": 28000,
@@ -118,6 +124,10 @@ export const protostellarCluster = {
   "nodeCount": 1,
   "compaction": "disabled",
   "stellarNebulaSha": "945b3d0e611ddb7549453fa30b22905cb4d33a9e"
+}
+
+export const openShiftCluster = {
+  "connectionString": "protostellar://grpc-performance-testing.apps.cloud-native.fg1b.p1.openshiftapps.com:443"
 }
 
 export const defaultQuery = {

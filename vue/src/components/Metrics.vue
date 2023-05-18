@@ -24,11 +24,13 @@ import Shared, {
   defaultWorkloadGets
 } from "@/components/Shared.vue";
 import Results from "@/components/Results.vue";
+import {defaultCluster} from "@/components/Shared.vue";
 
 function sharedQuery(language) {
   return {
     ...defaultQuery,
     "databaseCompare": {
+      "cluster": defaultCluster,
       "impl": {"language": language},
       "workload": defaultWorkloadGets,
       "vars": {...defaultVars}
