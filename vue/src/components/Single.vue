@@ -34,6 +34,16 @@ export default {
             column: "duration_average_us",
           },
           {
+            type: "buckets",
+            yAxisID: "right",
+            column: "duration_p99_us",
+          },
+          {
+            type: "buckets",
+            yAxisID: "right",
+            column: "duration_max_us",
+          },
+          {
             type: "errors",
             yAxisID: "left",
           },

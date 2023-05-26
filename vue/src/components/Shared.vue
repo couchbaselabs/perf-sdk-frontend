@@ -127,7 +127,7 @@ export const protostellarCluster = {
 }
 
 export const openShiftCluster = {
-  "connectionString": "protostellar://grpc-performance-testing.apps.cloud-native.fg1b.p1.openshiftapps.com:443"
+  "connectionString": "protostellar://grpc-sdk-performance-testing.apps.operator-fit.1o92.p1.openshiftapps.com:443"
 }
 
 export const defaultQuery = {

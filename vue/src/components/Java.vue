@@ -4,7 +4,7 @@
     <Metrics :language="'Java'"></Metrics>
 
     <h1>KV Gets (OpenShift + Protostellar + CNG)</h1>
-    Going from HQ to OpenShift cluster, both in us-west-1, over Protostellar to a CNG ingress node.
+    Going from an AWS node in us-west-1 to the test OpenShift cluster, also in us-west-1.  Protostellar is used, talking to a CNG ingress node.
 
     With 20 threads:
     <Results :input="kvGetsOpenShift20Threads"></Results>
@@ -123,9 +123,9 @@ export default {
           "cluster": openShiftCluster,
           "impl": {"language": "Java"},
           "workload": defaultWorkloadGets,
-          "vars": {"poolSize": 10000, ...defaultVarsWithoutHorizontalScaling, "horizontalScaling": 20, api: "DEFAULT"}
+          "vars": {"poolSize": 10000, ...defaultVarsWithoutHorizontalScaling, "horizontalScaling": 20}
         },
-        "excludeSnapshots": this.excludeSnapshots || false,
+        "excludeSnapshots": false,
       },
       kvGetsOpenShift1Thread: {
         ...defaultQuery,
@@ -133,9 +133,10 @@ export default {
           "cluster": openShiftCluster,
           "impl": {"language": "Java"},
           "workload": defaultWorkloadGets,
-          "vars": {"poolSize": 10000, ...defaultVarsWithoutHorizontalScaling, "horizontalScaling": 1, api: "DEFAULT"}
+          "vars": {"poolSize": 10000, ...defaultVarsWithoutHorizontalScaling, "horizontalScaling": 1}
         },
-        "excludeSnapshots": this.excludeSnapshots || false,
+        "excludeSnapshots": false,
+        "multipleResultsHandling": "Side-by-Side"
       },
       transactions: {
         ...defaultQuery,
