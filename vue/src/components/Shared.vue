@@ -97,15 +97,11 @@ export default {
 export const defaultCluster = {
   "type": "unmanaged",
   "memory": 28000,
-  "region": "us-east-2",
   "storage": "couchstore",
   "version": "7.1.1-3175-enterprise",
   "cpuCount": 16,
-  "instance": "c5.4xlarge",
   "replicas": 0,
-  "topology": "A",
   "nodeCount": 1,
-  "compaction": "disabled",
   "connectionString": "couchbase://localhost"
 }
 
