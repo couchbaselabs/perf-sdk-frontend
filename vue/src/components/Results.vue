@@ -21,7 +21,7 @@
     <div v-if="results" class="graph">
 <!--      <b-container class="mb-3">-->
 
-        <BarChart v-if="results.type === 'bar'" class="chart" :chartData="results.data"/>
+        <BarChart v-if="results.type === 'bar'" class="chart" :input="input" :chartData="results.data"/>
         <div v-if="results.type === 'line'">
           <LineChart class="chartLine" :chartData="results.data"/>
           <div>

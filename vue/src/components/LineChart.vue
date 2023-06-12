@@ -78,10 +78,6 @@ export default {
               display: true,
               text: 'Time'
             },
-            scaleLabel: {
-              display: true,
-              labelString: 'Time',
-            },
             ticks: {
               callback: function (value) {
                 const minutes = Math.floor(value / 60);
@@ -94,13 +90,6 @@ export default {
           left: {
             id: "left",
             position: "left",
-            scaleLabel: {
-              display: true,
-              labelString: (this.input?.yAxes[0]?.column) ?? "unknown",
-            },
-            title: {
-              display: true
-            },
             ticks: {
               beginAtZero: true
             }
@@ -108,12 +97,6 @@ export default {
           right: {
             id: "right",
             position: "right",
-            scaleLabel: {
-              display: true,
-            },
-            title: {
-              display: true
-            },
             ticks: {
               beginAtZero: true
             }

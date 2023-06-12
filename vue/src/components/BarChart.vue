@@ -24,9 +24,9 @@ export default {
         },
         scales: {
           y: {
-            scaleLabel: {
+            title: {
               display: true,
-              labelString: this.input?.yAxes[0]?.column ?? this.input?.yAxes[0]?.metric ?? "unknown",
+              text: this.input?.yAxes[0]?.column ?? this.input?.yAxes[0]?.metric ?? "unknown",
             },
             ticks: {
               beginAtZero: true
