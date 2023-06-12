@@ -28,6 +28,12 @@
     <p>Testing different numbers of connections to STG. Simple round-robining over them. Testing KV gets.</p>
     <Results :input="numEndpoints"></Results>
 
+    <p>Same test but against OpenShift, using 1 thread:</p>
+    <Results :input="numEndpointsOpenshift1Thread"></Results>
+
+    <p>Same test but using 20 threads:</p>
+    <Results :input="numEndpointsOpenshift20Threads"></Results>
+
     <h1>Experiment: Stellar Nebula ForkJoinPool com.couchbase.protostellar.executorMaxThreadCount</h1>
     <p>Testing various sizes of thread pool for the executor used for GRPC operations. Testing KV gets.</p>
     <p>With ThreadPool</p>
@@ -254,6 +260,36 @@ export default {
           "vars": {experimentName: "numEndpoints"}
         },
         "excludeGerrit": false,
+      },
+      numEndpointsOpenshift1Thread: {
+        ...defaultQuery,
+        "hAxis": {
+          "type": "dynamic",
+          "databaseField": "vars.com.couchbase.protostellar.numEndpoints",
+          "resultType": "Integer"
+        },
+        "databaseCompare": {
+          "cluster": openShiftCluster,
+          "impl": {"language": "Java"},
+          "vars": {experimentName: "openShiftNumEndpoints", "horizontalScaling": 1, "api": "DEFAULT"}
+        },
+        "excludeGerrit": false,
+        "filterRuns": "Latest"
+      },
+      numEndpointsOpenshift20Threads: {
+        ...defaultQuery,
+        "hAxis": {
+          "type": "dynamic",
+          "databaseField": "vars.com.couchbase.protostellar.numEndpoints",
+          "resultType": "Integer"
+        },
+        "databaseCompare": {
+          "cluster": openShiftCluster,
+          "impl": {"language": "Java"},
+          "vars": {experimentName: "openShiftNumEndpoints", "horizontalScaling": 20, "api": "DEFAULT"}
+        },
+        "excludeGerrit": false,
+        "filterRuns": "Latest"
       },
       protostellarLoadBalancingSingle: {
         ...defaultQuery,
