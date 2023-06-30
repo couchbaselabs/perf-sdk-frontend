@@ -19,7 +19,8 @@
     </div>
 
     <div v-if="results" class="graph">
-<!--      <b-container class="mb-3">-->
+
+      <!--      <b-container class="mb-3">-->
 
         <BarChart v-if="results.type === 'bar'" class="chart" :input="input" :chartData="results.data"/>
         <div v-if="results.type === 'line'">
@@ -32,18 +33,32 @@
 
 <!--      </b-container>-->
 
-      <div>
+      <div class="d-flex">
         <b-button class="mr-2" v-on:click="showInExplorer" variant="outline-primary">
           Show in Explorer
         </b-button>
 
-        <b-button v-if="!display" v-on:click="display = true" variant="outline-primary">
+        <b-button class="mr-2" v-if="!display" v-on:click="display = true" variant="outline-primary">
           Show runs ({{ results.runs.length }})
         </b-button>
 
-        <b-button v-if="display" v-on:click="display = false" variant="outline-primary">
+        <b-button class="mr-2" v-if="display" v-on:click="display = false" variant="outline-primary">
           Hide runs
         </b-button>
+
+        <div>
+          <b-form-select v-model="defaultDisplay" v-on:change="(ev) => displayChanged(ev)">
+            <option :selected="true">duration_average_us</option>
+            <option>duration_min_us</option>
+            <option>duration_max_us</option>
+            <option>duration_p50_us</option>
+            <option>duration_p95_us</option>
+            <option>duration_p99_us</option>
+            <option>operations_total</option>
+            <option>operations_success</option>
+            <option>operations_failed</option>
+          </b-form-select>
+        </div>
       </div>
 
       <table v-if="display" class="table text-left table-striped table-bordered table-sm table-responsive mt-5">
@@ -96,6 +111,7 @@ export default {
   components: {BarChart, LineChart},
   data() {
     return {
+      defaultDisplay: 'duration_average_us',
       lastInput: undefined,
       results: undefined,
       errors: undefined,
@@ -110,13 +126,19 @@ export default {
     }
   },
   // updated() {
-  //   // Need this component to refetch data when the `input` prop changes.  The approach used here doesn't seem slick
+  //   // Need this component to refetch data when the `input` prop changes.  The approash used here doesn't seem slick
   //   // but is the only solution that worked.
   //   if (!this.single && this.lastInput !== this.input) {
   //     this.fetchQuery(this.input)
   //   }
   // },
   methods: {
+    displayChanged: async function(display) {
+      const newInput = {... this.input }
+      newInput.yAxes[0].column = display
+      await this.fetchQuery(newInput)
+    },
+
     fetchQuery: async function (input) {
       if (input !== undefined) {
         this.lastInput = input
