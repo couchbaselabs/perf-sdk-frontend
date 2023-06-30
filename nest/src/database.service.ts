@@ -78,13 +78,19 @@ export interface RunPlus extends Run {
   color: string; // '#E2F0CB'
 }
 
+// Represents a bar on a barchart.
 export class Result {
+  // The x-axis.
   grouping: string;
+  // The y-axis.
   value: number;
+  // ['a6921d60-7f9a-44b5-8513-67697ce706d8']
+  runIds: string[] | undefined;
 
-  constructor(grouping: string, value: number) {
+  constructor(grouping: string, value: number, runIds: string[] = undefined) {
     this.grouping = grouping;
     this.value = value;
+    this.runIds = runIds
   }
 }
 
@@ -318,7 +324,7 @@ export class DatabaseService {
   }
 
   /**
-   * The Simplified display.
+   * The Simplified display (bar graph).
    */
   async getSimplifiedGraph(
     groupBy1: string,
@@ -342,7 +348,8 @@ export class DatabaseService {
                    JOIN runs ON sub.run_id = runs.id
             ORDER BY grouping, datetime asc`;
     } else if (input.multipleResultsHandling == MultipleResultsHandling.MERGED) {
-      st = `SELECT avg(sub.value) as value,
+      st = `SELECT array_agg(run_id) as run_ids,
+                   avg(sub.value) as value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
                         ${mergingOp}(buckets.${yAxis.column}) as value
@@ -359,7 +366,7 @@ export class DatabaseService {
     }
     console.info(st);
     const result = await this.client.query(st);
-    return DatabaseService.sort(result.map((x) => new Result(x.grouping, x.value)), input)
+    return DatabaseService.sort(result.map((x) => new Result(x.grouping, x.value, x.run_ids)), input)
   }
 
   async getSimplifiedGraphForMetric(runIds: readonly string[],

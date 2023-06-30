@@ -140,7 +140,7 @@ export interface HorizontalAxisDynamic {
   readonly type: "dynamic";
 
   // Can be any database field, though some fields are more likely than others to produce useful results:
-  // "impl.version" - displays SDK versions.  Most useful if the query is limited with `Compare` to one SDK.
+  // "impl.version" - displays SDK versions.  Most useful if the query is limited with `Compare` to one SDK language.
   // "impl.language" - displays SDK languages: "Kotlin", "Scala", etc.
   // Some fields that _might_ work but haven't been used yet:
   // "cluster.version" - displays cluster versions: "7.0.0" etc.  Could be useful for seeing how an SDK's performance
@@ -319,6 +319,7 @@ export class DashboardService {
   private async addGraphBar(input: Input): Promise<any> {
     const labels = [];
     const values = [];
+    const runIds = [];
     let runs: Run[];
     let results: Result[] = [];
 
@@ -376,6 +377,7 @@ export class DashboardService {
     results.forEach((b) => {
       labels.push(b.grouping);
       values.push(b.value);
+      runIds.push(b.runIds);
     });
 
     return {
@@ -383,6 +385,7 @@ export class DashboardService {
       runs: runs,
       chosen: JSON.stringify(input.databaseCompare),
       data: {
+        runIds: runIds,
         labels: labels,
         datasets: [
           {

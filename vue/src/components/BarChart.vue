@@ -43,8 +43,32 @@ export default {
     barClicked: function(event, arr) {
       console.info(event)
       console.info(arr)
-      // With Charts 2.x, can get back to the data with arr[0]._chart.data.datasets[0].data
-      // But, this data is just an array of numbers.  May need Charts 3.x to allow custom objects.
+      console.info(this.chartData)
+      const idx = arr[0].index
+      console.info(this.chartData.labels[idx])
+      console.info(this.chartData.datasets[0].data[idx])
+      const runIds = this.chartData.runIds[idx]
+      if (runIds !== undefined) {
+        console.info(Array.from(runIds))
+        console.info(runIds)
+
+        if (runIds.length === 1) {
+          this.$router.push({
+            path: `/single`,
+            query: {
+              runId: runIds[0]
+            }
+          })
+        }
+        else {
+          this.$router.push({
+            path: `/runs`,
+            query: {
+              runIds: Array.from(runIds)
+            }
+          })
+        }
+      }
     }
   },
   props: {

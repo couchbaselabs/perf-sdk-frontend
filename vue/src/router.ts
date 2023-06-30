@@ -15,6 +15,7 @@ import Go from './components/Go.vue'
 import SituationalRun from './components/SituationalRun.vue'
 import SituationalRuns from './components/SituationalRuns.vue'
 import SituationalSingle from './components/SituationalSingle.vue'
+import Runs from "./components/Runs.vue";
 
 const routes = [
     {
@@ -85,6 +86,11 @@ const routes = [
     {
         path: "/situationalSingle",
         component: SituationalSingle,
+        props: true
+    },
+    {
+        path: "/runs",
+        component: Runs,
         props: true
     },
 ]
