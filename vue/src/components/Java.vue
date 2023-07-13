@@ -1,10 +1,12 @@
 <template>
   <b-container>
+
     <Shared :language="'Java'"></Shared>
     <Metrics :language="'Java'"></Metrics>
 
     <h1>KV Gets (OpenShift + Protostellar + CNG)</h1>
-    Going from an AWS node in us-west-1 to the test OpenShift cluster, also in us-west-1.  Protostellar is used, talking to a CNG ingress node.
+    Going from an AWS node in us-west-1 to the test OpenShift cluster, also in us-west-1. Protostellar is used, talking
+    to a CNG ingress node.
 
     With 20 threads:
     <Results :input="kvGetsOpenShift20Threads"></Results>
@@ -60,6 +62,14 @@
       of CoreKvOps, checking if this abstraction (and the extra allocations) impacts perf.
       Testing KV gets.</p>
     <Results :input="coreKvOps"></Results>
+
+    <h1>Experiment: setting TCP_NODELAY</h1>
+    <p>Using KV gets and Gerrit review <a
+        href="https://review.couchbase.org/c/couchbase-jvm-clients/+/192387">192387</a>.</p>
+    <p>With 1 thread:</p>
+    <Results :input="tcpNoDelay1Thread"></Results>
+    <p>With 20 threads:</p>
+    <Results :input="tcpNoDelay20Threads"></Results>
   </b-container>
 </template>
 
@@ -322,6 +332,42 @@ export default {
             experimentName: "protostellarLoadBalancing",
             "com.couchbase.protostellar.loadBalancingSingle": "false"
           }
+        },
+        "excludeGerrit": false,
+      },
+      tcpNoDelay1Thread: {
+        ...defaultQuery,
+        "hAxis": {
+          "type": "dynamic",
+          "databaseField": "vars.com.couchbase.tcpNoDelay",
+          "resultType": "Integer"
+        },
+        "databaseCompare": {
+          "impl": {"language": "Java", "version": "refs/changes/87/192387/2"},
+          "vars": {
+            "poolSize": 10000,
+            "experimentName": "tcpNoDelay",
+            "horizontalScaling": 1,
+            "api": "DEFAULT"
+          },
+        },
+        "excludeGerrit": false,
+      },
+      tcpNoDelay20Threads: {
+        ...defaultQuery,
+        "hAxis": {
+          "type": "dynamic",
+          "databaseField": "vars.com.couchbase.tcpNoDelay",
+          "resultType": "Integer"
+        },
+        "databaseCompare": {
+          "impl": {"language": "Java", "version": "refs/changes/87/192387/2"},
+          "vars": {
+            "poolSize": 10000,
+            "experimentName": "tcpNoDelay",
+            "horizontalScaling": 20,
+            "api": "DEFAULT"
+          },
         },
         "excludeGerrit": false,
       },
