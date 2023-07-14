@@ -3,9 +3,15 @@ import { AppModule } from './app.module';
 require('dotenv').config();
 import * as sourceMapSupport from 'source-map-support';
 sourceMapSupport.install();
+import * as fs from 'fs';
+
+const httpsOptions = {
+  key: fs.readFileSync('/etc/nginx/ca.key'),
+  cert: fs.readFileSync('/etc/nginx/ca.crt'),
+};
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {httpsOptions});
   app.enableCors();
   await app.listen(3002);
 }
