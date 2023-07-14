@@ -51,7 +51,7 @@ export default {
   },
   methods: {
     fetchQuery: async function (input) {
-      const res = await fetch(`http://${document.location.hostname}:3002/dashboard/metrics`,
+      const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/metrics`,
           {
             headers: {
               'Accept': 'application/json',

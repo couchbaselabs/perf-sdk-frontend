@@ -135,7 +135,7 @@ export default {
   },
   methods: {
     fetchQuery: async function () {
-      const res = await fetch(`http://${document.location.hostname}:3002/dashboard/situationalRunRun`,
+      const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/situationalRunRun`,
           {
             headers: {
               'Accept': 'application/json',
@@ -156,7 +156,7 @@ export default {
     },
 
     fetchErrorsSummary: async function () {
-      const res = await fetch(`http://${document.location.hostname}:3002/dashboard/situationalRunRunErrorsSummary`,
+      const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/situationalRunRunErrorsSummary`,
           {
             headers: {
               'Accept': 'application/json',
@@ -177,7 +177,7 @@ export default {
     },
 
     fetchAlLEvents: async function () {
-      const res = await fetch(`http://${document.location.hostname}:3002/dashboard/situationalRunRunEvents`,
+      const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/situationalRunRunEvents`,
           {
             headers: {
               'Accept': 'application/json',

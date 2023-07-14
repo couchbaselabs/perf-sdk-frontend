@@ -63,7 +63,7 @@ export default {
   },
   methods: {
     fetchQuery: async function () {
-        const res = await fetch(`http://${document.location.hostname}:3002/dashboard/situationalRuns`,
+        const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/situationalRuns`,
             {
               headers: {
                 'Accept': 'application/json',

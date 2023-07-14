@@ -145,7 +145,7 @@ export default {
         console.info("Results fetching...")
         console.info(JSON.stringify(input))
 
-        const res = await fetch(`http://${document.location.hostname}:3002/dashboard/query`,
+        const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/query`,
             {
               headers: {
                 'Accept': 'application/json',
@@ -166,7 +166,7 @@ export default {
     },
 
     fetchSingleQuery: async function (input) {
-      const res = await fetch(`http://${document.location.hostname}:3002/dashboard/single`,
+      const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/single`,
           {
             headers: {
               'Accept': 'application/json',
