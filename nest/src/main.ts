@@ -5,12 +5,20 @@ import * as sourceMapSupport from 'source-map-support';
 sourceMapSupport.install();
 import * as fs from 'fs';
 
-const httpsOptions = {
-  key: fs.readFileSync('/etc/nginx/ca.key'),
-  cert: fs.readFileSync('/etc/nginx/ca.crt'),
-};
 
 async function bootstrap() {
+  let httpsOptions = undefined
+  if (fs.existsSync('/etc/nginx/ca.key')) {
+    console.info("Found key, assuming prod and enabling https")
+    httpsOptions = {
+      key: fs.readFileSync('/etc/nginx/ca.key'),
+      cert: fs.readFileSync('/etc/nginx/ca.crt'),
+    }
+  }
+  else {
+    console.info("Did not find key, assuming local dev and not enabling https")
+  }
+
   const app = await NestFactory.create(AppModule, {httpsOptions});
   app.enableCors();
   await app.listen(3002);
