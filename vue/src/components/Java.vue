@@ -3,6 +3,7 @@
 
     <Shared :language="'Java'"></Shared>
     <Metrics :language="'Java'"></Metrics>
+    <TransactionsShared :language="'Java'"></TransactionsShared>
 
     <h1>KV Gets (OpenShift + Protostellar + CNG)</h1>
     Going from an AWS node in us-west-1 to the test OpenShift cluster, also in us-west-1. Protostellar is used, talking
@@ -16,9 +17,6 @@
     <h1>Horizontal Scaling (Reactive)</h1>
     Tests how the SDK scales with parallelism, using KV gets and the reactive API.
     <Results :input="kvGetsHorizontalScalingAsync"></Results>
-
-    <h1>Transactions</h1>
-    <Results :input="transactions"></Results>
 
     <h1>KV Gets (Blocking API)</h1>
     <Results :input="kvGetsBlocking"></Results>
@@ -153,25 +151,6 @@ export default {
         },
         "excludeSnapshots": false,
         "multipleResultsHandling": "Side-by-Side"
-      },
-      transactions: {
-        ...defaultQuery,
-        "databaseCompare": {
-          "cluster": defaultCluster,
-          "impl": {"language": "Java"},
-          "workload": {
-            "operations": [{
-              "transaction": {
-                "ops": [{
-                  "op": "replace",
-                  "docLocation": {"method": "pool", "poolSize": "$poolSize", "poolSelectionStrategy": "randomUniform"}
-                }, {"op": "insert", "docLocation": {"method": "uuid"}}], "bounds": {"forSeconds": "$forSeconds"}
-              }
-            }]
-          },
-          "vars": {...defaultVars}
-        },
-        "excludeSnapshots": this.excludeSnapshots || false
       },
       stellarNebulaGets: {
         ...defaultQuery,

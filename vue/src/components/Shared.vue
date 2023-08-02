@@ -6,10 +6,13 @@
 
     <MetricsAlerts :input="{language:language}"></MetricsAlerts>
     <h1>KV Get</h1>
+    <p>With 20 threads:</p>
     <Results :input="kvGets"></Results>
     <h1>KV Replace</h1>
+    <p>With 20 threads:</p>
     <Results :input="kvReplaces"></Results>
     <h1>KV Insert</h1>
+    <p>With 20 threads:</p>
     <Results :input="kvInserts"></Results>
     <h1>Horizontal Scaling</h1>
     Tests how the SDK scales with parallelism, using KV gets.  The SDK's default numKvConnections setting is used (and is likely to be a bottleneck).
