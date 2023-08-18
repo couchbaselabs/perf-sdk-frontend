@@ -19,6 +19,9 @@
           <li class="nav-item"><router-link to="/ruby" class="nav-link">Ruby</router-link></li>
           <li class="nav-item"><router-link to="/versus" class="nav-link">Versus</router-link></li>
         </b-navbar-nav>
+        <b-navbar-nav class="ml-auto">
+          <li class="nav-item" right><router-link to="/situationalRuns" class="nav-link">Situational</router-link></li>
+        </b-navbar-nav>
       </b-collapse>
     </b-navbar>
 
