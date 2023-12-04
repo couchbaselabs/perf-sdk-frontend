@@ -2,6 +2,7 @@
   <b-container>
 
     <Shared :language="'Java'"></Shared>
+    <Protostellar :language="'Java'"></Protostellar>
     <Metrics :language="'Java'"></Metrics>
     <TransactionsShared :language="'Java'"></TransactionsShared>
 
@@ -84,10 +85,11 @@ import Shared, {
 } from "@/components/Shared.vue";
 import Results from "@/components/Results.vue";
 import Metrics from "@/components/Metrics.vue";
+import Protostellar from "@/components/Protostellar.vue";
 import {openShiftCluster} from "@/components/Shared.vue";
 
 export default {
-  components: {Metrics, Shared, Results},
+  components: {Metrics, Shared, Results, Protostellar},
   data() {
     return {
 
