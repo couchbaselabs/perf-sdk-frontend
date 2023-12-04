@@ -1,6 +1,7 @@
 <template>
   <b-container>
     <h1>couchbase2:// KV Gets</h1>
+    With a localhost CNG instance between the SDK and the localhost cluster.
     <p>With 1 thread:</p>
     <Results :input="kvGets1Thread"></Results>
     <p>With 20 threads:</p>
