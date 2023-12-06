@@ -1,7 +1,7 @@
 <template>
   <b-container>
 
-    <b-tabs content-class="mt-3">
+    <b-tabs content-class="mt-3" lazy>
       <b-tab title="Classic" active>
         <JavaClassic/>
       </b-tab>
