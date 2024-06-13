@@ -25,6 +25,12 @@ import {defaultQuery, defaultCluster, defaultVars} from "@/components/Shared.vue
 function transactionsDefault(language, threads, excludeSnapshots, excludeGerrit) {
   return {
     ...defaultQuery,
+    // Switch to throughput as we have some bad latency spikes in a few early Java transaction tests, that are likely
+    // test bugs and are dominating the results.
+    "yAxes": [{
+      type: "buckets",
+      column: "operations_total",
+    }],
     "databaseCompare": {
       "cluster": defaultCluster,
       "impl": {"language": language},
