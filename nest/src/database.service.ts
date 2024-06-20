@@ -134,8 +134,11 @@ export class DatabaseService {
                         ('${JSON.stringify(
                           compare, null, 2
                         )}'::jsonb #- '${groupBy}')`;
-    console.info(st);
+    const label = "getRunsById: " + st
+    console.time(label);
     const rows = await this.client.query(st);
+    console.timeEnd(label)
+
     let runs = rows.map((x) => {
       return new Run(
           x.params,
@@ -164,8 +167,11 @@ export class DatabaseService {
                         datetime
                       FROM runs
                 WHERE id in ('${runIds.join("','")}')`;
-    console.info(st);
+    const label = "getRunsById: " + st
+    console.time(label);
     const result = await this.client.query(st);
+    console.timeEnd(label)
+
     return result.map((x) => {
       return new Run(
           x.params,
@@ -225,8 +231,11 @@ export class DatabaseService {
         ORDER BY datetime ASC;`
     }
 
-    console.info(st);
+    const label = "getRunsWithBuckets: " + st
+    console.time(label);
     const result = await this.client.query(st);
+    console.timeEnd(label);
+
     return result.map((x) => {
       return new RunBucketPair(
         x.run_id,
@@ -364,8 +373,11 @@ export class DatabaseService {
     } else {
       throw new Error('Unknown grouping_type ' + input.multipleResultsHandling);
     }
-    console.info(st);
+    const label = "getSimplifiedGraph: " + st
+    console.time(label);
     const result = await this.client.query(st);
+    console.timeEnd(label);
+
     return DatabaseService.sort(result.map((x) => new Result(x.grouping, x.value, x.run_ids)), input)
   }
 
@@ -394,8 +406,11 @@ export class DatabaseService {
     } else {
       throw new Error('Unknown grouping_type ' + input.multipleResultsHandling);
     }
-    console.info(st);
+    const label = "getSimplifiedGraphForMetric: " + st
+    console.time(label);
     const result = await this.client.query(st);
+    console.timeEnd(label);
+
     return DatabaseService.sort(result.map((x) => new Result(x.grouping, x.value)), input);
   }
 
@@ -453,9 +468,10 @@ export class DatabaseService {
                 and datetime >= '2022-07-30 00:00:00.000000'
                 order by string_to_array(params::jsonb->'impl'->>'version', '.')::text[] desc;`
 
-    console.info(st);
+    const label = "getMetricsAlerts: " + st
+    console.time(label);
     const result = await this.client.query(st);
-    console.info(`Got ${result.length} alerts`)
+    console.timeEnd(label)
     return result.map((x) => new MetricsResult(x.run_id, x.datetime, x.message, x.version, input.language));
   }
 
@@ -491,8 +507,11 @@ export class DatabaseService {
         FROM out;
     `
 
-    console.info(st);
+    const label = "getSituationalRuns: " + st
+    console.time(label);
     const result = await this.client.query(st);
+    console.timeEnd(label);
+
     return result.map(x => new SituationalRun(x.situational_run_id, x.started, x.score, x.num_runs, x.details_of_any_run))
   }
 
@@ -506,8 +525,11 @@ export class DatabaseService {
                  LEFT OUTER JOIN situational_run_join AS srj ON srj.run_id = r.id
         WHERE srj.situational_run_id = '${query.situationalRunId}';    `
 
-    console.info(st);
+    const label = "getSituationalRun: " + st
+    console.time(label);
     const result = await this.client.query(st);
+    console.timeEnd(label);
+
     const mapped = result.map(x => new RunAndSituationalScore(x.id, x.datetime, x.run_params, x.srj_params))
     return new SituationalRunResults(query.situationalRunId, mapped);
   }
@@ -523,8 +545,11 @@ export class DatabaseService {
         WHERE srj.situational_run_id = '${query.situationalRunId}'
         AND r.id = '${query.runId}';    `
 
-    console.info(st);
+    const label = "getSituationalRunRun: " + st
+    console.time(label);
     const result = await this.client.query(st);
+    console.timeEnd(label);
+
     const mapped = result.map(x => new RunAndSituationalScore(x.id, x.datetime, x.run_params, x.srj_params))
     return new SituationalRunResults(query.situationalRunId, mapped);
   }
@@ -538,8 +563,11 @@ export class DatabaseService {
         WHERE r.run_id = '${runId}'
             ${displayOnGraphOnly ? ` AND cast(params::jsonb->>'displayOnGraph' as bool) = true` : ''};`
 
-    console.info(st);
+    const label = "getEvents: " + st
+    console.time(label);
     const result = await this.client.query(st);
+    console.timeEnd(label);
+
     return result.map(x => new RunEvent(x.datetime, x.time_offset_secs, x.params))
   }
 }
