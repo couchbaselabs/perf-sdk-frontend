@@ -194,19 +194,19 @@ export class DatabaseService {
     includeErrors: boolean): Promise<Array<RunBucketPair>> {
     let st;
     if (input.bucketiseSeconds > 1) {
-      // Not sure how to group the metrics or errors, would require some complex JSON processing
+      // Metrics could be grouped now, see the error handling
       includeMetrics = false
-      includeErrors = false
       const mergingOp = this.mapMerging(input.mergingType)
       st = `
         SELECT buckets.run_id,
                time_bucket('${input.bucketiseSeconds} seconds', time) as datetime,
                min(buckets.time_offset_secs)                     as time_offset_secs
                ${includeDataColumn ? `, ${mergingOp}(${includeDataColumn}) as value` : ""} 
-               ${includeErrors ? `, errors` : ""}
+               ${includeErrors ? `, SUM(CASE WHEN jsonb_typeof(buckets.errors) = 'object' THEN (value::int) ELSE 0 END) as errors` : ""}
                ${includeMetrics ? `, metrics.metrics` : ""}
         FROM buckets
           ${includeMetrics ? "LEFT OUTER JOIN metrics ON buckets.run_id = metrics.run_id AND buckets.time_offset_secs = metrics.time_offset_secs" : ""}
+        LEFT JOIN LATERAL jsonb_each_text(CASE WHEN jsonb_typeof(buckets.errors) = 'object' THEN buckets.errors ELSE '{}'::jsonb END) ON TRUE
         WHERE buckets.run_id in ('${runIds.join("','")}')
           AND buckets.time_offset_secs >= ${input.trimmingSeconds}
         GROUP BY run_id, datetime
@@ -229,19 +229,25 @@ export class DatabaseService {
 
     const label = "getRunsWithBuckets: " + st
     console.time(label);
-    const result = await this.client.query(st);
-    console.timeEnd(label);
+    try {
+      const result = await this.client.query(st);
+      console.timeEnd(label);
 
-    return result.map((x) => {
-      return new RunBucketPair(
-        x.run_id,
-        x.datetime,
-        parseInt(x.time_offset_secs),
-        x.value,
-        x.errors,
-        x.metrics
-      );
-    });
+      return result.map((x) => {
+        return new RunBucketPair(
+            x.run_id,
+            x.datetime,
+            parseInt(x.time_offset_secs),
+            x.value,
+            x.errors,
+            x.metrics
+        );
+      });
+    }
+    catch (err) {
+      console.error(`Query ${st} failed with: ${err}`)
+      throw err
+    }
   }
 
   async getRunsRaw(): Promise<Array<Record<string, unknown>>> {
