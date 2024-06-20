@@ -465,30 +465,33 @@ export class DashboardService {
         return run;
       });
 
+      const promiseArray = [];
+
       for (const yAxis of input.yAxes) {
         // Note this isn't the most efficient way of hitting the database, especially for the single-chart
         // display.  This will hit the database multiple times for the same run.  But, it's efficient
         // enough, and makes the logic easier to follow.
         if (yAxis.type == 'buckets') {
           const va = yAxis as VerticalAxisBucketsColumn;
-          const ds = await this.getVerticalAxisBucketsColumn(runsPlus, input, va, sp);
-          firstBucketTime = ds[0]?.data[0]?.nested?.datetime
-          console.info("Found first bucket time: ", firstBucketTime)
-          ds.forEach(d => datasets.push(d))
-        }
-        else if (yAxis.type == "metrics") {
+          promiseArray.push(this.getVerticalAxisBucketsColumn(runsPlus, input, va, sp).then(ds => {
+            firstBucketTime = ds[0]?.data[0]?.nested?.datetime
+            console.info("Found first bucket time: ", firstBucketTime)
+            ds.forEach(d => datasets.push(d))
+          }))
+        } else if (yAxis.type == "metrics") {
           const va = yAxis as VerticalAxisMetrics;
-          const ds = await this.getVerticalAxisMetrics(runsPlus, input, va, sp);
-          ds.forEach(d => datasets.push(d))
-        }
-        else if (yAxis.type == "errors") {
+          promiseArray.push(await this.getVerticalAxisMetrics(runsPlus, input, va, sp).then(ds =>
+              ds.forEach(d => datasets.push(d))))
+        } else if (yAxis.type == "errors") {
           const va = yAxis as VerticalAxisErrors;
-          const ds = await this.getVerticalAxisErrors(runsPlus, input, va, sp);
-          ds.forEach(d => datasets.push(d))
+          promiseArray.push(await this.getVerticalAxisErrors(runsPlus, input, va, sp).then(ds =>
+              ds.forEach(d => datasets.push(d))))
         }
         // VerticalAxisMetric _could_ be supported, but doesn't seem that useful when VerticalAxisMetrics is a superset of it
         else throw Error(`Unsupported yAxis type ${yAxis}`)
       }
+
+      await Promise.all(promiseArray);
 
       for (const ann of input.annotations) {
         if (ann.type == 'run-events') {
