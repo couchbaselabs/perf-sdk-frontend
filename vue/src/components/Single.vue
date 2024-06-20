@@ -57,7 +57,7 @@ export default {
         runId: this.$route.query.runId,
         trimmingSeconds: 0,
         mergingType: this.$route.query.mergingType ?? "Average",
-        bucketiseSeconds: this.$route.query.bucketiseSeconds ?? undefined,
+        bucketiseSeconds: this.$route.query.bucketiseSeconds ?? 10,
       }
     }
   }

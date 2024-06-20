@@ -199,8 +199,9 @@ export class DatabaseService {
     includeErrors: boolean): Promise<Array<RunBucketPair>> {
     let st;
     if (input.bucketiseSeconds > 1) {
-      // Not sure how to group the metrics, would require some complex JSON processing
+      // Not sure how to group the metrics or errors, would require some complex JSON processing
       includeMetrics = false
+      includeErrors = false
       const mergingOp = this.mapMerging(input.mergingType)
       st = `
         SELECT buckets.run_id,
