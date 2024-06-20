@@ -158,11 +158,6 @@ export class DatabaseService {
   async getRunsById(runIds: Array<string>): Promise<Array<Run>> {
     const st = `SELECT
                         params as params,
-                        params->'cluster' as cluster,
-                        params->'impl' as impl,
-                        params->'workload' as workload,
-                        params->'vars' as vars,
-                        params->'other' as other,
                         id as run_id,
                         datetime
                       FROM runs
@@ -175,11 +170,11 @@ export class DatabaseService {
     return result.map((x) => {
       return new Run(
           x.params,
-          x.cluster,
-          x.impl,
-          x.workload,
-          x.vars,
-          x.other,
+          x.params.cluster,
+          x.params.impl,
+          x.params.workload,
+          x.params.vars,
+          x.params.other,
           x.run_id,
           x.datetime,
       );
