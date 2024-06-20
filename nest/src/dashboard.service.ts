@@ -799,7 +799,7 @@ export class DashboardService {
 
   public async genMetrics(input: MetricsQuery) {
     let out = []
-    const excessiveThreads = new Metrics("cast (metrics::json->>'threadCount' as integer) > 100",
+    const excessiveThreads = new Metrics("cast (metrics::json->>'threadCount' as integer) > 200",
         "'Excessive thread count, max=' || max (cast (metrics::json->>'threadCount' as integer))")
     const excessiveHeap = new Metrics("cast(metrics::json->>'memHeapUsedMB' as float) > 500",
         "'Excessive heap usage, max=' || max(cast(metrics::json->>'memHeapUsedMB' as float))")
