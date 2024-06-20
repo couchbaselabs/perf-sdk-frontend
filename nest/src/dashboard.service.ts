@@ -453,6 +453,7 @@ export class DashboardService {
     const datasets = [];
     const annotations = {};
     const sp = new ShadeProvider()
+    let firstBucketTime = undefined
 
     if (input.hAxis.type == 'dynamic') {
       const ha = input.hAxis as HorizontalAxisDynamic;
@@ -471,6 +472,8 @@ export class DashboardService {
         if (yAxis.type == 'buckets') {
           const va = yAxis as VerticalAxisBucketsColumn;
           const ds = await this.getVerticalAxisBucketsColumn(runsPlus, input, va, sp);
+          firstBucketTime = ds[0]?.data[0]?.nested?.datetime
+          console.info("Found first bucket time: ", firstBucketTime)
           ds.forEach(d => datasets.push(d))
         }
         else if (yAxis.type == "metrics") {
@@ -490,7 +493,7 @@ export class DashboardService {
       for (const ann of input.annotations) {
         if (ann.type == 'run-events') {
           for (const run of runs) {
-            const events = await this.database.getEvents(run.id, true)
+            const events = await this.database.getEvents(run.id, firstBucketTime, true)
             for (let i = 0; i < events.length; i++){
               const event = events[i];
               const x = event.timeOffsetSecs;
@@ -827,11 +830,11 @@ export class DashboardService {
   }
 
   public async genSituationalRunRunEvents(input: SituationalRunAndRunQuery): Promise<RunEvent[]> {
-    return await this.database.getEvents(input.runId, false)
+    return await this.database.getEvents(input.runId, undefined, false)
   }
 
   public async genSituationalRunRunErrorsSummary(input: SituationalRunAndRunQuery): Promise<ErrorSummary[]> {
-    const events = await this.database.getEvents(input.runId, false)
+    const events = await this.database.getEvents(input.runId, undefined, false)
     const errors = events.filter(event => event.params["type"] == "situation-sdk-error")
     const errorMap = new Map<string, [any, number]>()
     errors.forEach(error => {

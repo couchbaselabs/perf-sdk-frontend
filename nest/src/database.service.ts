@@ -134,7 +134,7 @@ export class DatabaseService {
                         ('${JSON.stringify(
                           compare, null, 2
                         )}'::jsonb #- '${groupBy}')`;
-    const label = "getRunsById: " + st
+    const label = "getRuns: " + st
     console.time(label);
     const rows = await this.client.query(st);
     console.timeEnd(label)
@@ -554,10 +554,9 @@ export class DatabaseService {
     return new SituationalRunResults(query.situationalRunId, mapped);
   }
 
-  async getEvents(runId: string, displayOnGraphOnly: boolean): Promise<RunEvent[]> {
+  async getEvents(runId: string, firstBucketTime, displayOnGraphOnly: boolean): Promise<RunEvent[]> {
     const st = `
         SELECT r.datetime,
-               EXTRACT(EPOCH FROM (r.datetime - (SELECT time FROM buckets WHERE run_id = '${runId}' ORDER BY time LIMIT 1))) AS time_offset_secs,
                r.params
         FROM run_events AS r
         WHERE r.run_id = '${runId}'
@@ -568,7 +567,9 @@ export class DatabaseService {
     const result = await this.client.query(st);
     console.timeEnd(label);
 
-    return result.map(x => new RunEvent(x.datetime, x.time_offset_secs, x.params))
+    return result.map(x => {
+      return new RunEvent(x.datetime, (x.datetime - firstBucketTime) / 1000, x.params)
+    })
   }
 }
 
