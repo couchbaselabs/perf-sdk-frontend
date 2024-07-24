@@ -424,6 +424,10 @@ export class DashboardService {
       input: Single,
   ): Promise<any> {
     const runs = await this.database.getRunsById([input.runId]);
+    if (runs.length === 0) {
+      // Throw an error to indicate that the request cannot be fulfilled
+      throw Error(`Run with ID ${input.runId} not found.`);
+    }
     const i: Input = {
       ...input,
       hAxis: {
