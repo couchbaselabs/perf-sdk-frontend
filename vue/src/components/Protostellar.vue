@@ -11,12 +11,11 @@
 
 <script>
 import Results from "@/components/Results.vue";
-import MetricsAlerts from "@/components/MetricsAlerts.vue";
 
 import {defaultQuery, defaultCluster, defaultWorkloadGets, defaultVars} from "@/components/Shared.vue";
 
 export default {
-  components: {Results, MetricsAlerts},
+  components: {Results},
   props: ['language'],
   computed: {
     kvGets1Thread() {

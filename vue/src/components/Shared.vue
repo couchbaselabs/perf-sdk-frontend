@@ -4,7 +4,8 @@
       Exclude snapshots
     </b-form-checkbox>
 
-    <MetricsAlerts :input="{language:language}"></MetricsAlerts>
+    <!-- Disabling as unoptimised and potentially killing database -->
+    <!-- <MetricsAlerts :input="{language:language}"></MetricsAlerts>-->
     <h1>KV Get</h1>
     <p>With 20 threads:</p>
     <Results :input="kvGets"></Results>
@@ -22,10 +23,9 @@
 
 <script>
 import Results from "@/components/Results.vue";
-import MetricsAlerts from "@/components/MetricsAlerts.vue";
 
 export default {
-  components: {Results, MetricsAlerts},
+  components: {Results},
   props: ['language'],
   computed: {
     kvInserts() {
