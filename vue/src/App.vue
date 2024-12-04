@@ -7,7 +7,8 @@
 
       <b-collapse id="nav-collapse" is-nav>
         <b-navbar-nav>
-          <li class="nav-item"><router-link to="/explorer" class="nav-link">Explorer</router-link></li>
+          <!-- Explorer has bugs so is being (temporarily?) disabled -->
+          <!-- <li class="nav-item"><router-link to="/explorer" class="nav-link">Explorer</router-link></li> -->
           <li class="nav-item"><router-link to="/java" class="nav-link">Java</router-link></li>
           <li class="nav-item"><router-link to="/kotlin" class="nav-link">Kotlin</router-link></li>
           <li class="nav-item"><router-link to="/scala" class="nav-link">Scala</router-link></li>
