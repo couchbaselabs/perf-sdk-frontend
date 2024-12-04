@@ -34,11 +34,16 @@
 <!--      </b-container>-->
 
       <div class="d-flex">
-        <b-button class="mr-2" v-on:click="showInExplorer" variant="outline-primary">
+        <!-- <b-button class="mr-2" v-on:click="showInExplorer" variant="outline-primary">
           Show in Explorer
+        </b-button> -->
+
+        <b-button class="mr-2" variant="outline-secondary" size="sm" @click="forceRerender" :disabled="isReloading" title="Mainly to debug the backend">
+          <b-spinner small v-if="isReloading"></b-spinner>
+          {{ isReloading ? 'Reloading...' : 'Reload' }}
         </b-button>
 
-        <b-button class="mr-2" v-if="!display" v-on:click="display = true" variant="outline-primary">
+        <b-button class="mr-2" v-if="!display" v-on:click="display = true" variant="outline-secondary">
           Show runs ({{ results.runs.length }})
         </b-button>
 
@@ -115,7 +120,9 @@ export default {
       lastInput: undefined,
       results: undefined,
       errors: undefined,
-      display: false
+      display: false,
+      componentKey: 0,
+      isReloading: false
     }
   },
   mounted() {
@@ -141,11 +148,39 @@ export default {
 
     fetchQuery: async function (input) {
       if (input !== undefined) {
+        this.isReloading = true
         this.lastInput = input
-        console.info("Results fetching...")
-        console.info(JSON.stringify(input))
+        try {
+          console.info("Results fetching...")
+          console.info(JSON.stringify(input))
 
-        const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/query`,
+          const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/query`,
+              {
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+                },
+                method: "POST",
+                body: JSON.stringify(input)
+              })
+
+          if (res.status.toString().startsWith('2')) {
+            this.results = await res.json();
+          } else {
+            this.errors = await res.json()
+          }
+        } finally {
+          this.isReloading = false
+        }
+      } else {
+        console.info("Skipping fetch")
+      }
+    },
+
+    fetchSingleQuery: async function (input) {
+      this.isReloading = true
+      try {
+        const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/single`,
             {
               headers: {
                 'Accept': 'application/json',
@@ -155,28 +190,10 @@ export default {
               body: JSON.stringify(input)
             })
 
-        if (res.status.toString().startsWith('2')) {
-          this.results = await res.json();
-        } else {
-          this.errors = await res.json()
-        }
-      } else {
-        console.info("Skipping fetch")
+        this.results = await res.json();
+      } finally {
+        this.isReloading = false
       }
-    },
-
-    fetchSingleQuery: async function (input) {
-      const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/single`,
-          {
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            },
-            method: "POST",
-            body: JSON.stringify(input)
-          })
-
-      this.results = await res.json();
     },
 
     showInExplorer: function () {
@@ -195,6 +212,15 @@ export default {
           runId: runId
         }
       })
+    },
+
+    forceRerender() {
+      this.componentKey += 1;
+      if (this.single) {
+        this.fetchSingleQuery(this.single);
+      } else if (this.input) {
+        this.fetchQuery(this.input);
+      }
     }
   },
   props: ['input', 'single']
