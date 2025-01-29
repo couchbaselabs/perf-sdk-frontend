@@ -20,7 +20,7 @@ const pgp = require('pg-promise')(initOptions);
       provide: DatabaseService,
       useFactory: async () => {
         const client = pgp({
-          user: 'postgres',
+          user: process.env.CB_DATABASE_USERNAME ? process.env.CB_DATABASE_USERNAME : 'postgres',
           host: process.env.CB_DATABASE ? process.env.CB_DATABASE : 'localhost',
           database: 'perf',
           password: process.env.CB_DATABASE_PASSWORD,
