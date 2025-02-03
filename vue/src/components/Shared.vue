@@ -1,32 +1,57 @@
 <template>
   <b-container>
-    <b-form-checkbox v-model="excludeSnapshots">
-      Exclude snapshots
-    </b-form-checkbox>
+    <ExcludeSnapshotsCheckbox class="mb-3" />
 
     <!-- Disabling as unoptimised and potentially killing database -->
     <!-- <MetricsAlerts :input="{language:language}"></MetricsAlerts>-->
     <h1>KV Get</h1>
     <p>With 20 threads:</p>
-    <Results :input="kvGets"></Results>
+    <Results :input="kvGets" :key="reloadTrigger"></Results>
     <h1>KV Replace</h1>
     <p>With 20 threads:</p>
-    <Results :input="kvReplaces"></Results>
+    <Results :input="kvReplaces" :key="reloadTrigger"></Results>
     <h1>KV Insert</h1>
     <p>With 20 threads:</p>
-    <Results :input="kvInserts"></Results>
+    <Results :input="kvInserts" :key="reloadTrigger"></Results>
     <h1>Horizontal Scaling</h1>
     Tests how the SDK scales with parallelism, using KV gets.  The SDK's default numKvConnections setting is used (and is likely to be a bottleneck).
-    <Results :input="kvGetsHorizontalScaling"></Results>
+    <Results :input="kvGetsHorizontalScaling" :key="reloadTrigger"></Results>
   </b-container>
 </template>
 
 <script>
 import Results from "@/components/Results.vue";
+import { useGlobalSnapshots } from '@/mixins/GlobalSnapShotMixin'
+import { ref } from 'vue'
+import ExcludeSnapshotsCheckbox from './ExcludeSnapshotsCheckbox.vue'
 
 export default {
-  components: {Results},
-  props: ['language'],
+  components: { 
+    Results,
+    ExcludeSnapshotsCheckbox 
+  },
+  props: {
+    language: {
+      type: String,
+      required: true
+    }
+  },
+  setup() {
+    const { excludeSnapshots } = useGlobalSnapshots()
+    const reloadTrigger = ref(0)
+    
+    return {
+      excludeSnapshots,
+      reloadTrigger
+    }
+  },
+  watch: {
+    excludeSnapshots: {
+      handler() {
+        this.reloadTrigger++
+      }
+    }
+  },
   computed: {
     kvInserts() {
       return {
@@ -91,7 +116,6 @@ export default {
   },
   data() {
     return {
-      excludeSnapshots: false,
       excludeGerrit: true,
     }
   }

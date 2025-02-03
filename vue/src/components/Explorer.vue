@@ -111,9 +111,7 @@
           </b-form-group>
 
           <b-form-group label="Versions">
-            <b-form-checkbox v-model="excludeSnapshots" v-on:change="handleSubmit">
-              Exclude snapshots
-            </b-form-checkbox>
+            <ExcludeSnapshotsCheckbox class="mb-3" />
             <b-form-checkbox v-model="excludeGerrit" v-on:change="handleSubmit">
               Exclude Gerrit builds
             </b-form-checkbox>
@@ -134,15 +132,28 @@
 </template>
 
 <script>
-
-
-import Results from "@/components/Results.vue";
+import Results from "@/components/Results.vue"
+import { useGlobalSnapshots } from '@/mixins/GlobalSnapShotMixin'
+import { ref } from 'vue'
+import ExcludeSnapshotsCheckbox from './ExcludeSnapshotsCheckbox.vue'
 import {hAxisSdkVersion} from "./Shared.vue";
 
 export default {
   name: "Explorer",
-  components: {Results},
+  components: {
+    Results,
+    ExcludeSnapshotsCheckbox
+  },
   props: ['initialInput'],
+  setup() {
+    const { excludeSnapshots } = useGlobalSnapshots()
+    const reloadTrigger = ref(0)
+    
+    return {
+      excludeSnapshots,
+      reloadTrigger
+    }
+  },
   data() {
     const yAxis = [
       {id: 6, text: `duration_average_us`},
@@ -180,7 +191,6 @@ export default {
       queryParams: undefined,
       input: this.initialInput,
       excludeGerrit: false,
-      excludeSnapshots: false,
     }
   },
 
@@ -231,7 +241,6 @@ export default {
         trimmingSeconds: this.selectedTrimmingSeconds,
         bucketiseSeconds: this.selectedBucketiseSeconds,
         excludeGerrit: this.excludeGerrit,
-        excludeSnapshots: this.excludeSnapshots,
       }
     },
 
@@ -257,6 +266,21 @@ export default {
       const url = new URL(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/groupByOptions`);
       const res = await fetch(url);
       this.hAxis = await res.json();
+    }
+  },
+
+  watch: {
+    excludeGerrit: {
+      handler(newVal) {
+        this.handleSubmit();
+      },
+      immediate: true
+    },
+    excludeSnapshots: {
+      handler() {
+        this.reloadTrigger++
+        this.handleSubmit()
+      }
     }
   }
 }

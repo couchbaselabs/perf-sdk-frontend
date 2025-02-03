@@ -1,5 +1,6 @@
 export class ShadeProvider {
     private shades = [
+        '#000000',
         '#E2F0CB',
         '#B5EAD7',
         '#C7CEEA',

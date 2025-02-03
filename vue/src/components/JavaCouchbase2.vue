@@ -1,6 +1,7 @@
 <template>
   <b-container>
-
+    <ExcludeSnapshotsCheckbox class="mb-3" />
+    
     <Protostellar :language="'Java'"></Protostellar>
 
     <h1>KV Gets (OpenShift + Protostellar + CNG)</h1>
@@ -8,9 +9,9 @@
     to a CNG ingress node.
 
     With 20 threads:
-    <Results :input="kvGetsOpenShift20Threads"></Results>
+    <Results :input="kvGetsOpenShift20Threads" :key="reloadTrigger"></Results>
     With 1 thread:
-    <Results :input="kvGetsOpenShift1Thread"></Results>
+    <Results :input="kvGetsOpenShift1Thread" :key="reloadTrigger"></Results>
   </b-container>
 </template>
 
@@ -29,12 +30,37 @@ import Results from "@/components/Results.vue";
 import Metrics from "@/components/Metrics.vue";
 import Protostellar from "@/components/Protostellar.vue";
 import {openShiftCluster} from "@/components/Shared.vue";
+import { useGlobalSnapshots } from '@/mixins/GlobalSnapShotMixin'
+import { ref } from 'vue'
+import ExcludeSnapshotsCheckbox from './ExcludeSnapshotsCheckbox.vue'
 
 export default {
-  components: {Metrics, Shared, Results, Protostellar},
-  data() {
+  components: {
+    Metrics, 
+    Shared, 
+    Results, 
+    Protostellar,
+    ExcludeSnapshotsCheckbox
+  },
+  setup() {
+    const { excludeSnapshots } = useGlobalSnapshots()
+    const reloadTrigger = ref(0)
+    
     return {
-      kvGetsOpenShift20Threads: {
+      excludeSnapshots,
+      reloadTrigger
+    }
+  },
+  watch: {
+    excludeSnapshots: {
+      handler() {
+        this.reloadTrigger++
+      }
+    }
+  },
+  computed: {
+    kvGetsOpenShift20Threads() {
+      return {
         ...defaultQuery,
         "databaseCompare": {
           "cluster": openShiftCluster,
@@ -42,9 +68,11 @@ export default {
           "workload": defaultWorkloadGets,
           "vars": {"poolSize": 10000, ...defaultVarsWithoutHorizontalScaling, "horizontalScaling": 20}
         },
-        "excludeSnapshots": false,
-      },
-      kvGetsOpenShift1Thread: {
+        "excludeSnapshots": this.excludeSnapshots,
+      }
+    },
+    kvGetsOpenShift1Thread() {
+      return {
         ...defaultQuery,
         "databaseCompare": {
           "cluster": openShiftCluster,
@@ -52,10 +80,12 @@ export default {
           "workload": defaultWorkloadGets,
           "vars": {"poolSize": 10000, ...defaultVarsWithoutHorizontalScaling, "horizontalScaling": 1}
         },
-        "excludeSnapshots": false,
+        "excludeSnapshots": this.excludeSnapshots,
         "multipleResultsHandling": "Side-by-Side"
-      },
-      stellarNebulaGets: {
+      }
+    },
+    stellarNebulaGets() {
+      return {
         ...defaultQuery,
         "hAxis": {
           "type": "dynamic",

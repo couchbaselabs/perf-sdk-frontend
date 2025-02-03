@@ -5,19 +5,20 @@
 
     <h2>Memory</h2>
     Measures the maximum heap memory used in MB by the performer+SDK.
-    <Results :input="memHeapUsedMB"></Results>
+    <Results :input="memHeapUsedMB" :key="reloadTrigger"></Results>
 
     <h2>Thread Count</h2>
     Measures the maximum thread count used by the performer+SDK.
-    <Results :input="threadCount"></Results>
+    <Results :input="threadCount" :key="reloadTrigger"></Results>
 
     <h2>Process CPU</h2>
     Measures the average process CPU used by the performer+SDK, in %.
-    <Results :input="processCpu"></Results>
+    <Results :input="processCpu" :key="reloadTrigger"></Results>
   </b-container>
 </template>
 
 <script>
+import { useGlobalSnapshots } from '@/mixins/GlobalSnapShotMixin'
 import Shared, {
   defaultQuery,
   defaultVars,
@@ -25,8 +26,9 @@ import Shared, {
 } from "@/components/Shared.vue";
 import Results from "@/components/Results.vue";
 import {defaultCluster} from "@/components/Shared.vue";
+import { ref } from 'vue'
 
-function sharedQuery(language) {
+function sharedQuery(language, excludeSnapshots) {
   return {
     ...defaultQuery,
     "databaseCompare": {
@@ -35,44 +37,60 @@ function sharedQuery(language) {
       "workload": defaultWorkloadGets,
       "vars": {...defaultVars}
     },
-    "excludeSnapshots": false
+    "excludeSnapshots": excludeSnapshots
   }
 }
 
 export default {
   components: {Shared, Results},
   props: ['language'],
+  setup() {
+    const { excludeSnapshots } = useGlobalSnapshots()
+    const reloadTrigger = ref(0)
+    
+    return {
+      excludeSnapshots,
+      reloadTrigger
+    }
+  },
+  watch: {
+    excludeSnapshots: {
+      handler() {
+        this.reloadTrigger++
+      }
+    }
+  },
   computed: {
     processCpu() {
       return {
-        ...sharedQuery(this.language),
+        ...sharedQuery(this.language, this.excludeSnapshots),
         "yAxes": [{
           "type": "metric",
           "metric": "processCpu",
         }],
-        mergingType: "Average",
+        mergingType: "Average"
       }
     },
 
     memHeapUsedMB() {
       return {
-        ...sharedQuery(this.language),
+        ...sharedQuery(this.language, this.excludeSnapshots),
         "yAxes": [{
           "type": "metric",
           "metric": "memHeapUsedMB",
         }],
-        mergingType: "Maximum",
+        mergingType: "Maximum"
       }
     },
 
     threadCount() {
       return {
-        ...sharedQuery(this.language),
+        ...sharedQuery(this.language, this.excludeSnapshots),
         "yAxes": [{
           "type": "metric",
           "metric": "threadCount",
         }],
-        mergingType: "Maximum",
+        mergingType: "Maximum"
       }
     }
   }

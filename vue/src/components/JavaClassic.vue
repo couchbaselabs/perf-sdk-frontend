@@ -7,13 +7,13 @@
 
     <h1>Horizontal Scaling (Reactive)</h1>
     Tests how the SDK scales with parallelism, using KV gets and the reactive API.
-    <Results :input="kvGetsHorizontalScalingAsync"></Results>
+    <Results :input="kvGetsHorizontalScalingAsync" :key="reloadTrigger"></Results>
 
     <h1>KV Gets (Blocking API)</h1>
-    <Results :input="kvGetsBlocking"></Results>
+    <Results :input="kvGetsBlocking" :key="reloadTrigger"></Results>
 
     <h1>KV Gets (Reactive API)</h1>
-    <Results :input="kvGetsReactive"></Results>
+    <Results :input="kvGetsReactive" :key="reloadTrigger"></Results>
   </b-container>
 </template>
 
@@ -32,13 +32,30 @@ import Results from "@/components/Results.vue";
 import Metrics from "@/components/Metrics.vue";
 import Protostellar from "@/components/Protostellar.vue";
 import {openShiftCluster} from "@/components/Shared.vue";
+import { useGlobalSnapshots } from '@/mixins/GlobalSnapShotMixin'
+import { ref } from 'vue'
 
 export default {
   components: {Metrics, Shared, Results, Protostellar},
-  data() {
+  setup() {
+    const { excludeSnapshots } = useGlobalSnapshots()
+    const reloadTrigger = ref(0)
+    
     return {
-
-      kvGetsHorizontalScalingAsync: {
+      excludeSnapshots,
+      reloadTrigger
+    }
+  },
+  watch: {
+    excludeSnapshots: {
+      handler() {
+        this.reloadTrigger++
+      }
+    }
+  },
+  computed: {
+    kvGetsHorizontalScalingAsync() {
+      return {
         ...defaultQuery,
         "hAxis": {
           "type": "dynamic",
@@ -55,10 +72,12 @@ export default {
             "api": "ASYNC"
           }
         },
-        "excludeSnapshots": this.excludeSnapshots || false
-      },
+        "excludeSnapshots": this.excludeSnapshots
+      }
+    },
 
-      kvGetsBlocking: {
+    kvGetsBlocking() {
+      return {
         ...defaultQuery,
         "databaseCompare": {
           "cluster": defaultCluster,
@@ -66,9 +85,12 @@ export default {
           "workload": defaultWorkloadGets,
           "vars": {"poolSize": 10000, ...defaultVars, api: "DEFAULT"}
         },
-        "excludeSnapshots": this.excludeSnapshots || false,
-      },
-      kvGetsReactive: {
+        "excludeSnapshots": this.excludeSnapshots
+      }
+    },
+
+    kvGetsReactive() {
+      return {
         ...defaultQuery,
         "databaseCompare": {
           "cluster": defaultCluster,
@@ -76,7 +98,7 @@ export default {
           "workload": defaultWorkloadGets,
           "vars": {"poolSize": 10000, ...defaultVars, api: "ASYNC"}
         },
-        "excludeSnapshots": this.excludeSnapshots || false,
+        "excludeSnapshots": this.excludeSnapshots
       }
     }
   }
