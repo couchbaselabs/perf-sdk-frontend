@@ -63,13 +63,10 @@ import Results from "@/components/Results.vue";
 import Metrics from "@/components/Metrics.vue";
 import Protostellar from "@/components/Protostellar.vue";
 import {openShiftCluster} from "@/components/Shared.vue";
-
 export default {
   components: {Metrics, Shared, Results, Protostellar},
   data() {
     return {
-
-
       forkJoinPoolExecutorMaxThreadCount: {
         ...defaultQuery,
         "hAxis": {
@@ -119,7 +116,7 @@ export default {
           "vars": {...defaultVars},
         },
         "excludeGerrit": false,
-        "excludeSnapshots": this.excludeSnapshots || false,
+        "excludeSnapshots": false,
       },
       reuseStubs: {
         ...defaultQuery,

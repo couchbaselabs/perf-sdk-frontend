@@ -133,10 +133,10 @@
 
 <script>
 import Results from "@/components/Results.vue"
-import { useGlobalSnapshots } from '@/mixins/GlobalSnapShotMixin'
-import { ref } from 'vue'
 import ExcludeSnapshotsCheckbox from './ExcludeSnapshotsCheckbox.vue'
-import {hAxisSdkVersion} from "./Shared.vue";
+import { hAxisSdkVersion } from "./Shared.vue"
+import { useReloadHandler } from '@/composables/useReloadHandler'
+import { ref } from 'vue'
 
 export default {
   name: "Explorer",
@@ -146,12 +146,21 @@ export default {
   },
   props: ['initialInput'],
   setup() {
-    const { excludeSnapshots } = useGlobalSnapshots()
-    const reloadTrigger = ref(0)
+    const excludeGerrit = ref(false)
+    const { excludeSnapshots, reloadTrigger } = useReloadHandler({
+      additionalWatchers: [
+        {
+          source: () => excludeGerrit.value,
+          handler: () => handleSubmit(),
+          options: { immediate: true }
+        }
+      ]
+    })
     
     return {
       excludeSnapshots,
-      reloadTrigger
+      reloadTrigger,
+      excludeGerrit
     }
   },
   data() {
@@ -189,8 +198,7 @@ export default {
       selectedBucketiseSeconds: 0,
       fetching: undefined,
       queryParams: undefined,
-      input: this.initialInput,
-      excludeGerrit: false,
+      input: this.initialInput
     }
   },
 
@@ -270,15 +278,8 @@ export default {
   },
 
   watch: {
-    excludeGerrit: {
-      handler(newVal) {
-        this.handleSubmit();
-      },
-      immediate: true
-    },
     excludeSnapshots: {
       handler() {
-        this.reloadTrigger++
         this.handleSubmit()
       }
     }

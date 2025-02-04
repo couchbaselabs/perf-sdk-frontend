@@ -21,9 +21,8 @@
 
 <script>
 import Results from "@/components/Results.vue";
-import { useGlobalSnapshots } from '@/mixins/GlobalSnapShotMixin'
-import { ref } from 'vue'
 import ExcludeSnapshotsCheckbox from './ExcludeSnapshotsCheckbox.vue'
+import { useReloadHandler } from '@/composables/useReloadHandler'
 
 export default {
   components: { 
@@ -37,19 +36,11 @@ export default {
     }
   },
   setup() {
-    const { excludeSnapshots } = useGlobalSnapshots()
-    const reloadTrigger = ref(0)
+    const { excludeSnapshots, reloadTrigger } = useReloadHandler()
     
     return {
       excludeSnapshots,
       reloadTrigger
-    }
-  },
-  watch: {
-    excludeSnapshots: {
-      handler() {
-        this.reloadTrigger++
-      }
     }
   },
   computed: {

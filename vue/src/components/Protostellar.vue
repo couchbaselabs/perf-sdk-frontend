@@ -11,7 +11,7 @@
 
 <script>
 import Results from "@/components/Results.vue";
-import { useGlobalSnapshots } from '@/mixins/GlobalSnapShotMixin'
+import { useReloadHandler } from '@/composables/useReloadHandler'
 import { ref } from 'vue'
 import {defaultQuery, defaultCluster, defaultWorkloadGets, defaultVars} from "@/components/Shared.vue";
 
@@ -39,8 +39,7 @@ export default {
   components: {Results},
   props: ['language'],
   setup() {
-    const { excludeSnapshots } = useGlobalSnapshots()
-    const reloadTrigger = ref(0)
+    const { excludeSnapshots, reloadTrigger } = useReloadHandler()
     
     return {
       excludeSnapshots,
@@ -50,13 +49,6 @@ export default {
   data() {
     return {
       excludeGerrit: true
-    }
-  },
-  watch: {
-    excludeSnapshots: {
-      handler() {
-        this.reloadTrigger++
-      }
     }
   },
   computed: {

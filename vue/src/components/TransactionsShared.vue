@@ -20,8 +20,7 @@
 
 <script>
 import Results from "@/components/Results.vue";
-import { useGlobalSnapshots } from '@/mixins/GlobalSnapShotMixin'
-import { ref } from 'vue'
+import { useReloadHandler } from '@/composables/useReloadHandler'
 import { defaultQuery, defaultCluster } from "@/components/Shared.vue";
 
 function transactionsDefault(language, threads, excludeSnapshots, excludeGerrit) {
@@ -84,19 +83,11 @@ export default {
   components: { Results },
   props: ['language'],
   setup() {
-    const { excludeSnapshots } = useGlobalSnapshots()
-    const reloadTrigger = ref(0)
+    const { excludeSnapshots, reloadTrigger } = useReloadHandler()
     
     return {
       excludeSnapshots,
       reloadTrigger
-    }
-  },
-  watch: {
-    excludeSnapshots: {
-      handler() {
-        this.reloadTrigger++
-      }
     }
   },
   computed: {
