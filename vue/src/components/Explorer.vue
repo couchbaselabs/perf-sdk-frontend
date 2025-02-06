@@ -132,7 +132,7 @@
 
 <script>
 import { useGlobalSnapshots } from '../mixins/GlobalSnapshotMixin'
-import { useReloadHandler } from '../composables/useReloadHandler'
+import { useSnapshotState } from '../composables/useSnapshotState'
 import ExcludeSnapshotsCheckbox from './ExcludeSnapshotsCheckbox.vue'
 import Results from "@/components/Results.vue";
 import {hAxisSdkVersion} from "./Shared.vue";
@@ -143,7 +143,7 @@ export default {
   props: ['initialInput'],
   setup() {
     const { excludeSnapshots } = useGlobalSnapshots()
-    const { reloadTrigger } = useReloadHandler()
+    const { reloadTrigger } = useSnapshotState()
 
     return {
       excludeSnapshots,

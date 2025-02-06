@@ -1,35 +1,42 @@
 // Import required Vue composition API functions
 import { ref, Ref } from 'vue'
 
-// Interface defining the shape of the GlobalSnapshots object
+/**
+ * Core interface for snapshot management across the application.
+ * Provides everything components need to handle snapshot filtering:
+ * - State tracking for snapshot visibility
+ * - Methods to update filtering preferences
+ * - Filtering logic for snapshot data
+ */
 interface GlobalSnapshots {
   excludeSnapshots: Ref<boolean>  // Flag to control snapshot filtering
   setExcludeSnapshots: (value: boolean) => void  // Function to update the flag
   filterSnapshots: (data: any[]) => any[]  // Function to filter snapshot data
 }
 
-// Global reactive reference to track snapshot exclusion state
+// We use a global ref to ensure all components share the same snapshot state.
+// This prevents inconsistencies where some charts might show snapshots while others don't.
 const excludeSnapshots = ref(false)
 
 /**
- * Composable function to handle snapshot filtering functionality
- * @returns GlobalSnapshots object with methods and state for snapshot filtering
+ * Determines if a version string represents a snapshot release.
+ * 
+ * SDK snapshot versions contain hyphens (e.g., "1.0.0-SNAPSHOT", "2.0.0-beta.1").
+ * This helps distinguish between release versions (1.0.0) and development/preview versions.
  */
+function versionIsSnapshot(version?: string): boolean {
+  if (!version) return false
+  return version.includes('-')
+}
+
 export function useGlobalSnapshots(): GlobalSnapshots {
-  // Function to update the excludeSnapshots flag
   const setExcludeSnapshots = (value: boolean) => {
     excludeSnapshots.value = value
   }
 
-  /**
-   * Filters an array of data based on snapshot exclusion rules
-   * @param data Array of items that may contain version information
-   * @returns Filtered array excluding snapshot versions when excludeSnapshots is true
-   */
   const filterSnapshots = (data: any[]) => {
     if (!excludeSnapshots.value) return data
-    // Filter out items where version contains a hyphen (indicating snapshot versions)
-    return data.filter(item => !item.version?.includes('-'))
+    return data.filter(item => !versionIsSnapshot(item.version))
   }
 
   return {

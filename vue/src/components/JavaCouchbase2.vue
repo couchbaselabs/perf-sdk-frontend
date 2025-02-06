@@ -30,7 +30,7 @@ import Results from "@/components/Results.vue";
 import Metrics from "@/components/Metrics.vue";
 import Protostellar from "@/components/Protostellar.vue";
 import {openShiftCluster} from "@/components/Shared.vue";
-import { useReloadHandler } from '@/composables/useReloadHandler'
+import { useSnapshotState } from '@/composables/useSnapshotState'
 import ExcludeSnapshotsCheckbox from './ExcludeSnapshotsCheckbox.vue'
 
 export default {
@@ -42,7 +42,7 @@ export default {
     ExcludeSnapshotsCheckbox
   },
   setup() {
-    const { excludeSnapshots, reloadTrigger } = useReloadHandler()
+    const { excludeSnapshots, reloadTrigger } = useSnapshotState()
     
     return {
       excludeSnapshots,

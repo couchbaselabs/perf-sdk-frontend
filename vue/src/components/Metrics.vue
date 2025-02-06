@@ -25,7 +25,7 @@ import Shared, {
 } from "@/components/Shared.vue";
 import Results from "@/components/Results.vue";
 import {defaultCluster} from "@/components/Shared.vue";
-import { useReloadHandler } from '@/composables/useReloadHandler'
+import { useSnapshotState } from '@/composables/useSnapshotState'
 
 function sharedQuery(language, excludeSnapshots) {
   return {
@@ -44,7 +44,7 @@ export default {
   components: {Shared, Results},
   props: ['language'],
   setup() {
-    const { excludeSnapshots, reloadTrigger } = useReloadHandler()
+    const { excludeSnapshots, reloadTrigger } = useSnapshotState()
     
     return {
       excludeSnapshots,
