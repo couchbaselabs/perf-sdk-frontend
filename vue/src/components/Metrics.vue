@@ -4,8 +4,14 @@
     All these tests are doing KV gets in 20 threads.
 
     <h2>Memory</h2>
-    Measures the maximum heap memory used in MB by the performer+SDK.
-    <Results :input="memHeapUsedMB" :key="'heap-' + reloadTrigger"></Results>
+    <div v-if="hasHeapUsedMB">
+      Measures the maximum heap memory used in MB by the performer+SDK.
+      <Results :input="memHeapUsedMB" :key="'heap-' + reloadTrigger"></Results>
+    </div>
+    <div v-if="hasRssUsedMB">
+      Measures the maximum RSS memory used in MB by the performer+SDK.
+      <Results :input="memRssUsedMB" :key="'rss-' + reloadTrigger"></Results>
+    </div>
 
     <h2>Thread Count</h2>
     Measures the maximum thread count used by the performer+SDK.
@@ -63,12 +69,31 @@ export default {
       }
     },
 
+    hasHeapUsedMB() {
+      return ["go", "java", "kotlin", "scala"].includes(this.language.toLowerCase());
+    },
+
+    hasRssUsedMB() {
+      return ["c++", "node", "python", "ruby"].includes(this.language.toLowerCase());
+    },
+
     memHeapUsedMB() {
       return {
         ...sharedQuery(this.language, this.excludeSnapshots),
         "yAxes": [{
           "type": "metric",
           "metric": "memHeapUsedMB",
+        }],
+        mergingType: "Maximum",
+      }
+    },
+
+    memRssUsedMB() {
+      return {
+        ...sharedQuery(this.language),
+        "yAxes": [{
+          "type": "metric",
+          "metric": "memRssUsedMB",
         }],
         mergingType: "Maximum",
       }
