@@ -5,22 +5,23 @@
     <h1>Transactions (write)</h1>
     <p>Each transaction is doing one KV replace and one KV insert.</p>
     <p>With 1 thread:</p>
-    <Results :input="transactions1Thread"></Results>
+    <Results :input="transactions1Thread" :key="'trans1-' + reloadTrigger"></Results>
     <p>With 20 threads:</p>
-    <Results :input="transactions20Threads"></Results>
+    <Results :input="transactions20Threads" :key="'trans20-' + reloadTrigger"></Results>
     <h1>Transactions (readonly)</h1>
     <p>Each transaction is doing one KV read. It should have near-identical performance to non-transactional KV
       gets.</p>
     <p>With 1 thread:</p>
-    <Results :input="transactionsReadOnly1Thread"></Results>
+    <Results :input="transactionsReadOnly1Thread" :key="'readonly1-' + reloadTrigger"></Results>
     <p>With 20 threads:</p>
-    <Results :input="transactionsReadOnly20Threads"></Results>
+    <Results :input="transactionsReadOnly20Threads" :key="'readonly20-' + reloadTrigger"></Results>
   </b-container>
 </template>
 
 <script>
 import Results from "@/components/Results.vue";
-import {defaultQuery, defaultCluster, defaultVars} from "@/components/Shared.vue";
+import { useSnapshotState } from '@/composables/useSnapshotState'
+import { defaultQuery, defaultCluster } from "@/components/Shared.vue";
 
 function transactionsDefault(language, threads, excludeSnapshots, excludeGerrit) {
   return {
@@ -81,17 +82,28 @@ function transactionsReadOnlyDefault(language, threads, excludeSnapshots, exclud
 export default {
   components: {Results},
   props: ['language'],
- data() {
+  setup() {
+    const { excludeSnapshots, reloadTrigger } = useSnapshotState()
+    
     return {
-      transactions1Thread: transactionsDefault(this.language, 1, this.excludeSnapshots, this.excludeGerrit || true),
-      transactions20Threads: transactionsDefault(this.language, 20, this.excludeSnapshots, this.excludeGerrit || true),
-      transactionsReadOnly1Thread: transactionsReadOnlyDefault(this.language, 1, this.excludeSnapshots, this.excludeGerrit || true),
-      transactionsReadOnly20Threads: transactionsReadOnlyDefault(this.language, 20, this.excludeSnapshots, this.excludeGerrit || true),
-      excludeSnapshots: false,
-      excludeGerrit: true,
+      excludeSnapshots,
+      reloadTrigger
+    }
+  },
+  computed: {
+    transactions1Thread() {
+      return transactionsDefault(this.language, 1, this.excludeSnapshots, this.excludeGerrit || true)
+    },
+    transactions20Threads() {
+      return transactionsDefault(this.language, 20, this.excludeSnapshots, this.excludeGerrit || true)
+    },
+    transactionsReadOnly1Thread() {
+      return transactionsReadOnlyDefault(this.language, 1, this.excludeSnapshots, this.excludeGerrit || true)
+    },
+    transactionsReadOnly20Threads() {
+      return transactionsReadOnlyDefault(this.language, 20, this.excludeSnapshots, this.excludeGerrit || true)
     }
   }
 }
 </script>
-
 

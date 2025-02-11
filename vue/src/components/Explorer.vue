@@ -111,9 +111,7 @@
           </b-form-group>
 
           <b-form-group label="Versions">
-            <b-form-checkbox v-model="excludeSnapshots" v-on:change="handleSubmit">
-              Exclude snapshots
-            </b-form-checkbox>
+            <ExcludeSnapshotsCheckbox />
             <b-form-checkbox v-model="excludeGerrit" v-on:change="handleSubmit">
               Exclude Gerrit builds
             </b-form-checkbox>
@@ -123,8 +121,7 @@
     </b-row>
 
     <div v-if="input">
-      <Results :input="input"/>
-
+      <Results :input="input" :key="reloadTrigger"/>
       <div class="jumbotron">
         {{ JSON.stringify(input) }}
       </div>
@@ -134,15 +131,25 @@
 </template>
 
 <script>
-
-
+import { useGlobalSnapshots } from '../mixins/GlobalSnapshotMixin'
+import { useSnapshotState } from '../composables/useSnapshotState'
+import ExcludeSnapshotsCheckbox from './ExcludeSnapshotsCheckbox.vue'
 import Results from "@/components/Results.vue";
 import {hAxisSdkVersion} from "./Shared.vue";
 
 export default {
   name: "Explorer",
-  components: {Results},
+  components: {Results, ExcludeSnapshotsCheckbox},
   props: ['initialInput'],
+  setup() {
+    const { excludeSnapshots } = useGlobalSnapshots()
+    const { reloadTrigger } = useSnapshotState()
+
+    return {
+      excludeSnapshots,
+      reloadTrigger
+    }
+  },
   data() {
     const yAxis = [
       {id: 6, text: `duration_average_us`},
@@ -180,7 +187,6 @@ export default {
       queryParams: undefined,
       input: this.initialInput,
       excludeGerrit: false,
-      excludeSnapshots: false,
     }
   },
 
@@ -206,7 +212,6 @@ export default {
   },
 
   methods: {
-
     handleSubmit: function () {
       console.info("handle submit");
 

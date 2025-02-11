@@ -1,32 +1,45 @@
 <template>
   <b-container>
-    <b-form-checkbox v-model="excludeSnapshots">
-      Exclude snapshots
-    </b-form-checkbox>
-
+    <ExcludeSnapshotsCheckbox />
+    
     <!-- Disabling as unoptimised and potentially killing database -->
     <!-- <MetricsAlerts :input="{language:language}"></MetricsAlerts>-->
     <h1>KV Get</h1>
     <p>With 20 threads:</p>
-    <Results :input="kvGets"></Results>
+    <Results :input="kvGets" :key="'gets-' + reloadTrigger"></Results>
     <h1>KV Replace</h1>
     <p>With 20 threads:</p>
-    <Results :input="kvReplaces"></Results>
+    <Results :input="kvReplaces" :key="'replaces-' + reloadTrigger"></Results>
     <h1>KV Insert</h1>
     <p>With 20 threads:</p>
-    <Results :input="kvInserts"></Results>
+    <Results :input="kvInserts" :key="'inserts-' + reloadTrigger"></Results>
     <h1>Horizontal Scaling</h1>
     Tests how the SDK scales with parallelism, using KV gets.  The SDK's default numKvConnections setting is used (and is likely to be a bottleneck).
-    <Results :input="kvGetsHorizontalScaling"></Results>
+    <Results :input="kvGetsHorizontalScaling" :key="'horizontalScaling-' + reloadTrigger"></Results>
   </b-container>
 </template>
 
 <script>
+import { useGlobalSnapshots } from '../mixins/GlobalSnapshotMixin'
+import { useSnapshotState } from '../composables/useSnapshotState'
+import ExcludeSnapshotsCheckbox from './ExcludeSnapshotsCheckbox.vue'
 import Results from "@/components/Results.vue";
 
 export default {
-  components: {Results},
+  components: { 
+    Results,
+    ExcludeSnapshotsCheckbox
+  },
   props: ['language'],
+  setup() {
+    const { excludeSnapshots } = useGlobalSnapshots()
+    const { reloadTrigger } = useSnapshotState()
+    
+    return {
+      excludeSnapshots,
+      reloadTrigger
+    }
+  },
   computed: {
     kvInserts() {
       return {
@@ -38,7 +51,7 @@ export default {
           "vars": {"docNum": 10000000, ... defaultVars}
         },
         "excludeSnapshots": this.excludeSnapshots,
-        "excludeGerrit": this.excludeGerrit || true,
+        "excludeGerrit": this.excludeGerrit || true
       }
     },
 
@@ -52,7 +65,7 @@ export default {
           "vars": {... defaultVars}
         },
         "excludeGerrit": this.excludeGerrit || true,
-        "excludeSnapshots": this.excludeSnapshots,
+        "excludeSnapshots": this.excludeSnapshots
       }
     },
 
@@ -67,6 +80,7 @@ export default {
         },
         "excludeGerrit": this.excludeGerrit || true,
         "excludeSnapshots": this.excludeSnapshots || false,
+        
       }
     },
 
@@ -85,13 +99,13 @@ export default {
           "vars": {"poolSize": 10000, ... defaultVarsWithoutHorizontalScaling, "experimentName": "horizontalScaling" }
         },
         "excludeSnapshots": this.excludeSnapshots || false,
-        "filterRuns": "Latest"
+        "filterRuns": "Latest",
+        
       }
     }
   },
   data() {
     return {
-      excludeSnapshots: false,
       excludeGerrit: true,
     }
   }

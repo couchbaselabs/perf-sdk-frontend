@@ -7,13 +7,13 @@
 
     <h1>Horizontal Scaling (Reactive)</h1>
     Tests how the SDK scales with parallelism, using KV gets and the reactive API.
-    <Results :input="kvGetsHorizontalScalingAsync"></Results>
+    <Results :input="kvGetsHorizontalScalingAsync" :key="'async-' + reloadTrigger"></Results>
 
     <h1>KV Gets (Blocking API)</h1>
-    <Results :input="kvGetsBlocking"></Results>
+    <Results :input="kvGetsBlocking" :key="'blocking-' + reloadTrigger"></Results>
 
     <h1>KV Gets (Reactive API)</h1>
-    <Results :input="kvGetsReactive"></Results>
+    <Results :input="kvGetsReactive" :key="'reactive-' + reloadTrigger"></Results>
   </b-container>
 </template>
 
@@ -32,13 +32,21 @@ import Results from "@/components/Results.vue";
 import Metrics from "@/components/Metrics.vue";
 import Protostellar from "@/components/Protostellar.vue";
 import {openShiftCluster} from "@/components/Shared.vue";
+import { useSnapshotState } from '@/composables/useSnapshotState'
 
 export default {
   components: {Metrics, Shared, Results, Protostellar},
-  data() {
+  setup() {
+    const { excludeSnapshots, reloadTrigger } = useSnapshotState()
+    
     return {
-
-      kvGetsHorizontalScalingAsync: {
+      excludeSnapshots,
+      reloadTrigger
+    }
+  },
+  computed: {
+    kvGetsHorizontalScalingAsync() {
+      return {
         ...defaultQuery,
         "hAxis": {
           "type": "dynamic",
@@ -56,9 +64,11 @@ export default {
           }
         },
         "excludeSnapshots": this.excludeSnapshots || false
-      },
+      }
+    },
 
-      kvGetsBlocking: {
+    kvGetsBlocking() {
+      return {
         ...defaultQuery,
         "databaseCompare": {
           "cluster": defaultCluster,
@@ -67,8 +77,11 @@ export default {
           "vars": {"poolSize": 10000, ...defaultVars, api: "DEFAULT"}
         },
         "excludeSnapshots": this.excludeSnapshots || false,
-      },
-      kvGetsReactive: {
+      }
+    },
+
+    kvGetsReactive() {
+      return {
         ...defaultQuery,
         "databaseCompare": {
           "cluster": defaultCluster,
@@ -82,4 +95,3 @@ export default {
   }
 }
 </script>
-
