@@ -5,9 +5,9 @@
       {{ JSON.stringify(input) }}
     </div>
 
-    <div v-if="!results && !errors">
-      <b-spinner small variant="primary" label="Spinning"></b-spinner>
-      Fetching...
+    <div v-if="!results && !errors" class="text-center">
+      <b-spinner variant="primary"></b-spinner>
+      <p>Loading metrics data...</p>
     </div>
 
     <div v-if="errors">

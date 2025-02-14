@@ -10,7 +10,12 @@
       </div>
     </div>
 
-    <Results :single="input" :input="input"></Results>
+    <div v-if="loading" class="text-center">
+      <b-spinner variant="primary"></b-spinner>
+      <p>Loading metrics data...</p>
+    </div>
+
+    <Results v-else :single="input" :input="input" :showDropdown="false"></Results>
   </div>
 </template>
 
@@ -21,8 +26,9 @@ export default {
   components: {Results},
   data() {
     return {
+      loading: true,
       input: {
-        yAxes: this.$route.query.yAxis ?? [
+        yAxes: [
           {
             type: "buckets",
             yAxisID: "left",
@@ -32,8 +38,8 @@ export default {
             type: "buckets",
             yAxisID: "right",
             column: "duration_average_us",
-          },
-          // Too slow to fetch all these
+          },         
+           // Too slow to fetch all these
           // {
           //   type: "buckets",
           //   yAxisID: "right",
@@ -43,21 +49,47 @@ export default {
           //   type: "buckets",
           //   yAxisID: "right",
           //   column: "duration_max_us",
-          // },
+          // },    
           {
             type: "errors",
             yAxisID: "left",
-          },
-          {
-            type: "metrics",
-            yAxisID: "right",
           }
         ],
-        annotations: [],
+        annotations: [{type: "run-events"}],
         runId: this.$route.query.runId,
         trimmingSeconds: 0,
         mergingType: this.$route.query.mergingType ?? "Average",
         bucketiseSeconds: this.$route.query.bucketiseSeconds ?? 10,
+      }
+    }
+  },
+  async created() {
+    await this.initializeWithMetrics();
+  },
+  methods: {
+    async initializeWithMetrics() {
+      try {
+        const response = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/metrics`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const metrics = await response.json();
+        
+        if (Array.isArray(metrics)) {
+          // Add all metrics to yAxes with display: false by default
+          metrics.forEach(metric => {
+            this.input.yAxes.push({
+              type: "metric",
+              yAxisID: "right",
+              metric: metric,
+              
+            });
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching metrics:', error);
+      } finally {
+        this.loading = false;
       }
     }
   }

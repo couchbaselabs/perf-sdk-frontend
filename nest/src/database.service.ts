@@ -110,6 +110,34 @@ class ExcludedDatabaseCompareFields {
   vars?: Array<string>;
 }
 
+export class RunMetricPair {
+  runId: string;
+  datetime: string;
+  timeOffsetSecs: number;
+  value: number;
+  metrics: Record<string, any>;
+
+  constructor(
+    runId: string,
+    datetime: string,
+    timeOffsetSecs: number,
+    metricValue: number,
+    metrics: Record<string, any>
+  ) {
+    this.runId = runId;
+    this.datetime = datetime;
+    this.timeOffsetSecs = timeOffsetSecs;
+    this.value = metricValue;
+    this.metrics = metrics;
+  }
+}
+
+interface MetricsData {
+  timeOffset: number;
+  timestamp: Date;
+  [key: string]: any;
+}
+
 @Injectable()
 export class DatabaseService {
   constructor(private client: Client) {}
@@ -121,16 +149,16 @@ export class DatabaseService {
     let excludedFields = this.findAndRemoveExcluded(compare);
 
     const st = `SELECT
-                        params as params,
-                        params->'cluster' as cluster,
-                        params->'impl' as impl,
-                        params->'workload' as workload,
-                        params->'vars' as vars,
-                        params->'other' as other,
-                        id as run_id,
-                        datetime
-                      FROM runs
-                      where (params) @>
+                params as params,
+                params->'cluster' as cluster,
+                params->'impl' as impl,
+                params->'workload' as workload,
+                params->'vars' as vars,
+                params->'other' as other,
+                id as run_id,
+                datetime
+              FROM runs
+              where (params) @>
                         ('${JSON.stringify(
                           compare, null, 2
                         )}'::jsonb #- '${groupBy}')`;
@@ -138,7 +166,7 @@ export class DatabaseService {
     console.time(label);
     const rows = await this.client.query(st);
     console.timeEnd(label)
-
+    
     let runs = rows.map((x) => {
       return new Run(
           x.params,
@@ -245,7 +273,7 @@ export class DatabaseService {
       });
     }
     catch (err) {
-      console.error(`Query ${st} failed with: ${err}`)
+       console.error(`Query ${st} failed with: ${err}`)
       throw err
     }
   }
@@ -343,6 +371,8 @@ export class DatabaseService {
     input: Input,
     yAxis: VerticalAxisBucketsColumn): Promise<Array<Result>> {
     const mergingOp = this.mapMerging(input.mergingType)
+    const columnName = yAxis.column // Get the column name from yAxis
+
 
     let st;
     if (input.multipleResultsHandling == MultipleResultsHandling.SIDE_BY_SIDE) {
@@ -350,7 +380,7 @@ export class DatabaseService {
                    sub.value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
-                         ${mergingOp}(buckets.${yAxis.column}) as value
+                         ${mergingOp}(buckets.${columnName}) as value
                   FROM buckets join runs
                   on buckets.run_id = runs.id
                   WHERE run_id in ('${runIds.join("','")}')
@@ -363,7 +393,7 @@ export class DatabaseService {
                    avg(sub.value) as value,
                    ${groupBy1} as grouping
             FROM (SELECT run_id,
-                        ${mergingOp}(buckets.${yAxis.column}) as value
+                        ${mergingOp}(buckets.${columnName}) as value
                   FROM buckets join runs
                   on buckets.run_id = runs.id
                   WHERE run_id in ('${runIds.join("','")}')
@@ -572,6 +602,129 @@ export class DatabaseService {
     return result.map(x => {
       return new RunEvent(x.datetime, (x.datetime - firstBucketTime) / 1000, x.params)
     })
+  }
+
+  async getRunsWithMetrics(
+    runIds: Array<string>,
+    input: Input,
+    metricName: string
+  ): Promise<Array<RunMetricPair>> {
+    let st;
+    if (input.bucketiseSeconds > 1) {
+      const mergingOp = this.mapMerging(input.mergingType);
+      st = `
+      SELECT 
+        metrics.run_id,
+        time_bucket('${input.bucketiseSeconds} seconds', initiated) as datetime,
+        min(metrics.time_offset_secs) as time_offset_secs,
+        ${mergingOp}(CAST(metrics.metrics::jsonb->>'${metricName}' AS FLOAT)) as value,
+        jsonb_agg(metrics.metrics::jsonb) as metrics
+      FROM 
+        metrics
+      WHERE 
+        run_id = ANY($1::uuid[])
+        AND time_offset_secs >= ${input.trimmingSeconds}
+        AND metrics::jsonb ? '${metricName}'
+      GROUP BY 
+        run_id, time_bucket('${input.bucketiseSeconds} seconds', initiated)
+      ORDER BY 
+        datetime ASC;`;
+    } else {
+      st = `
+      SELECT 
+        run_id,
+        initiated as datetime,
+        time_offset_secs,
+        CAST(metrics.metrics::jsonb->>'${metricName}' AS FLOAT) as value,
+        metrics::jsonb as metrics
+      FROM 
+        metrics
+      WHERE 
+        run_id = ANY($1::uuid[])
+        AND time_offset_secs >= ${input.trimmingSeconds}
+        AND metrics::jsonb ? '${metricName}'
+      ORDER BY 
+        datetime ASC;`;
+    }
+
+    try {
+      const result = await this.client.query(st, [runIds]);
+      return result.map((x) => {
+        return new RunMetricPair(
+          x.run_id,
+          x.datetime,
+          parseInt(x.time_offset_secs),
+          parseFloat(x.value),
+          x.metrics
+        );
+      });
+    } catch (err) {
+      console.error(`Query ${st} failed with: ${err}`)
+      throw err;
+    }
+  }
+
+  async getMetricsForRun(runId: string): Promise<MetricsData[]> {
+    const query = `
+      SELECT 
+        metrics.metrics,
+        metrics.time_offset_secs,
+        metrics.initiated
+      FROM metrics
+      WHERE metrics.run_id = $1
+      ORDER BY metrics.time_offset_secs ASC;
+    `;
+
+    try {
+      const result = await this.client.query(query, [runId]);
+
+      if (!result?.rows || result.rows.length === 0) {
+       // No metrics found for this run
+       console.info(`No metrics found for run_id: ${runId}`)
+        return [];
+      }
+
+      return result.rows.map(row => ({
+        ...row.metrics,
+        timeOffset: row.time_offset_secs,
+        timestamp: row.initiated
+      }));
+
+    } catch (error) {
+      console.error(`Query ${query} failed with: ${error}`)
+      return [];
+    }
+  }
+
+  async getAllMetricNames(): Promise<string[]> {
+    const query = `
+      SELECT DISTINCT jsonb_object_keys(metrics::jsonb) as metric_name
+      FROM metrics
+      WHERE metrics IS NOT NULL;
+    `;
+
+    try {
+      const result = await this.client.query(query);
+      
+      if (!result || result.length === 0) {
+        console.info('No metrics found')
+        return [];
+      }
+
+      // Extract metric names and filter out non-metric fields
+      const metricNames = result
+        .map(row => row.metric_name)
+        .filter(name => 
+          name !== 'timeOffset' && 
+          name !== 'timestamp' && 
+          name !== 'time_offset_secs' && 
+          name !== 'initiated'
+        );
+      return metricNames;
+
+    } catch (error) {
+      return [];
+    }
   }
 }
 
