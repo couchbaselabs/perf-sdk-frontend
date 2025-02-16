@@ -484,9 +484,8 @@ export class DashboardService {
           }))
         } else if (yAxis.type == "metric") {
             const metricAxis = yAxis as VerticalAxisMetric;
-            const metricDatasets = await this.getVerticalAxisMetrics(runsPlus, input, metricAxis, sp);
-            datasets = [...datasets, ...metricDatasets];
- 
+            promiseArray.push(this.getVerticalAxisMetrics(runsPlus, input, metricAxis, sp).then(ds =>
+                datasets = [...datasets, ...ds]));
         } else if (yAxis.type == "errors") {
           const va = yAxis as VerticalAxisErrors;
           promiseArray.push(this.getVerticalAxisErrors(runsPlus, input, va, sp).then(ds =>
