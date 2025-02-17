@@ -454,7 +454,7 @@ export class DashboardService {
     runs: Array<Run>,
     input: Input
   ): Promise<any> {
-    const datasets = [];
+    let datasets = [];
     const annotations = {};
     const sp = new ShadeProvider()
     let firstBucketTime = undefined
@@ -482,16 +482,15 @@ export class DashboardService {
             console.info("Found first bucket time: ", firstBucketTime)
             ds.forEach(d => datasets.push(d))
           }))
-        } else if (yAxis.type == "metrics") {
-          const va = yAxis as VerticalAxisMetrics;
-          promiseArray.push(await this.getVerticalAxisMetrics(runsPlus, input, va, sp).then(ds =>
-              ds.forEach(d => datasets.push(d))))
+        } else if (yAxis.type == "metric") {
+            const metricAxis = yAxis as VerticalAxisMetric;
+            promiseArray.push(this.getVerticalAxisMetrics(runsPlus, input, metricAxis, sp).then(ds =>
+                datasets = [...datasets, ...ds]));
         } else if (yAxis.type == "errors") {
           const va = yAxis as VerticalAxisErrors;
-          promiseArray.push(await this.getVerticalAxisErrors(runsPlus, input, va, sp).then(ds =>
+          promiseArray.push(this.getVerticalAxisErrors(runsPlus, input, va, sp).then(ds =>
               ds.forEach(d => datasets.push(d))))
-        }
-        // VerticalAxisMetric _could_ be supported, but doesn't seem that useful when VerticalAxisMetrics is a superset of it
+        } 
         else throw Error(`Unsupported yAxis type ${yAxis}`)
       }
 
@@ -583,41 +582,36 @@ export class DashboardService {
     const runIds = runs.map((v) => v.id);
     const datasets = [];
 
-    const dataErrors = [];
-
     const runsWithBuckets = await this.database.getRunsWithBuckets(runIds, input, undefined, false, true);
 
     for (const run of runs) {
       const bucketsForRun = runsWithBuckets.filter((v) => v.runId == run.id);
+      const data = [];
 
       bucketsForRun.forEach((b) => {
-        const tooltip = b.timeOffsetSecs + "s " + new Date(b.datetime).toISOString()
-
+        let totalErrors = 0;
         if (b.errors) {
-          let totalErrors = 0;
           Object.keys(b.errors).forEach(errorName => {
-            const errorCount = b.errors[errorName] as number
-            totalErrors += errorCount
-          })
-
-          dataErrors.push({
-            x: b.timeOffsetSecs,
-            y: totalErrors,
-            tooltip: tooltip + " " + JSON.stringify(b.errors)
-          });
-        } else {
-          dataErrors.push({
-            x: b.timeOffsetSecs,
-            y: 0,
-            tooltip: tooltip
+            const errorCount = b.errors[errorName] as number;
+            totalErrors += errorCount;
           });
         }
-      })
+
+        data.push({
+          x: b.timeOffsetSecs,
+          y: totalErrors,
+          nested: {
+            datetime: b.datetime,
+            runid: b.runId,
+            errors: b.errors || {}
+          }
+        });
+      });
 
       datasets.push({
         yAxisID: va.yAxisID,
         label: run.groupedBy + " errors",
-        data: dataErrors,
+        data: data,
         fill: false,
         backgroundColor: '#e88873',
         borderColor: '#e88873',
@@ -628,57 +622,53 @@ export class DashboardService {
   }
 
   private async getVerticalAxisMetrics(runs: Array<RunPlus>,
-                                       input: Input,
-                                       va: VerticalAxisMetrics,
-                                       sp: ShadeProvider): Promise<Array<Record<string, unknown>>> {
+    input: Input,
+    va: VerticalAxisMetric,
+    sp: ShadeProvider): Promise<Array<Record<string, unknown>>> {
     const runIds = runs.map((v) => v.id);
     const datasets = [];
 
-    const dataMetrics = {};
 
-    const runsWithBuckets = await this.database.getRunsWithBuckets(runIds, input, undefined, true, false);
+    try {
+      const metricsData = await this.database.getRunsWithMetrics(runIds, input, va.metric);
+      
+      for (const run of runs) {
+        const metricsForRun = metricsData.filter((v) => v.runId === run.id);
+        const data = [];
 
-    for (const run of runs) {
-      const bucketsForRun = runsWithBuckets.filter((v) => v.runId == run.id);
+        // console.log(`Metrics for run ${run.id}: ${JSON.stringify(metricsForRun)}`);
 
-      // console.info(`For run ${run.id} buckets ${bucketsForRun.length}`);
+        metricsForRun.forEach((m) => {
+          // console.info(`Metric: ${JSON.stringify(m)}`);
+          data.push({
+            x: m.timeOffsetSecs,
+            y: m.value,
+            nested: {
+              datetime: m.datetime,
+              runid: m.runId,
+            },
+          });
+        });
 
-      bucketsForRun.forEach((b) => {
-        const tooltip = b.timeOffsetSecs + "s " + new Date(b.datetime).toISOString()
-
-        if (b.metrics) {
-          const metricsJson = b.metrics;
-          const keys = Object.keys(metricsJson);
-          keys.forEach(key => {
-            // const x = b.run_id + "_" + key;
-            // It's not useful to have multiple runs with metrics on same screen
-            const x = key;
-            const data = {
-              x: b.timeOffsetSecs,
-              y: metricsJson[key]
-            }
-            if (x in dataMetrics) {
-              dataMetrics[x].push(data);
-            } else {
-              dataMetrics[x] = [data];
-            }
-          })
+        if (data.length > 0) {
+          datasets.push({
+            yAxisID: va.yAxisID,
+            label: `${run.groupedBy} ${va.metric}`,
+            data: data,
+            fill: false,
+            borderColor: sp.nextShade(),
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            borderWidth: 2,
+            source: { type: 'metric', ...va }
+          });
         }
-      })
-    }
+      }
 
-    for (const [k, v] of Object.entries(dataMetrics)) {
-      datasets.push({
-        yAxisID: va.yAxisID,
-        label: k,
-        data: v,
-        hidden: true,
-        fill: false,
-        borderColor: sp.nextShade()
-      });
+      return datasets;
+    } catch (error) {
+      return datasets;
     }
-
-    return datasets;
   }
 
   public async getFiltered(groupBy: string): Promise<Filtered> {
@@ -859,5 +849,9 @@ export class DashboardService {
       out.push(new ErrorSummary(key[1][0], key[1][1]))
     }
     return out
+  }
+
+  public async getAvailableMetrics(): Promise<string[]> {
+    return await this.database.getAllMetricNames();
   }
 }

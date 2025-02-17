@@ -101,4 +101,9 @@ export class AppController {
     return await this.dashboard.genSituationalRunRunErrorsSummary(input);
   }
 
+  @Get('/metrics')
+  async getAvailableMetrics() {
+    return await this.dashboard.getAvailableMetrics();
+  }
+
 }
