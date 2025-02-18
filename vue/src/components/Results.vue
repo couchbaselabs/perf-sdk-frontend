@@ -85,7 +85,7 @@
               {{ r.id }}
             </a>
           </td>
-          <td v-bind:style="{color: r.color}">{{ r.datetime }}</td>
+          <td>{{ r.datetime }}</td>
           <td>{{ r.groupedBy }}</td>
           <td>
             <pre>{{ JSON.stringify(r.impl, null, 2) }}</pre>
