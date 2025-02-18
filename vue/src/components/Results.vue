@@ -7,7 +7,7 @@
 
     <div v-if="!results && !errors" class="text-center">
       <b-spinner variant="primary"></b-spinner>
-      <p>Loading metrics data...</p>
+      <p>Fetching...</p>
     </div>
 
     <div v-if="errors">
