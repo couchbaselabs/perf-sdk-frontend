@@ -1,53 +1,55 @@
 <template>
   <b-container>
-    <div v-if="!results && !errors">
-      <b-spinner small variant="primary" label="Spinning"></b-spinner>
-      Fetching...
+    <h2 class="mb-4">Situational Runs</h2>
+    
+    <div v-if="!results && !errors" class="text-center my-5">
+      <b-spinner variant="primary" label="Spinning"></b-spinner>
+      <p class="mt-2">Fetching data...</p>
     </div>
 
-    <div v-if="errors">
-      <b-card bg-variant="danger" text-variant="white" title="Error">
-        <b-card-text>
-          {{errors}}
-        </b-card-text>
-      </b-card>
-    </div>
+    <b-alert v-if="errors" show variant="danger">
+      <h4 class="alert-heading">Error</h4>
+      <p>{{errors}}</p>
+    </b-alert>
 
     <div v-if="results">
-<!--      {{JSON.stringify(results)}}-->
-
-      <table class="table text-left table-striped table-sm table-responsive mt-5">
-        <thead class="font-weight-bold">
-        <tr>
-          <td>Situational Run</td>
-          <td>Started</td>
-          <td>Score</td>
-          <td>Runs</td>
-          <td>SDK</td>
-          <td>Version</td>
-        </tr>
-        </thead>
-
-        <tr v-for="r in results" :key="r.situationalRunId">
-          <td v-bind:style="{color: r.color}">
-            <a href="#" v-on:click="situationalRunClicked(r.situationalRunId)">
-              {{ r.situationalRunId }}
+      <b-card class="shadow-sm">
+        <b-table 
+          striped 
+          hover 
+          responsive 
+          :items="results" 
+          :fields="fields"
+          class="text-left table-fixed"
+        >
+          <template #cell(situationalRunId)="data">
+            <a 
+              href="#" 
+              @click.prevent="situationalRunClicked(data.item.situationalRunId)"
+              :style="{color: data.item.color}"
+            >
+              {{ data.item.situationalRunId }}
             </a>
-          </td>
-          <td>{{ r.started }}</td>
-          <td>{{ r.score ?? "N/A" }}</td>
-          <td>{{ r.numRuns }}</td>
-          <td>{{ r.detailsOfAnyRun?.impl?.language }}</td>
-          <td>{{ r.detailsOfAnyRun?.impl?.version }}</td>
-        </tr>
-      </table>
-
+          </template>
+          
+          <template #cell(score)="data">
+            {{ data.item.score ?? "N/A" }}
+          </template>
+          
+          <template #cell(language)="data">
+            {{ data.item.detailsOfAnyRun?.impl?.language }}
+          </template>
+          
+          <template #cell(version)="data">
+            {{ data.item.detailsOfAnyRun?.impl?.version }}
+          </template>
+        </b-table>
+      </b-card>
     </div>
   </b-container>
 </template>
 
 <script>
-
 export default {
   name: "SituationalRun",
   data() {
@@ -55,7 +57,15 @@ export default {
       lastInput: undefined,
       results: undefined,
       errors: undefined,
-      display: false
+      display: false,
+      fields: [
+        { key: 'situationalRunId', label: 'Situational Run', tdClass: 'col-width-20' },
+        { key: 'started', label: 'Started', tdClass: 'col-width-20' },
+        { key: 'score', label: 'Score', tdClass: 'col-width-15' },
+        { key: 'numRuns', label: 'Runs', tdClass: 'col-width-15' },
+        { key: 'language', label: 'SDK', tdClass: 'col-width-15' },
+        { key: 'version', label: 'Version', tdClass: 'col-width-15' }
+      ]
     }
   },
   mounted() {
@@ -89,3 +99,22 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.b-table {
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.table-fixed {
+  table-layout: fixed;
+}
+
+.col-width-20 {
+  width: 20%;
+}
+
+.col-width-15 {
+  width: 15%;
+}
+</style> 
