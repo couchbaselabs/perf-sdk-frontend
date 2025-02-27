@@ -21,6 +21,8 @@
           :items="results" 
           :fields="fields"
           class="text-left table-fixed"
+          :per-page="perPage"
+          :current-page="currentPage"
         >
           <template #cell(situationalRunId)="data">
             <a 
@@ -44,6 +46,16 @@
             {{ data.item.detailsOfAnyRun?.impl?.version }}
           </template>
         </b-table>
+        
+        <div class="mt-3">
+          <b-pagination
+            v-model="currentPage"
+            :total-rows="rows"
+            :per-page="perPage"
+            align="center"
+            aria-controls="situational-runs-table"
+          ></b-pagination>
+        </div>
       </b-card>
     </div>
   </b-container>
@@ -58,6 +70,8 @@ export default {
       results: undefined,
       errors: undefined,
       display: false,
+      perPage: 25,
+      currentPage: 1,
       fields: [
         { key: 'situationalRunId', label: 'Situational Run', tdClass: 'col-width-20' },
         { key: 'started', label: 'Started', tdClass: 'col-width-20' },
@@ -66,6 +80,11 @@ export default {
         { key: 'language', label: 'SDK', tdClass: 'col-width-15' },
         { key: 'version', label: 'Version', tdClass: 'col-width-15' }
       ]
+    }
+  },
+  computed: {
+    rows() {
+      return this.results ? this.results.length : 0;
     }
   },
   mounted() {
