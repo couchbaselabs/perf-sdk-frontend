@@ -60,18 +60,12 @@
       <!-- Main Content Area -->
       <div class="content-area">
         <!-- Charts Grid -->
-        <div class="charts-container">
-          <div class="section-header">
-            <h2>{{ getCurrentOperation.name }}</h2>
-            <p class="section-description">{{ getCurrentOperation.description }}</p>
-          </div>
-          
+        <div class="charts-container">          
           <div class="charts-grid">
             <router-view v-slot="{ Component }">
               <transition name="fade" mode="out-in">
                 <component 
                   :is="Component" 
-                  :operation-type="selectedOperation"
                 />
               </transition>
             </router-view>
@@ -91,36 +85,6 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const isNavCollapsed = ref(true)
-const selectedOperation = ref(null)
-
-const operationTypes = [
-  {
-    id: 'kv',
-    name: 'Key-Value Operations',
-    icon: 'database',
-    description: 'Performance metrics for basic KV operations like get, set, and delete'
-  },
-  {
-    id: 'metrics',
-    name: 'Metrics & Monitoring',
-    icon: 'monitoring',
-    description: 'System-level metrics including CPU, memory, and throughput'
-  },
-  {
-    id: 'transactions',
-    name: 'Transactions',
-    icon: 'sync_alt',
-    description: 'Performance data for transactional operations'
-  }
-]
-
-const getCurrentOperation = computed(() => {
-  return operationTypes.find(op => op.id === selectedOperation.value) || {
-    name: 'Single Run Metrics',
-    description: 'Metrics for a single run',
-    icon: 'help_outline'
-  }
-})
 
 const toggleNav = () => {
   const newState = !isNavCollapsed.value
