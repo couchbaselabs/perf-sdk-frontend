@@ -16,7 +16,7 @@ interface GlobalSnapshots {
 
 // We use a global ref to ensure all components share the same snapshot state.
 // This prevents inconsistencies where some charts might show snapshots while others don't.
-const excludeSnapshots = ref(false)
+const excludeSnapshots = ref(true)
 
 /**
  * Determines if a version string represents a snapshot release.
