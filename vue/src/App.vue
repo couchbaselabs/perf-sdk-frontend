@@ -59,10 +59,6 @@
 
       <!-- Main Content Area -->
       <div class="content-area">
-                <!-- Welcome Screen -->
-                <div class="welcome-screen" >
-          <h1>SDK Performance Dashboard</h1>
-        </div>
         <!-- Charts Grid -->
         <div class="charts-container">
           <div class="section-header">
