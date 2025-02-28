@@ -115,7 +115,7 @@ export default {
             yAxisID: "left",
           },
           {
-            type: "metrics",
+            type: "metric",
             yAxisID: "left",
           }
         ],
