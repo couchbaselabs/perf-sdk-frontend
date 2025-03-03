@@ -65,7 +65,8 @@
             <router-view v-slot="{ Component }">
               <keep-alive :max="10">
                 <component 
-                  :is="Component" 
+                  :is="Component"
+                  :operation-type="selectedOperation"
                 />
               </keep-alive>
             </router-view>
