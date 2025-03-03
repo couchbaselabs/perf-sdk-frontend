@@ -63,7 +63,7 @@
         <div class="charts-container">
           <div class="charts-grid">
             <router-view v-slot="{ Component }">
-              <keep-alive>
+              <keep-alive :max="10">
                 <component 
                   :is="Component"
                   :operation-type="selectedOperation"
