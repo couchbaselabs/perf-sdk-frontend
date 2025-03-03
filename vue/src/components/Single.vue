@@ -16,7 +16,7 @@
 
     <div v-if="loading" class="text-center">
       <b-spinner variant="primary"></b-spinner>
-      <p>Loading metrics data...</p>
+      <p>Fetching...</p>
     </div>
 
     <Results v-else :single="input" :input="input" :showDropdown="false"></Results>

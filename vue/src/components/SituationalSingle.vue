@@ -106,6 +106,7 @@ export default {
       isLoading: false,
       resultsKey: 0,
       results: undefined,
+      errors: undefined,
       errorsSummary: undefined,
       hideEventsButton: false,
       events: undefined,
@@ -127,7 +128,7 @@ export default {
             yAxisID: "left",
           },
           {
-            type: "metrics",
+            type: "metric",
             yAxisID: "left",
           }
         ],
@@ -139,14 +140,30 @@ export default {
       }
     }
   },
-
-  mounted() {
-    if (this.$route.query.situationalRunId && this.$route.query.runId) {
-      this.fetchQuery(this.$route.query.situationalRunId)
-      this.fetchErrorsSummary(this.$route.query.situationalRunId)
+  created() {
+    this.loadData();
+  },
+  watch: {
+    '$route': {
+      handler() {
+        this.loadData();
+      },
+      immediate: true
     }
   },
+  beforeUnmount() {
+    // Cleanup any pending operations
+    this.results = undefined;
+    this.errors = undefined;
+    this.errorsSummary = undefined;
+  },
   methods: {
+    loadData() {
+      if (this.$route.query.situationalRunId && this.$route.query.runId) {
+        this.fetchQuery();
+        this.fetchErrorsSummary();
+      }
+    },
     fetchQuery: async function () {
       const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/situationalRunRun`,
           {
