@@ -137,6 +137,7 @@ export default {
         trimmingSeconds: 5,
         mergingType: this.$route.query.mergingType ?? "Average",
         bucketiseSeconds: this.$route.query.bucketiseSeconds ?? 10,
+        situationalRunId: this.$route.query.situationalRunId,
       }
     }
   },
@@ -144,6 +145,13 @@ export default {
     this.loadData();
   },
   watch: {
+    '$route.query.runId': {
+      handler(newRunId) {
+        this.input.runId = newRunId;
+        this.loadData();
+      },
+      immediate: true,
+    },
     '$route': {
       handler() {
         this.loadData();
@@ -159,9 +167,17 @@ export default {
   },
   methods: {
     loadData() {
-      if (this.$route.query.situationalRunId && this.$route.query.runId) {
-        this.fetchQuery();
-        this.fetchErrorsSummary();
+      if (this.input.situationalRunId && this.input.runId) {
+        this.isLoading = true;
+        this.resultsKey++;
+
+        // Fetch data
+        Promise.all([
+          this.fetchQuery(),
+          this.fetchErrorsSummary(),
+        ]).finally(() => {
+          this.isLoading = false;
+        });
       }
     },
     fetchQuery: async function () {
@@ -173,8 +189,8 @@ export default {
             },
             method: "POST",
             body: JSON.stringify({
-              situationalRunId: this.$route.query.situationalRunId,
-              runId: this.$route.query.runId
+              situationalRunId: this.input.situationalRunId,
+              runId: this.input.runId
             })
           })
 
@@ -195,8 +211,8 @@ export default {
             },
             method: "POST",
             body: JSON.stringify({
-              situationalRunId: this.$route.query.situationalRunId,
-              runId: this.$route.query.runId
+              situationalRunId: this.input.situationalRunId,
+              runId: this.input.runId
             })
           })
 
@@ -216,8 +232,8 @@ export default {
             },
             method: "POST",
             body: JSON.stringify({
-              situationalRunId: this.$route.query.situationalRunId,
-              runId: this.$route.query.runId
+              situationalRunId: this.input.situationalRunId,
+              runId: this.input.runId
             })
           })
 
@@ -233,7 +249,7 @@ export default {
       this.$router.push({
         path: `/situationalRun`,
         query: {
-          situationalRunId: this.$route.query.situationalRunId
+          situationalRunId: this.input.situationalRunId
         }
       })
     },
