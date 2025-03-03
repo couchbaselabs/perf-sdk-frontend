@@ -223,7 +223,30 @@ export default {
       }
     }
   },
-  props: ['input', 'single']
+  props: ['input', 'single'],
+  watch: {
+    input: {
+      handler(newInput, oldInput) {
+        if (newInput && (!oldInput || newInput.runId !== oldInput.runId)) {
+          // Clear previous results first
+          this.results = undefined;
+          this.errors = undefined;
+          
+          // Then fetch new data
+          if (this.single) {
+            this.fetchSingleQuery(this.single);
+          } else {
+            this.fetchQuery(newInput);
+          }
+        }
+      },
+      deep: true
+    }
+  },
+  beforeMount() {
+    this.results = undefined;
+    this.errors = undefined;
+  }
 }
 </script>
 

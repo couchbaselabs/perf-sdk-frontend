@@ -4,6 +4,7 @@
       <div v-if="results">
         <h1>{{results.runs[0].runParams?.workload?.situational}}</h1>
       </div>
+      <div v-else class="h1-placeholder"></div>
 
       <a href="#" v-on:click="this.situationalRunClicked()">Back to situational results</a>
 
@@ -15,7 +16,17 @@
       </div>
     </div>
 
-    <Results :single="input" :input="input"></Results>
+    <!-- Use a transition for smooth content changes -->
+    <transition name="fade" mode="out-in">
+      <div :key="resultsKey">
+        <div v-if="isLoading" class="chart-placeholder">
+          <div class="loading-overlay">
+            <b-spinner variant="primary" small></b-spinner>
+          </div>
+        </div>
+        <Results v-else :single="input" :input="input"></Results>
+      </div>
+    </transition>
 
     <b-row class="mb-2">
       <b-col>
@@ -92,6 +103,8 @@ export default {
   components: {BCard, Results},
   data() {
     return {
+      isLoading: false,
+      resultsKey: 0,
       results: undefined,
       errorsSummary: undefined,
       hideEventsButton: false,
@@ -153,6 +166,7 @@ export default {
       } else {
         this.errors = await res.json()
       }
+      return res;
     },
 
     fetchErrorsSummary: async function () {
@@ -211,11 +225,30 @@ export default {
 </script>
 
 <style>
-pre {
-  white-space: pre-wrap; /* css-3 */
-  white-space: -moz-pre-wrap; /* Mozilla, since 1999 */
-  white-space: -pre-wrap; /* Opera 4-6 */
-  white-space: -o-pre-wrap; /* Opera 7 */
-  word-wrap: break-word; /* Internet Explorer 5.5+ */
+/* Add these styles for smooth transitions */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
+
+.chart-placeholder {
+  min-height: 300px;
+  position: relative;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.h1-placeholder {
+  height: 2.5rem;
+  margin-bottom: 0.5rem;
 }
 </style>
