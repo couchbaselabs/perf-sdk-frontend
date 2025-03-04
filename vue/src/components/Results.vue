@@ -231,7 +231,6 @@ export default {
   watch: {
     input: {
       handler(newInput, oldInput) {
-        console.info("Input changed in Results component");
         if (newInput) {
           // Clear previous results first
           this.results = undefined;

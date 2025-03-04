@@ -31,35 +31,24 @@
 
       <div v-else-if="results" :key="'results-' + resultsKey">
         <!--      {{JSON.stringify(results)}}-->
+          <tr v-for="r in results.runs" :key="r.runId">
+            <td v-bind:style="{color: r.color}">
+              <a href="#" v-on:click="runClicked(r.runId)">
+                {{ r.runId }}
+              </a>
+            </td>
+            <td>{{ r.started }}</td>
+            <td>{{ r.runParams?.workload?.situational }}</td>
+            <td>{{ r.srjParams?.score ?? "N/A" }}</td>
+          </tr>
+        </table>
 
-      <table class="table text-left table-striped table-sm table-responsive mt-5">
-        <thead class="font-weight-bold">
-        <tr>
-          <td>Run</td>
-          <td>Started</td>
-          <td>Description</td>
-          <td>Score</td>
-        </tr>
-        </thead>
-
-        <tr v-for="r in results.runs" :key="r.runId">
-          <td v-bind:style="{color: r.color}">
-            <a href="#" v-on:click="runClicked(r.runId)">
-              {{ r.runId }}
-            </a>
-          </td>
-          <td>{{ r.started }}</td>
-          <td>{{ r.runParams?.workload?.situational }}</td>
-          <td>{{ r.srjParams?.score ?? "N/A" }}</td>
-        </tr>
-      </table>
-
-    </div>
+      </div>
+    </transition>
   </b-container>
 </template>
 
 <script>
-
 export default {
   name: "SituationalRun",
   data() {
@@ -104,7 +93,6 @@ export default {
         this.isLoading = true;
         this.results = undefined;
         this.errors = undefined;
-        
         this.fetchQuery(this.$route.query.situationalRunId)
           .finally(() => {
             this.isLoading = false;
@@ -129,6 +117,7 @@ export default {
         } else {
           this.errors = await res.json()
         }
+        return res;
     },
 
     runClicked: function (runId) {
@@ -144,3 +133,16 @@ export default {
   }
 }
 </script>
+
+<style>
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
+
+.loading-indicator {
+  opacity: 0.6;
+}
+</style>
