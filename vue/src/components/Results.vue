@@ -126,19 +126,15 @@ export default {
     }
   },
   mounted() {
-    if (this.single) {
-      this.fetchSingleQuery(this.single)
-    } else if (this.input) {
-      this.fetchQuery(this.input)
-    }
+    console.info("Results component mounted");
+    this.forceRerender();
   },
-  // updated() {
-  //   // Need this component to refetch data when the `input` prop changes.  The approash used here doesn't seem slick
-  //   // but is the only solution that worked.
-  //   if (!this.single && this.lastInput !== this.input) {
-  //     this.fetchQuery(this.input)
-  //   }
-  // },
+  unmounted() {
+    console.info("Results component unmounted");
+    // Clean up resources
+    this.results = undefined;
+    this.errors = undefined;
+  },
   methods: {
     displayChanged: async function(display) {
       const newInput = {... this.input }
@@ -180,6 +176,7 @@ export default {
     fetchSingleQuery: async function (input) {
       this.isReloading = true
       try {
+        console.info("Fetching single query with input:", JSON.stringify(input));
         const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/single`,
             {
               headers: {
@@ -190,7 +187,11 @@ export default {
               body: JSON.stringify(input)
             })
 
-        this.results = await res.json();
+        if (res.status.toString().startsWith('2')) {
+          this.results = await res.json();
+        } else {
+          this.errors = await res.json()
+        }
       } finally {
         this.isReloading = false
       }
@@ -216,6 +217,9 @@ export default {
 
     forceRerender() {
       this.componentKey += 1;
+      this.results = undefined;
+      this.errors = undefined;
+      
       if (this.single) {
         this.fetchSingleQuery(this.single);
       } else if (this.input) {
@@ -227,7 +231,7 @@ export default {
   watch: {
     input: {
       handler(newInput, oldInput) {
-        if (newInput && (!oldInput || newInput.runId !== oldInput.runId)) {
+        if (newInput) {
           // Clear previous results first
           this.results = undefined;
           this.errors = undefined;
@@ -240,12 +244,24 @@ export default {
           }
         }
       },
-      deep: true
+      deep: true,
+      immediate: true
+    },
+    single: {
+      handler(newSingle) {
+        console.info("Single changed in Results component");
+        if (newSingle) {
+          // Clear previous results first
+          this.results = undefined;
+          this.errors = undefined;
+          
+          // Then fetch new data
+          this.fetchSingleQuery(newSingle);
+        }
+      },
+      deep: true,
+      immediate: true
     }
-  },
-  beforeMount() {
-    this.results = undefined;
-    this.errors = undefined;
   }
 }
 </script>
