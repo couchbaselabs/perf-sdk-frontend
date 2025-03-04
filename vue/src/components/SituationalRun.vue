@@ -1,20 +1,36 @@
 <template>
   <b-container>
-    <div v-if="!results && !errors">
-      <b-spinner small variant="primary" label="Spinning"></b-spinner>
-      Fetching...
-    </div>
+    <!-- Navigation breadcrumbs -->
+    <div class="mb-3">
+      <b-breadcrumb>
+        <b-breadcrumb-item to="/situationalRuns">
+          <i class="bi bi-house"></i> Situational Runs
+        </b-breadcrumb-item>
+        <b-breadcrumb-item active>Situational Run Details</b-breadcrumb-item>
+      </b-breadcrumb>
 
-    <div v-if="errors">
-      <b-card bg-variant="danger" text-variant="white" title="Error">
-        <b-card-text>
-          {{errors}}
-        </b-card-text>
-      </b-card>
+      <b-button variant="outline-secondary" class="mb-3" v-on:click="refreshData">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </b-button>
     </div>
+    
+    <transition name="fade" mode="out-in">
+      <div v-if="isLoading" class="text-center py-5" :key="'loading'">
+        <div class="loading-indicator">
+          <b-spinner small variant="primary" class="opacity-50"></b-spinner>
+        </div>
+      </div>
+      
+      <div v-else-if="errors" :key="'error'">
+        <b-card bg-variant="danger" text-variant="white" title="Error">
+          <b-card-text>
+            {{errors}}
+          </b-card-text>
+        </b-card>
+      </div>
 
-    <div v-if="results">
-<!--      {{JSON.stringify(results)}}-->
+      <div v-else-if="results" :key="'results-' + resultsKey">
+        <!--      {{JSON.stringify(results)}}-->
 
       <table class="table text-left table-striped table-sm table-responsive mt-5">
         <thead class="font-weight-bold">
@@ -51,13 +67,50 @@ export default {
       lastInput: undefined,
       results: undefined,
       errors: undefined,
-      display: false
+      display: false,
+      isLoading: false,
+      resultsKey: 0
     }
   },
-  mounted() {
-    this.fetchQuery(this.$route.query.situationalRunId)
+  created() {
+    this.loadData();
+  },
+  watch: {
+    '$route.query.situationalRunId': {
+      handler() {
+        this.resetState();
+        this.loadData();
+      },
+      immediate: true
+    }
   },
   methods: {
+    resetState() {
+      // Clear all state to ensure fresh rendering
+      this.results = undefined;
+      this.errors = undefined;
+      this.isLoading = false;
+      this.resultsKey++;
+    },
+    
+    refreshData() {
+      // Manually trigger a refresh
+      this.resetState();
+      this.loadData();
+    },
+    
+    loadData() {
+      if (this.$route.query.situationalRunId) {
+        this.isLoading = true;
+        this.results = undefined;
+        this.errors = undefined;
+        
+        this.fetchQuery(this.$route.query.situationalRunId)
+          .finally(() => {
+            this.isLoading = false;
+          });
+      }
+    },
     fetchQuery: async function (situationalRunId) {
         const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/situationalRun`,
             {
@@ -79,6 +132,7 @@ export default {
     },
 
     runClicked: function (runId) {
+      console.info("Moving to situational single view...");
       this.$router.push({
         path: `/situationalSingle`,
         query: {

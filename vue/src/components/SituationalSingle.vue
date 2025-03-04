@@ -4,8 +4,18 @@
       <div v-if="results">
         <h1>{{results.runs[0].runParams?.workload?.situational}}</h1>
       </div>
+      <div v-else class="h1-placeholder"></div>
 
-      <a href="#" v-on:click="this.situationalRunClicked()">Back to situational results</a>
+      <!-- Improved navigation controls -->
+      <div class="d-flex mb-3">
+        <b-button variant="outline-secondary" class="mr-2" v-on:click="this.situationalRunClicked()">
+          <i class="bi bi-arrow-left"></i> Back to situational results
+        </b-button>
+
+        <b-button variant="outline-secondary" class="mr-2" v-on:click="this.refreshData()">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </b-button>
+      </div>
 
       <div v-if="input.bucketiseSeconds">
         Re-bucketised into {{ input.bucketiseSeconds }} second buckets, merged with {{ input.mergingType }}.
@@ -15,7 +25,17 @@
       </div>
     </div>
 
-    <Results :single="input" :input="input"></Results>
+    <!-- Use a transition for smooth content changes with a unique key to force re-render -->
+    <transition name="fade" mode="out-in">
+      <div :key="'results-container-' + resultsKey">
+        <div v-if="isLoading" class="chart-placeholder">
+          <div class="loading-overlay">
+            <b-spinner variant="primary" small></b-spinner>
+          </div>
+        </div>
+        <Results v-else :single="input" :input="input" :key="'results-' + resultsKey"></Results>
+      </div>
+    </transition>
 
     <b-row class="mb-2">
       <b-col>
@@ -131,24 +151,57 @@ export default {
     this.loadData();
   },
   watch: {
-    '$route': {
-      handler() {
+    '$route.query.runId': {
+      handler(newRunId) {
+        this.input.runId = newRunId;
+        // Force a complete reset and reload when the run ID changes
+        this.resetState();
         this.loadData();
       },
-      immediate: true
+      immediate: true,
+    },
+    '$route.query.situationalRunId': {
+      handler(newSituationalRunId) {
+        this.input.situationalRunId = newSituationalRunId;
+        // Force a complete reset and reload when the situational run ID changes
+        this.resetState();
+        this.loadData();
+      },
+      immediate: true,
     }
   },
   beforeUnmount() {
     // Cleanup any pending operations
-    this.results = undefined;
-    this.errors = undefined;
-    this.errorsSummary = undefined;
+    this.resetState();
   },
   methods: {
+    resetState() {
+      // Clear all state to ensure fresh rendering
+      this.results = undefined;
+      this.errors = undefined;
+      this.errorsSummary = undefined;
+      this.events = undefined;
+    },
+    
+    refreshData() {
+      // Manually trigger a refresh
+      this.resetState();
+      this.loadData();
+    },
+    
     loadData() {
-      if (this.$route.query.situationalRunId && this.$route.query.runId) {
-        this.fetchQuery();
-        this.fetchErrorsSummary();
+      if (this.input.situationalRunId && this.input.runId) {
+        this.isLoading = true;
+        // Increment the key to force a complete re-render of the Results component
+        this.resultsKey++;
+
+        // Fetch data
+        Promise.all([
+          this.fetchQuery(),
+          this.fetchErrorsSummary(),
+        ]).finally(() => {
+          this.isLoading = false;
+        });
       }
     },
     fetchQuery: async function () {
@@ -215,7 +268,7 @@ export default {
     },
 
     situationalRunClicked: function () {
-      console.info("Moving...")
+      console.info("Moving back to situational run view...")
       this.$router.push({
         path: `/situationalRun`,
         query: {
