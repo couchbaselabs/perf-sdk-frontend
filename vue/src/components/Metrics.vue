@@ -70,7 +70,7 @@ export default {
     },
 
     hasHeapUsedMB() {
-      return ["go", "java", "kotlin", "scala"].includes(this.language.toLowerCase());
+      return ["go", "java", "kotlin", "scala", ".net"].includes(this.language.toLowerCase());
     },
 
     hasRssUsedMB() {
