@@ -40,73 +40,126 @@ export default {
       reloadTrigger
     }
   },
-  computed: {
-    kvInserts() {
-      return {
-        ... defaultQuery,
-        "databaseCompare": {
-          "cluster": defaultCluster,
-          "impl": {"language": this.language},
-          "workload": defaultWorkloadInserts,
-          "vars": {"docNum": 10000000, ... defaultVars}
-        },
-        "excludeSnapshots": this.excludeSnapshots,
-        "excludeGerrit": this.excludeGerrit || true
-      }
-    },
-
-    kvReplaces() {
-      return {
-        ... defaultQuery,
-        "databaseCompare": {
-          "cluster": defaultCluster,
-          "impl": {"language": this.language},
-          "workload": defaultWorkloadReplaces,
-          "vars": {... defaultVars}
-        },
-        "excludeGerrit": this.excludeGerrit || true,
-        "excludeSnapshots": this.excludeSnapshots
-      }
-    },
-
-    kvGets() {
-      return {
-        ... defaultQuery,
-        "databaseCompare": {
-          "cluster": defaultCluster,
-          "impl": {"language": this.language},
-          "workload": defaultWorkloadGets,
-          "vars": {... defaultVars}
-        },
-        "excludeGerrit": this.excludeGerrit || true,
-        "excludeSnapshots": this.excludeSnapshots || false,
-        
-      }
-    },
-
-    kvGetsHorizontalScaling() {
-      return {
-        ... defaultQuery,
-        "hAxis": {
-          "type": "dynamic",
-          "databaseField": "vars.horizontalScaling",
-          "resultType": "Integer"
-        },
-        "databaseCompare": {
-          "cluster": defaultCluster,
-          "impl": {"language": this.language},
-          "workload": defaultWorkloadGets,
-          "vars": {"poolSize": 10000, ... defaultVarsWithoutHorizontalScaling, "experimentName": "horizontalScaling" }
-        },
-        "excludeSnapshots": this.excludeSnapshots || false,
-        "filterRuns": "Latest",
-        
-      }
-    }
-  },
   data() {
     return {
       excludeGerrit: true,
+      // Cache computed results to avoid creating new objects unnecessarily
+      _cachedQueries: {},
+      _lastExcludeSnapshots: null,
+      _lastLanguage: null
+    }
+  },
+  computed: {
+    kvInserts() {
+      const cacheKey = 'kvInserts'
+      const excludeSnapshots = !!this.excludeSnapshots
+      const excludeGerrit = this.excludeGerrit !== false
+      
+      // Only create new object if relevant dependencies actually changed
+      if (this._lastExcludeSnapshots !== excludeSnapshots || 
+          this._lastLanguage !== this.language || 
+          !this._cachedQueries[cacheKey]) {
+        this._cachedQueries[cacheKey] = {
+          ... defaultQuery,
+          "databaseCompare": {
+            "cluster": defaultCluster,
+            "impl": {"language": this.language},
+            "workload": defaultWorkloadInserts,
+            "vars": {"docNum": 10000000, ... defaultVars}
+          },
+          "excludeSnapshots": excludeSnapshots,
+          "excludeGerrit": excludeGerrit
+        }
+        this._lastExcludeSnapshots = excludeSnapshots
+        this._lastLanguage = this.language
+      }
+      
+      return this._cachedQueries[cacheKey]
+    },
+
+    kvReplaces() {
+      const cacheKey = 'kvReplaces'
+      const excludeSnapshots = !!this.excludeSnapshots
+      const excludeGerrit = this.excludeGerrit !== false
+      
+      // Only create new object if relevant dependencies actually changed
+      if (this._lastExcludeSnapshots !== excludeSnapshots || 
+          this._lastLanguage !== this.language || 
+          !this._cachedQueries[cacheKey]) {
+        this._cachedQueries[cacheKey] = {
+          ... defaultQuery,
+          "databaseCompare": {
+            "cluster": defaultCluster,
+            "impl": {"language": this.language},
+            "workload": defaultWorkloadReplaces,
+            "vars": {... defaultVars}
+          },
+          "excludeGerrit": excludeGerrit,
+          "excludeSnapshots": excludeSnapshots
+        }
+        this._lastExcludeSnapshots = excludeSnapshots
+        this._lastLanguage = this.language
+      }
+      
+      return this._cachedQueries[cacheKey]
+    },
+
+    kvGets() {
+      const cacheKey = 'kvGets'
+      const excludeSnapshots = !!this.excludeSnapshots
+      const excludeGerrit = this.excludeGerrit !== false
+      
+      // Only create new object if relevant dependencies actually changed
+      if (this._lastExcludeSnapshots !== excludeSnapshots || 
+          this._lastLanguage !== this.language || 
+          !this._cachedQueries[cacheKey]) {
+        this._cachedQueries[cacheKey] = {
+          ... defaultQuery,
+          "databaseCompare": {
+            "cluster": defaultCluster,
+            "impl": {"language": this.language},
+            "workload": defaultWorkloadGets,
+            "vars": {... defaultVars}
+          },
+          "excludeGerrit": excludeGerrit,
+          "excludeSnapshots": excludeSnapshots,
+        }
+        this._lastExcludeSnapshots = excludeSnapshots
+        this._lastLanguage = this.language
+      }
+      
+      return this._cachedQueries[cacheKey]
+    },
+
+    kvGetsHorizontalScaling() {
+      const cacheKey = 'kvGetsHorizontalScaling'
+      const excludeSnapshots = !!this.excludeSnapshots
+      
+      // Only create new object if relevant dependencies actually changed
+      if (this._lastExcludeSnapshots !== excludeSnapshots || 
+          this._lastLanguage !== this.language || 
+          !this._cachedQueries[cacheKey]) {
+        this._cachedQueries[cacheKey] = {
+          ... defaultQuery,
+          "hAxis": {
+            "type": "dynamic",
+            "databaseField": "vars.horizontalScaling",
+            "resultType": "Integer"
+          },
+          "databaseCompare": {
+            "cluster": defaultCluster,
+            "impl": {"language": this.language},
+            "workload": defaultWorkloadGets,
+            "vars": {"poolSize": 10000, ... defaultVarsWithoutHorizontalScaling, "experimentName": "horizontalScaling" }
+          },
+          "excludeSnapshots": excludeSnapshots,
+          "filterRuns": "Latest",
+        }
+        this._lastExcludeSnapshots = excludeSnapshots
+        this._lastLanguage = this.language
+      }
+      
+      return this._cachedQueries[cacheKey]
     }
   }
 }

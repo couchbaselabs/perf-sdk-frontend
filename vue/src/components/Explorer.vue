@@ -241,7 +241,7 @@ export default {
     },
 
     handleGroupByChanged: async function () {
-      const url = new URL(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/filtered`);
+      const url = new URL(`/dashboard/filtered`, window.location.origin);
       url.searchParams.append("hAxis", this.selectedHAxis);
       const res = await fetch(url);
       const json = await res.json();
@@ -259,7 +259,7 @@ export default {
     },
 
     fetchGroupByOptions: async function () {
-      const url = new URL(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/groupByOptions`);
+      const url = new URL(`/dashboard/groupByOptions`, window.location.origin);
       const res = await fetch(url);
       this.hAxis = await res.json();
     }

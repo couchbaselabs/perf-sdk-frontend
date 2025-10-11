@@ -44,53 +44,87 @@ export default {
       reloadTrigger
     }
   },
+  data() {
+    return {
+      // Cache computed results to avoid creating new objects unnecessarily
+      _cachedQueries: {},
+      _lastExcludeSnapshots: null
+    }
+  },
   computed: {
     kvGetsHorizontalScalingAsync() {
-      return {
-        ...defaultQuery,
-        "hAxis": {
-          "type": "dynamic",
-          "databaseField": "vars.horizontalScaling",
-          resultType: "Integer"
-        },
-        "databaseCompare": {
-          "cluster": defaultCluster,
-          "impl": {"language": "Java"},
-          "workload": defaultWorkloadGets,
-          "vars": {
-            "poolSize": 10000, ...defaultVarsWithoutHorizontalScaling,
-            "experimentName": "horizontalScaling",
-            "api": "ASYNC"
-          }
-        },
-        "excludeSnapshots": this.excludeSnapshots || false
+      const cacheKey = 'kvGetsHorizontalScalingAsync'
+      const excludeSnapshots = this.excludeSnapshots || false
+      
+      // Only create new object if excludeSnapshots actually changed
+      if (this._lastExcludeSnapshots !== excludeSnapshots || !this._cachedQueries[cacheKey]) {
+        this._cachedQueries[cacheKey] = {
+          ...defaultQuery,
+          "hAxis": {
+            "type": "dynamic",
+            "databaseField": "vars.horizontalScaling",
+            resultType: "Integer"
+          },
+          "databaseCompare": {
+            "cluster": defaultCluster,
+            "impl": {"language": "Java"},
+            "workload": defaultWorkloadGets,
+            "vars": {
+              "poolSize": 10000, ...defaultVarsWithoutHorizontalScaling,
+              "experimentName": "horizontalScaling",
+              "api": "ASYNC"
+            }
+          },
+          "excludeSnapshots": excludeSnapshots
+        }
+        this._lastExcludeSnapshots = excludeSnapshots
       }
+      
+      return this._cachedQueries[cacheKey]
     },
 
     kvGetsBlocking() {
-      return {
-        ...defaultQuery,
-        "databaseCompare": {
-          "cluster": defaultCluster,
-          "impl": {"language": "Java"},
-          "workload": defaultWorkloadGets,
-          "vars": {"poolSize": 10000, ...defaultVars, api: "DEFAULT"}
-        },
-        "excludeSnapshots": this.excludeSnapshots || false,
+      const cacheKey = 'kvGetsBlocking'
+      const excludeSnapshots = this.excludeSnapshots || false
+      
+      // Only create new object if excludeSnapshots actually changed
+      if (this._lastExcludeSnapshots !== excludeSnapshots || !this._cachedQueries[cacheKey]) {
+        this._cachedQueries[cacheKey] = {
+          ...defaultQuery,
+          "databaseCompare": {
+            "cluster": defaultCluster,
+            "impl": {"language": "Java"},
+            "workload": defaultWorkloadGets,
+            "vars": {"poolSize": 10000, ...defaultVars, api: "DEFAULT"}
+          },
+          "excludeSnapshots": excludeSnapshots
+        }
+        this._lastExcludeSnapshots = excludeSnapshots
       }
+      
+      return this._cachedQueries[cacheKey]
     },
 
     kvGetsReactive() {
-      return {
-        ...defaultQuery,
-        "databaseCompare": {
-          "cluster": defaultCluster,
-          "impl": {"language": "Java"},
-          "workload": defaultWorkloadGets,
-          "vars": {"poolSize": 10000, ...defaultVars, api: "ASYNC"}
-        },
-        "excludeSnapshots": this.excludeSnapshots || false,
+      const cacheKey = 'kvGetsReactive'
+      const excludeSnapshots = this.excludeSnapshots || false
+      
+      // Only create new object if excludeSnapshots actually changed
+      if (this._lastExcludeSnapshots !== excludeSnapshots || !this._cachedQueries[cacheKey]) {
+        this._cachedQueries[cacheKey] = {
+          ...defaultQuery,
+          "databaseCompare": {
+            "cluster": defaultCluster,
+            "impl": {"language": "Java"},
+            "workload": defaultWorkloadGets,
+            "vars": {"poolSize": 10000, ...defaultVars, api: "ASYNC"}
+          },
+          "excludeSnapshots": excludeSnapshots
+        }
+        this._lastExcludeSnapshots = excludeSnapshots
       }
+      
+      return this._cachedQueries[cacheKey]
     }
   }
 }

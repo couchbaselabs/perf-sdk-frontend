@@ -1,5 +1,19 @@
 <template>
   <b-container>
+    <!-- Navigation breadcrumbs -->
+    <div class="mb-3">
+      <b-breadcrumb>
+        <b-breadcrumb-item to="/situationalRuns">
+          <i class="bi bi-house"></i> Situational Runs
+        </b-breadcrumb-item>
+        <b-breadcrumb-item active>Situational Run Details</b-breadcrumb-item>
+      </b-breadcrumb>
+
+      <b-button variant="outline-secondary" class="mb-3" v-on:click="refreshData">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </b-button>
+    </div>
+    
     <transition name="fade" mode="out-in">
       <div v-if="isLoading" class="text-center py-5" :key="'loading'">
         <div class="loading-indicator">
@@ -15,9 +29,8 @@
         </b-card>
       </div>
 
-      <div v-else-if="results" :key="'results'">
+      <div v-else-if="results" :key="'results-' + resultsKey">
         <!--      {{JSON.stringify(results)}}-->
-
         <table class="table text-left table-striped table-sm table-responsive mt-5">
           <thead class="font-weight-bold">
           <tr>
@@ -27,19 +40,15 @@
             <td>Score</td>
           </tr>
           </thead>
-
           <tr v-for="r in results.runs" :key="r.runId">
             <td v-bind:style="{color: r.color}">
-              <a href="#" v-on:click="runClicked(r.runId)">
-                {{ r.runId }}
-              </a>
+              <a href="#" @click.prevent="runClicked(r.runId)">{{ r.runId }}</a>
             </td>
             <td>{{ r.started }}</td>
             <td>{{ r.runParams?.workload?.situational }}</td>
-            <td>{{ r.srjParams?.score ?? "N/A" }}</td>
+            <td>{{ r.srjParams?.score ?? 'N/A' }}</td>
           </tr>
         </table>
-
       </div>
     </transition>
   </b-container>
@@ -54,37 +63,50 @@ export default {
       results: undefined,
       errors: undefined,
       display: false,
-      isLoading: false
+      isLoading: false,
+      resultsKey: 0
     }
   },
   created() {
     this.loadData();
   },
   watch: {
-    '$route': {
+    '$route.query.situationalRunId': {
       handler() {
+        this.resetState();
         this.loadData();
       },
       immediate: true
     }
   },
   methods: {
+    resetState() {
+      // Clear all state to ensure fresh rendering
+      this.results = undefined;
+      this.errors = undefined;
+      this.isLoading = false;
+      this.resultsKey++;
+    },
+    
+    refreshData() {
+      // Manually trigger a refresh
+      this.resetState();
+      this.loadData();
+    },
+    
     loadData() {
       if (this.$route.query.situationalRunId) {
         this.isLoading = true;
         this.results = undefined;
         this.errors = undefined;
-        
-        setTimeout(() => {
-          this.fetchQuery(this.$route.query.situationalRunId)
-            .finally(() => {
-              this.isLoading = false;
-            });
-        }, 50);
+        this.fetchQuery(this.$route.query.situationalRunId)
+          .finally(() => {
+            this.isLoading = false;
+          });
       }
     },
     fetchQuery: async function (situationalRunId) {
-        const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/situationalRun`,
+        const res = await fetch(`/dashboard/situationalRun`,
             {
               headers: {
                 'Accept': 'application/json',
@@ -105,6 +127,7 @@ export default {
     },
 
     runClicked: function (runId) {
+      console.info("Moving to situational single view...");
       this.$router.push({
         path: `/situationalSingle`,
         query: {

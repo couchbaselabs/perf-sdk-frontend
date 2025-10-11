@@ -1,7 +1,6 @@
 <template>
   <b-form-checkbox 
     v-model="localExcludeSnapshots"
-    @change="handleChange"
     class="mb-3">
     Exclude snapshots
   </b-form-checkbox>
@@ -21,13 +20,8 @@ export default {
       set: (value) => setExcludeSnapshots(value)
     })
 
-    const handleChange = (value) => {
-      setExcludeSnapshots(value)
-    }
-
     return {
       localExcludeSnapshots,
-      handleChange
     }
   }
 }

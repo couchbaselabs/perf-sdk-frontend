@@ -57,16 +57,31 @@ export default {
       reloadTrigger
     }
   },
+  data() {
+    return {
+      // Cache computed query objects to avoid changing identity unnecessarily
+      _cachedQueries: {},
+      _lastExcludeSnapshots: null,
+      _lastLanguage: null,
+    }
+  },
   computed: {
     processCpu() {
-      return {
-        ...sharedQuery(this.language, this.excludeSnapshots),
-        "yAxes": [{
-          "type": "metric",
-          "metric": "processCpu",
-        }],
-        mergingType: "Average",
+      const cacheKey = 'processCpu'
+      const excludeSnapshots = !!this.excludeSnapshots
+      if (this._lastExcludeSnapshots !== excludeSnapshots || this._lastLanguage !== this.language || !this._cachedQueries[cacheKey]) {
+        this._cachedQueries[cacheKey] = {
+          ...sharedQuery(this.language, excludeSnapshots),
+          "yAxes": [{
+            "type": "metric",
+            "metric": "processCpu",
+          }],
+          mergingType: "Average",
+        }
+        this._lastExcludeSnapshots = excludeSnapshots
+        this._lastLanguage = this.language
       }
+      return this._cachedQueries[cacheKey]
     },
 
     hasHeapUsedMB() {
@@ -78,36 +93,57 @@ export default {
     },
 
     memHeapUsedMB() {
-      return {
-        ...sharedQuery(this.language, this.excludeSnapshots),
-        "yAxes": [{
-          "type": "metric",
-          "metric": "memHeapUsedMB",
-        }],
-        mergingType: "Maximum",
+      const cacheKey = 'memHeapUsedMB'
+      const excludeSnapshots = !!this.excludeSnapshots
+      if (this._lastExcludeSnapshots !== excludeSnapshots || this._lastLanguage !== this.language || !this._cachedQueries[cacheKey]) {
+        this._cachedQueries[cacheKey] = {
+          ...sharedQuery(this.language, excludeSnapshots),
+          "yAxes": [{
+            "type": "metric",
+            "metric": "memHeapUsedMB",
+          }],
+          mergingType: "Maximum",
+        }
+        this._lastExcludeSnapshots = excludeSnapshots
+        this._lastLanguage = this.language
       }
+      return this._cachedQueries[cacheKey]
     },
 
     memRssUsedMB() {
-      return {
-        ...sharedQuery(this.language),
-        "yAxes": [{
-          "type": "metric",
-          "metric": "memRssUsedMB",
-        }],
-        mergingType: "Maximum",
+      const cacheKey = 'memRssUsedMB'
+      const excludeSnapshots = !!this.excludeSnapshots
+      if (this._lastExcludeSnapshots !== excludeSnapshots || this._lastLanguage !== this.language || !this._cachedQueries[cacheKey]) {
+        this._cachedQueries[cacheKey] = {
+          ...sharedQuery(this.language, excludeSnapshots),
+          "yAxes": [{
+            "type": "metric",
+            "metric": "memRssUsedMB",
+          }],
+          mergingType: "Maximum",
+        }
+        this._lastExcludeSnapshots = excludeSnapshots
+        this._lastLanguage = this.language
       }
+      return this._cachedQueries[cacheKey]
     },
 
     threadCount() {
-      return {
-        ...sharedQuery(this.language, this.excludeSnapshots),
-        "yAxes": [{
-          "type": "metric",
-          "metric": "threadCount",
-        }],
-        mergingType: "Maximum",
+      const cacheKey = 'threadCount'
+      const excludeSnapshots = !!this.excludeSnapshots
+      if (this._lastExcludeSnapshots !== excludeSnapshots || this._lastLanguage !== this.language || !this._cachedQueries[cacheKey]) {
+        this._cachedQueries[cacheKey] = {
+          ...sharedQuery(this.language, excludeSnapshots),
+          "yAxes": [{
+            "type": "metric",
+            "metric": "threadCount",
+          }],
+          mergingType: "Maximum",
+        }
+        this._lastExcludeSnapshots = excludeSnapshots
+        this._lastLanguage = this.language
       }
+      return this._cachedQueries[cacheKey]
     }
   }
 }

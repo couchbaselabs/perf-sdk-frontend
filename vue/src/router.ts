@@ -63,6 +63,7 @@ const routes = [
     },
     {
         path: "/versus",
+        name: 'Versus',
         component: Versus,
     },
     {
@@ -81,17 +82,36 @@ const routes = [
         props: true
     },
     {
-        path: "/situationalRun",
-        component: SituationalRun,
+        path: "/situationalRuns",
+        name: 'SituationalRuns',
+        component: SituationalRuns,
+        alias: ["/situational"],
     },
     {
-        path: "/situationalRuns",
-        component: SituationalRuns,
+        path: "/situationalRun",
+        name: 'SituationalRun',
+        component: SituationalRun,
+        alias: ["/situational/run"],
+    },
+    // Pretty param-based routes (backward compatible with query-based)
+    {
+        path: "/situational/:situationalRunId",
+        name: 'SituationalRunParam',
+        component: SituationalRun,
+        props: true,
     },
     {
         path: "/situationalSingle",
+        name: 'SituationalSingle',
         component: SituationalSingle,
-        props: true
+        props: true,
+        alias: ["/situational/run/single"],
+    },
+    {
+        path: "/situational/:situationalRunId/run/:runId",
+        name: 'SituationalSingleParam',
+        component: SituationalSingle,
+        props: true,
     },
     {
         path: "/runs",
@@ -101,8 +121,41 @@ const routes = [
 ]
 
 const router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
-    routes // short for `routes: routes`
+    history: createWebHistory(import.meta.env.BASE_URL || '/results/'),
+    routes, // short for `routes: routes`
+    scrollBehavior() {
+        return { top: 0 }
+    }
+})
+
+// Normalize/guard situational routes for better UX
+router.beforeEach((to, _from, next) => {
+    const q = to.query as Record<string, any>
+
+    // If situationalRun route missing required query, go to list
+    if (to.path === '/situationalRun' && !q?.situationalRunId) {
+        return next({ path: '/situationalRuns' })
+    }
+
+    // If single view missing data, send to best-known parent
+    if (to.path === '/situationalSingle' && (!q?.situationalRunId || !q?.runId)) {
+        if (q?.situationalRunId) {
+            return next({ path: '/situationalRun', query: { situationalRunId: q.situationalRunId } })
+        }
+        return next({ path: '/situationalRuns' })
+    }
+
+    // Normalize pretty param routes to query-based that components currently use
+    const p = to.params as Record<string, any>
+    if (to.name === 'SituationalRunParam' && p?.situationalRunId && !q?.situationalRunId) {
+        return next({ path: '/situationalRun', query: { situationalRunId: p.situationalRunId } })
+    }
+
+    if (to.name === 'SituationalSingleParam' && (p?.situationalRunId || p?.runId) && (!q?.situationalRunId || !q?.runId)) {
+        return next({ path: '/situationalSingle', query: { situationalRunId: p.situationalRunId, runId: p.runId } })
+    }
+
+    return next()
 })
 
 export default router

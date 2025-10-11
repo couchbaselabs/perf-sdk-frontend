@@ -46,11 +46,11 @@
 
         <!-- Action Links -->
         <div class="sidebar-actions">
-          <router-link to="/versus" class="action-button">
+          <router-link to="/versus" class="action-button" :class="{ active: currentPath.startsWith('/versus') }">
             <span class="material-symbols-outlined">bolt</span>
             <span v-if="!isNavCollapsed">Versus</span>
           </router-link>
-          <router-link to="/situationalRuns" class="action-button">
+          <router-link to="/situationalRuns" class="action-button" :class="{ active: isSituationalActive }">
             <span class="material-symbols-outlined">monitoring</span>
             <span v-if="!isNavCollapsed">Situational</span>
           </router-link>
@@ -59,11 +59,23 @@
 
       <!-- Main Content Area -->
       <div class="content-area">
+        <!-- Situational breadcrumbs indicator -->
+        <div v-if="isSituationalActive" class="situational-indicator">
+          <router-link class="crumb-link" to="/situationalRuns">Situational Runs</router-link>
+          <template v-if="situationalRunId">
+            <span class="crumb-sep">/</span>
+            <router-link class="crumb-link" :to="{ path: '/situationalRun', query: { situationalRunId } }">{{ situationalRunId }}</router-link>
+          </template>
+          <template v-if="runId">
+            <span class="crumb-sep">/</span>
+            <span class="crumb-current">{{ runId }}</span>
+          </template>
+        </div>
         <!-- Charts Grid -->
         <div class="charts-container">
           <div class="charts-grid">
             <router-view v-slot="{ Component }">
-              <keep-alive :max="10">
+              <keep-alive :max="10" :exclude="excludedFromCache">
                 <component 
                   :is="Component"
                   :operation-type="selectedOperation"
@@ -86,6 +98,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const isNavCollapsed = ref(true)
+const excludedFromCache = ref(['SituationalRun', 'SituationalSingle'])
 
 const toggleNav = () => {
   const newState = !isNavCollapsed.value
@@ -176,6 +189,14 @@ const currentPath = computed(() => {
   // Handle nested routes by checking if current path starts with item path
   return path.endsWith('/') ? path.slice(0, -1) : path
 })
+
+const isSituationalActive = computed(() => {
+  const p = router.currentRoute.value.path
+  return p.startsWith('/situational')
+})
+
+const situationalRunId = computed(() => router.currentRoute.value.query?.situationalRunId)
+const runId = computed(() => router.currentRoute.value.query?.runId)
 
 onMounted(() => {
   // Load initial nav state from localStorage
@@ -412,6 +433,11 @@ watch(
   transition: all 0.2s ease;
 }
 
+.action-button.active {
+  background: rgba(124, 161, 243, 0.12);
+  color: #ffffff;
+}
+
 .collapsed .action-button {
   justify-content: flex-start;
 }
@@ -515,6 +541,31 @@ watch(
   background: var(--surface);
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.situational-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #0f285e;
+}
+
+.crumb-link {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.crumb-link:hover {
+  text-decoration: underline;
+}
+
+.crumb-sep {
+  color: #6b7280;
+}
+
+.crumb-current {
+  font-weight: 600;
 }
 
 .section-header {

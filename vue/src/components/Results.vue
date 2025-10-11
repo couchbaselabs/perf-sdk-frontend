@@ -1,9 +1,6 @@
 <template>
   <div class="mb-5">
-    <!-- Hack to force this to update when input changes.  Not sure if better way to achieve. -->
-    <div style="display: none">
-      {{ JSON.stringify(input) }}
-    </div>
+    <!-- Removed hack that forced updates via JSON.stringify(input) -->
 
     <div v-if="!results && !errors" class="text-center">
       <b-spinner variant="primary"></b-spinner>
@@ -52,8 +49,8 @@
         </b-button>
 
         <div>
-          <b-form-select v-model="defaultDisplay" v-on:change="(ev) => displayChanged(ev)">
-            <option :selected="true">duration_average_us</option>
+          <b-form-select v-model="defaultDisplay">
+            <option>duration_average_us</option>
             <option>duration_min_us</option>
             <option>duration_max_us</option>
             <option>duration_p50_us</option>
@@ -122,27 +119,26 @@ export default {
       errors: undefined,
       display: false,
       componentKey: 0,
-      isReloading: false
+      isReloading: false,
+      lastRequestId: 0
     }
   },
   mounted() {
-    if (this.single) {
-      this.fetchSingleQuery(this.single)
-    } else if (this.input) {
-      this.fetchQuery(this.input)
-    }
+    // Do not fetch here; watchers with immediate=true handle initial fetch
   },
-  // updated() {
-  //   // Need this component to refetch data when the `input` prop changes.  The approash used here doesn't seem slick
-  //   // but is the only solution that worked.
-  //   if (!this.single && this.lastInput !== this.input) {
-  //     this.fetchQuery(this.input)
-  //   }
-  // },
+  unmounted() {
+    console.info("Results component unmounted");
+    // Clean up resources
+    this.results = undefined;
+    this.errors = undefined;
+  },
   methods: {
     displayChanged: async function(display) {
-      const newInput = {... this.input }
-      newInput.yAxes[0].column = display
+      // Clone to avoid mutating prop (which triggers deep watchers endlessly)
+      const newInput = JSON.parse(JSON.stringify(this.input || {}))
+      if (newInput?.yAxes?.[0]) {
+        newInput.yAxes[0].column = display
+      }
       await this.fetchQuery(newInput)
     },
 
@@ -150,11 +146,12 @@ export default {
       if (input !== undefined) {
         this.isReloading = true
         this.lastInput = input
+        const reqId = ++this.lastRequestId
         try {
           console.info("Results fetching...")
           console.info(JSON.stringify(input))
 
-          const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/query`,
+          const res = await fetch(`/dashboard/query`,
               {
                 headers: {
                   'Accept': 'application/json',
@@ -164,10 +161,17 @@ export default {
                 body: JSON.stringify(input)
               })
 
-          if (res.status.toString().startsWith('2')) {
-            this.results = await res.json();
-          } else {
-            this.errors = await res.json()
+          if (reqId === this.lastRequestId) {
+            if (res.status.toString().startsWith('2')) {
+              this.results = await res.json();
+            } else {
+              const err = await res.json().catch(() => ({ message: res.statusText }))
+              this.errors = err?.message || JSON.stringify(err) || `HTTP ${res.status}`
+            }
+          }
+        } catch (e) {
+          if (reqId === this.lastRequestId) {
+            this.errors = e?.message || 'Network error'
           }
         } finally {
           this.isReloading = false
@@ -179,8 +183,10 @@ export default {
 
     fetchSingleQuery: async function (input) {
       this.isReloading = true
+      const reqId = ++this.lastRequestId
       try {
-        const res = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/single`,
+        console.info("Fetching single query with input:", JSON.stringify(input));
+        const res = await fetch(`/dashboard/single`,
             {
               headers: {
                 'Accept': 'application/json',
@@ -190,7 +196,18 @@ export default {
               body: JSON.stringify(input)
             })
 
-        this.results = await res.json();
+        if (reqId === this.lastRequestId) {
+          if (res.status.toString().startsWith('2')) {
+            this.results = await res.json();
+          } else {
+            const err = await res.json().catch(() => ({ message: res.statusText }))
+            this.errors = err?.message || JSON.stringify(err) || `HTTP ${res.status}`
+          }
+        }
+      } catch (e) {
+        if (reqId === this.lastRequestId) {
+          this.errors = e?.message || 'Network error'
+        }
       } finally {
         this.isReloading = false
       }
@@ -215,37 +232,45 @@ export default {
     },
 
     forceRerender() {
-      this.componentKey += 1;
-      if (this.single) {
-        this.fetchSingleQuery(this.single);
-      } else if (this.input) {
-        this.fetchQuery(this.input);
+      this.componentKey += 1
+      this.results = undefined
+      this.errors = undefined
+      if (this.single && !this.input) {
+        this.fetchSingleQuery(this.single)
+      } else if (this.input && !this.single) {
+        this.fetchQuery(this.input)
       }
     }
   },
   props: ['input', 'single'],
   watch: {
+    // Use v-model watch rather than DOM change events to avoid duplicate triggers
+    defaultDisplay(newVal) {
+      this.displayChanged(newVal)
+    },
     input: {
-      handler(newInput, oldInput) {
-        if (newInput && (!oldInput || newInput.runId !== oldInput.runId)) {
-          // Clear previous results first
-          this.results = undefined;
-          this.errors = undefined;
-          
-          // Then fetch new data
-          if (this.single) {
-            this.fetchSingleQuery(this.single);
-          } else {
-            this.fetchQuery(newInput);
-          }
+      handler(newInput) {
+        if (newInput && !this.single) {
+          this.results = undefined
+          this.errors = undefined
+          this.fetchQuery(newInput)
         }
       },
-      deep: true
+      // Watch by reference only; child should not react to nested mutations of parent input
+      deep: false,
+      immediate: true
+    },
+    single: {
+      handler(newSingle) {
+        if (newSingle && !this.input) {
+          this.results = undefined
+          this.errors = undefined
+          this.fetchSingleQuery(newSingle)
+        }
+      },
+      deep: false,
+      immediate: true
     }
-  },
-  beforeMount() {
-    this.results = undefined;
-    this.errors = undefined;
   }
 }
 </script>

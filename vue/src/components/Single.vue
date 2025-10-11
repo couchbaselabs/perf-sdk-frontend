@@ -73,7 +73,7 @@ export default {
   methods: {
     async initializeWithMetrics() {
       try {
-        const response = await fetch(`${document.location.protocol}//${document.location.hostname}:3002/dashboard/metrics`);
+        const response = await fetch(`/dashboard/metrics`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
