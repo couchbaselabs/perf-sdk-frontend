@@ -90,7 +90,7 @@ export default {
 
     memRssUsedMB() {
       return {
-        ...sharedQuery(this.language),
+        ...sharedQuery(this.language, this.excludeSnapshots),
         "yAxes": [{
           "type": "metric",
           "metric": "memRssUsedMB",
