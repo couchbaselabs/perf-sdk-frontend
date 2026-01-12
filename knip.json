@@ -1,0 +1,40 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "app/**/*.tsx",
+    "app/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.ts",
+    "next.config.mjs",
+    "tailwind.config.ts"
+  ],
+  "project": [
+    "app/**/*.tsx",
+    "app/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.ts"
+  ],
+  "ignore": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/dist/**",
+    "**/out/**",
+    "**/*.d.ts",
+    "**/reports/**"
+  ],
+  "ignoreDependencies": [
+    "next",
+    "react",
+    "react-dom",
+    "tailwindcss",
+    "postcss",
+    "eslint",
+    "eslint-config-next"
+  ],
+  "rules": {
+    "files": "warn",
+    "dependencies": "warn",
+    "exports": "warn",
+    "nsExports": "warn"
+  }
+}
