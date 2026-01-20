@@ -290,33 +290,6 @@ export default function SituationalRunDetailPage({
           </div>
         </div>
 
-        {/* Development Notice */}
-        <div className="mb-6">
-          <Card className="border-amber-200 bg-amber-50">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h3 className="font-medium text-amber-800 mb-1">Note: Dashboard Under Development</h3>
-                  <p className="text-sm text-amber-700 mb-3">
-                    This dashboard is still under development. If you want to check the results on the old dashboard, you can do so by clicking the button below:
-                  </p>
-                  <Button asChild variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100">
-                    <Link
-                      href={`https://performance-sdk.couchbase.com:8080/situationalSingle?situationalRunId=${resolvedParams.id}&runId=${resolvedParams.runId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      View on Old Dashboard
-                      <ExternalLink className="ml-2 h-3 w-3" />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Key metrics summary */}
         <div className={`grid grid-cols-1 gap-4 mb-6 ${runData.environment === 'Unknown' ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
           <Card>

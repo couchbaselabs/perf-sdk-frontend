@@ -30,7 +30,7 @@ export default function RunDetailClient({ runData, runMetrics, runBuckets }: Run
   const searchParams = useSearchParams()
   const metric = searchParams.get("metric") || "duration_average_us"
   const sdk = searchParams.get("sdk") || "kotlin"
-  
+
   const [activeTab, setActiveTab] = useState("overview")
   const [currentUrl, setCurrentUrl] = useState('')
   const [copiedLink, setCopiedLink] = useState(false)
@@ -129,33 +129,6 @@ export default function RunDetailClient({ runData, runMetrics, runBuckets }: Run
           </div>
         </div>
 
-        {/* Development Notice */}
-        <div className="mb-6">
-          <Card className="border-amber-200 bg-amber-50">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h3 className="font-medium text-amber-800 mb-1">Note: Dashboard Under Development</h3>
-                  <p className="text-sm text-amber-700 mb-3">
-                    This dashboard is still under development. If you want to check the results on the old dashboard, you can do so by clicking the button below:
-                  </p>
-                  <Button asChild variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100">
-                    <Link 
-                      href={`https://performance-sdk.couchbase.com:8080/single?runId=${runData.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      View on Old Dashboard
-                      <ExternalLink className="ml-2 h-3 w-3" />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Run Info Card */}
         <Card className="mb-6">
           <CardHeader>
@@ -192,8 +165,8 @@ export default function RunDetailClient({ runData, runMetrics, runBuckets }: Run
                           value={currentUrl}
                           className="flex-1 px-3 py-2 text-sm border rounded-md bg-muted"
                         />
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           onClick={() => copyToClipboard(currentUrl)}
                           className="gap-1"
                         >
@@ -237,7 +210,7 @@ export default function RunDetailClient({ runData, runMetrics, runBuckets }: Run
             <CardTitle>Performance Graph</CardTitle>
           </CardHeader>
           <CardContent>
-            <PerformanceGraph 
+            <PerformanceGraph
               runId={runData.id}
               title="Performance Metrics"
               showAllMetrics={false}
@@ -265,7 +238,7 @@ export default function RunDetailClient({ runData, runMetrics, runBuckets }: Run
                   <JsonViewer data={runData.params} />
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>Execution Summary</CardTitle>
@@ -312,7 +285,7 @@ export default function RunDetailClient({ runData, runMetrics, runBuckets }: Run
                     <TableBody>
                       <TableRow>
                         <TableCell className="font-mono text-sm">
-                          <Link 
+                          <Link
                             href={`/run/${runData.id}`}
                             className="text-blue-600 hover:text-blue-800 hover:underline"
                           >
@@ -340,7 +313,7 @@ export default function RunDetailClient({ runData, runMetrics, runBuckets }: Run
                             <div><strong>Memory:</strong> {runData.params?.cluster?.memory || 'N/A'}</div>
                             <div><strong>Storage:</strong> {runData.params?.cluster?.storage || 'N/A'}</div>
                             <div>
-                              <strong>Version:</strong> 
+                              <strong>Version:</strong>
                               <div className="mt-1">
                                 <ClusterBadge value={runData.params?.cluster?.version || 'N/A'} />
                               </div>
