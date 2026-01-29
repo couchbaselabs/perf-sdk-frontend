@@ -207,6 +207,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   const handleExcludeSnapshotsChange = (checked: boolean) => setExcludeSnapshots(checked)
   const { handleRefresh } = useRefreshHandler(() => setReloadTrigger(prev => prev + 1))
   const handleClusterVersionsChange = useCallback((versions: string[]) => setSelectedClusterVersions(versions), [])
+  const activeClusterVersion = selectedClusterVersions[0] ?? DEFAULT_CLUSTERS[0]
 
   const toggleOperation = useCallback((operationId: string) => {
     if (visibleOperations.includes(operationId)) {
@@ -317,6 +318,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
           selectedMetric={selectedMetric}
           onMetricChange={setSelectedMetric}
           currentSdk={currentSdk}
+          clusterVersion={activeClusterVersion}
           excludeSnapshots={excludeSnapshots}
           reloadTrigger={reloadTrigger}
           visibleOperations={visibleOperations}

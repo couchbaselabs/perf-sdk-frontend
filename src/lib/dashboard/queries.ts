@@ -100,13 +100,24 @@ export class ErrorSummary {
 // Import consolidated axis utilities
 import { HorizontalAxisDynamicUtil } from './axis';
 
+const resolveClusterVersion = (clusterVersion?: string) => {
+  if (clusterVersion && clusterVersion.trim().length > 0) return clusterVersion
+  return DEFAULT_CLUSTER.version
+}
+
+const buildClusterConfig = (clusterVersion?: string) => ({
+  ...DEFAULT_CLUSTER,
+  version: resolveClusterVersion(clusterVersion)
+})
+
 // Input builder functions
 export function createKVOperationInput(
   language: string, 
   operation: 'get' | 'replace' | 'insert',
   excludeSnapshots: boolean = false,
   excludeGerrit: boolean = true,
-  metricColumn: string = "duration_average_us"
+  metricColumn: string = "duration_average_us",
+  clusterVersion?: string
 ): DashboardInput {
   const actualLanguage = LANGUAGE_MAP[language] || language
 
@@ -138,7 +149,7 @@ export function createKVOperationInput(
       yAxisID: "y"
     }],
     databaseCompare: {
-      cluster: DEFAULT_CLUSTER,
+      cluster: buildClusterConfig(clusterVersion),
       impl: { language: actualLanguage },
       workload: workload,
       vars: vars
@@ -157,7 +168,8 @@ export function createSystemMetricInput(
   language: string,
   metric: string,
   excludeSnapshots: boolean = false,
-  excludeGerrit: boolean = true  
+  excludeGerrit: boolean = true,
+  clusterVersion?: string
 ): DashboardInput {
   const actualLanguage = LANGUAGE_MAP[language] || language
 
@@ -188,7 +200,7 @@ export function createSystemMetricInput(
       yAxisID: "y"
     }],
     databaseCompare: {
-      cluster: DEFAULT_CLUSTER,
+      cluster: buildClusterConfig(clusterVersion),
       impl: { language: actualLanguage },
       workload: DEFAULT_WORKLOAD_GET,
       vars: DEFAULT_QUERY_VARS
@@ -207,7 +219,8 @@ export function createHorizontalScalingInput(
   language: string,
   excludeSnapshots: boolean = false,
   excludeGerrit: boolean = true,
-  metricColumn: string = "duration_average_us"
+  metricColumn: string = "duration_average_us",
+  clusterVersion?: string
 ): DashboardInput {
   const actualLanguage = LANGUAGE_MAP[language] || language
 
@@ -227,7 +240,7 @@ export function createHorizontalScalingInput(
       yAxisID: "y"
     }],
     databaseCompare: {
-      cluster: DEFAULT_CLUSTER,
+      cluster: buildClusterConfig(clusterVersion),
       impl: { language: actualLanguage },
       workload: DEFAULT_WORKLOAD_GET,
       // CRITICAL FIX: Add experimentName: "horizontalScaling" to match Vue exactly
@@ -249,7 +262,8 @@ export function createTransactionInput(
   language: string,
   threads: number,
   excludeSnapshots: boolean = false,
-  excludeGerrit: boolean = true
+  excludeGerrit: boolean = true,
+  clusterVersion?: string
 ): DashboardInput {
   const actualLanguage = LANGUAGE_MAP[language] || language
 
@@ -266,7 +280,7 @@ export function createTransactionInput(
       yAxisID: "y"
     }],
     databaseCompare: {
-      cluster: DEFAULT_CLUSTER,
+      cluster: buildClusterConfig(clusterVersion),
       impl: { language: actualLanguage },
       // CRITICAL: Vue uses special transaction workload with transaction.ops structure
       workload: {
@@ -302,7 +316,8 @@ export function createTransactionReadOnlyInput(
   language: string,
   threads: number,
   excludeSnapshots: boolean = false,
-  excludeGerrit: boolean = true
+  excludeGerrit: boolean = true,
+  clusterVersion?: string
 ): DashboardInput {
   const actualLanguage = LANGUAGE_MAP[language] || language
 
@@ -318,7 +333,7 @@ export function createTransactionReadOnlyInput(
       yAxisID: "y"
     }],
     databaseCompare: {
-      cluster: DEFAULT_CLUSTER,
+      cluster: buildClusterConfig(clusterVersion),
       impl: { language: actualLanguage },
       // CRITICAL: Vue readonly transactions only do one get operation
       workload: {
@@ -351,7 +366,8 @@ export function createReactiveAPIInput(
   language: string,
   apiType: 'DEFAULT' | 'ASYNC',
   excludeSnapshots: boolean = false,
-  excludeGerrit: boolean = true
+  excludeGerrit: boolean = true,
+  clusterVersion?: string
 ): DashboardInput {
   const actualLanguage = LANGUAGE_MAP[language] || language
 
@@ -367,7 +383,7 @@ export function createReactiveAPIInput(
       yAxisID: "y"
     }],
     databaseCompare: {
-      cluster: DEFAULT_CLUSTER,
+      cluster: buildClusterConfig(clusterVersion),
       impl: { language: actualLanguage },
       workload: DEFAULT_WORKLOAD_GET,
       // CRITICAL: Vue reactive queries use different API setting and poolSize
@@ -386,7 +402,8 @@ export function createReactiveAPIInput(
 export function createHorizontalScalingReactiveInput(
   language: string,
   excludeSnapshots: boolean = false,
-  excludeGerrit: boolean = true
+  excludeGerrit: boolean = true,
+  clusterVersion?: string
 ): DashboardInput {
   const actualLanguage = LANGUAGE_MAP[language] || language
   
@@ -405,7 +422,7 @@ export function createHorizontalScalingReactiveInput(
       yAxisID: "y"
     }],
     databaseCompare: {
-      cluster: DEFAULT_CLUSTER,
+      cluster: buildClusterConfig(clusterVersion),
       impl: { language: actualLanguage },
       workload: DEFAULT_WORKLOAD_GET,
       // CRITICAL: Vue reactive horizontal scaling uses ASYNC API and experimentName

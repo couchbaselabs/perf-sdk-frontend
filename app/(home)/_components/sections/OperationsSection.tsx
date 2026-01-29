@@ -24,6 +24,7 @@ import {
 
 interface OperationsSectionProps {
   currentSdk: string;
+  clusterVersion: string;
   excludeSnapshots: boolean;
   selectedMetric: string;
   reloadTrigger: number;
@@ -41,6 +42,7 @@ interface OperationsSectionProps {
 
 export default function OperationsSection({
   currentSdk,
+  clusterVersion,
   excludeSnapshots,
   selectedMetric,
   reloadTrigger,
@@ -90,7 +92,8 @@ export default function OperationsSection({
             operationMap[operation.id as keyof typeof operationMap] || 'get',
             excludeSnapshots,
             true, // excludeGerrit
-            selectedMetric
+            selectedMetric,
+            clusterVersion
           )
 
           return (
@@ -99,7 +102,7 @@ export default function OperationsSection({
                 input={dashboardInput}
                 title={`${operation.title} - ${sdkInfo?.name}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}`}
                 selectedMetric={selectedMetric}
                 threads={operation.threads}
               />
@@ -132,7 +135,8 @@ export default function OperationsSection({
             sdkInfo?.name || 'Java',
             excludeSnapshots,
             true, // excludeGerrit
-            selectedMetric
+            selectedMetric,
+            clusterVersion
           )
 
           return (
@@ -141,7 +145,7 @@ export default function OperationsSection({
                 input={dashboardInput}
                 title={`${operation.title} - ${sdkInfo?.name}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${reloadTrigger}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={20}
               />
@@ -179,7 +183,8 @@ export default function OperationsSection({
             sdkInfo?.name || 'Java',
             metric.metric,
             excludeSnapshots,
-            true // excludeGerrit
+            true, // excludeGerrit
+            clusterVersion
           )
 
           return (
@@ -188,7 +193,7 @@ export default function OperationsSection({
                 input={dashboardInput}
                 title={`${metric.title} - ${sdkInfo?.name}`}
                 description={metric.description}
-                keyProp={`${metric.id}-${currentSdk}-${excludeSnapshots}-${reloadTrigger}`}
+                keyProp={`${metric.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={20}
               />
@@ -225,13 +230,15 @@ export default function OperationsSection({
                 sdkInfo?.name || 'Java',
                 threads,
                 excludeSnapshots,
-                true // excludeGerrit
+                true, // excludeGerrit
+                clusterVersion
               )
             : createTransactionInput(
                 sdkInfo?.name || 'Java',
                 threads,
                 excludeSnapshots,
-                true // excludeGerrit
+                true, // excludeGerrit
+                clusterVersion
               )
 
           return (
@@ -240,7 +247,7 @@ export default function OperationsSection({
                 input={dashboardInput}
                 title={`${operation.title} - ${sdkInfo?.name}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${reloadTrigger}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={operation.threads}
               />
@@ -277,7 +284,8 @@ export default function OperationsSection({
               dashboardInput = createHorizontalScalingReactiveInput(
                 sdkInfo?.name || 'Java',
                 excludeSnapshots,
-                true // excludeGerrit
+                true, // excludeGerrit
+                clusterVersion
               )
               break
             case 'kvGetsBlocking':
@@ -286,7 +294,8 @@ export default function OperationsSection({
                 sdkInfo?.name || 'Java',
                 'DEFAULT',
                 excludeSnapshots,
-                true // excludeGerrit
+                true, // excludeGerrit
+                clusterVersion
               )
               break
             case 'kvGetsReactive':
@@ -295,7 +304,8 @@ export default function OperationsSection({
                 sdkInfo?.name || 'Java',
                 'ASYNC',
                 excludeSnapshots,
-                true // excludeGerrit
+                true, // excludeGerrit
+                clusterVersion
               )
               break
             default:
@@ -305,7 +315,8 @@ export default function OperationsSection({
                 'get',
                 excludeSnapshots,
                 true,
-                selectedMetric
+                selectedMetric,
+                clusterVersion
               )
           }
 
@@ -315,7 +326,7 @@ export default function OperationsSection({
                 input={dashboardInput}
                 title={`${operation.title} - ${sdkInfo?.name}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${reloadTrigger}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={20}
               />

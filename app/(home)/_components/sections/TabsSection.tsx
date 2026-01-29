@@ -10,6 +10,7 @@ interface TabsSectionProps {
   selectedMetric: string
   onMetricChange: (metric: string) => void
   currentSdk: string
+  clusterVersion: string
   excludeSnapshots: boolean
   reloadTrigger: number
   visibleOperations: string[]
@@ -31,6 +32,7 @@ export function TabsSection({
   selectedMetric,
   onMetricChange,
   currentSdk,
+  clusterVersion,
   excludeSnapshots,
   reloadTrigger,
   visibleOperations,
@@ -63,6 +65,7 @@ export function TabsSection({
         
         <OperationsSection
           currentSdk={currentSdk}
+          clusterVersion={clusterVersion}
           excludeSnapshots={excludeSnapshots}
           selectedMetric={selectedMetric}
           reloadTrigger={reloadTrigger}
