@@ -102,7 +102,7 @@ export default function OperationsSection({
                 input={dashboardInput}
                 title={`${operation.title} - ${sdkInfo?.name}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={operation.threads}
               />
