@@ -101,7 +101,8 @@ export class ErrorSummary {
 import { HorizontalAxisDynamicUtil } from './axis';
 
 const resolveClusterVersion = (clusterVersion?: string) => {
-  if (clusterVersion && clusterVersion.trim().length > 0) return clusterVersion
+  const normalized = clusterVersion?.trim()
+  if (normalized && normalized.length > 0) return normalized
   return DEFAULT_CLUSTER.version
 }
 
