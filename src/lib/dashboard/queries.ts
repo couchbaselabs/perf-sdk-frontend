@@ -102,7 +102,7 @@ import { HorizontalAxisDynamicUtil } from './axis';
 
 const resolveClusterVersion = (clusterVersion?: string) => {
   const normalized = clusterVersion?.trim()
-  if (normalized && normalized.length > 0) return normalized
+  if (normalized) return normalized
   return DEFAULT_CLUSTER.version
 }
 
