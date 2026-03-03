@@ -88,9 +88,9 @@ export default function PerformanceGraph({
 }: PerformanceGraphProps) {
   const { data: queryData, isLoading, isFetching, error, refetch } = usePerformanceData(runId)
   const [chartData, setChartData] = useState<any[]>(initialData || queryData || [])
-  
+
   const allMetrics = getAllMetrics()
-  
+
   // Check which metrics have data available
   const metricsWithData = useMemo(() => {
     const availableMetrics = new Set<string>()
@@ -105,7 +105,7 @@ export default function PerformanceGraph({
     }
     return availableMetrics
   }, [chartData])
-  
+
   // ---------------------------------------------------------------------------
   // Simplified metric visibility state
   //   • activeMetrics  – list of metric ids currently displayed
@@ -157,7 +157,7 @@ export default function PerformanceGraph({
     const s = Math.floor(totalSeconds)
     const hours = Math.floor(s / 3600)
     const minutes = Math.floor((s % 3600) / 60)
-    return `${hours}h${String(minutes).padStart(2,'0')}m`
+    return `${hours}h${String(minutes).padStart(2, '0')}m`
   }
 
   // Compute full range from data + events
@@ -241,16 +241,16 @@ export default function PerformanceGraph({
   useEffect(() => {
     if (chartData && chartData.length) {
       const hasDuration = chartData.some((p: any) => typeof p.duration_average_us === 'number' && p.duration_average_us > 0)
-      
+
       // Update activeMetrics based on data availability
       setActiveMetrics((prev) => {
         const updated = [...prev]
-        
+
         // Ensure at least one duration metric is visible if available
         if (hasDuration && !updated.includes("duration_average_us")) {
           updated.push("duration_average_us")
         }
-        
+
         // Disable any active metrics that have no data
         updated.forEach(metricId => {
           if (updated.includes(metricId) && !metricsWithData.has(metricId)) {
@@ -258,7 +258,7 @@ export default function PerformanceGraph({
             updated.splice(index, 1)
           }
         })
-        
+
         return updated
       })
     }
@@ -320,9 +320,9 @@ export default function PerformanceGraph({
           <div className="text-muted-foreground flex flex-col items-center">
             <HelpCircle className="h-8 w-8 mb-4 text-red-500" />
             <p className="text-red-600">Error: {error}</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={loadRealData}
               className="mt-2"
             >
@@ -407,7 +407,7 @@ export default function PerformanceGraph({
   const visibleData = selectedTimeRange
     ? sliced.filter(p => typeof p?.time === 'number' && Number.isFinite(p.time) && p.time >= selectedTimeRange[0] && p.time <= selectedTimeRange[1])
     : sliced
-  
+
   // Simple debug logging without hooks
   console.log(`DEBUG: chartData.length=${chartData?.length}, selectedTimeRange=${selectedTimeRange ? `[${selectedTimeRange[0]}, ${selectedTimeRange[1]}]` : 'null'}, visibleData.length=${visibleData?.length}`)
   if (visibleData && visibleData.length > 0) {
@@ -428,8 +428,41 @@ export default function PerformanceGraph({
 
   // Count metrics on each axis
   const leftAxisMetrics = activeMetrics.filter((id) => getAxis(id) === "left").length
-
   const rightAxisMetrics = activeMetrics.filter((id) => getAxis(id) === "right").length
+
+  // Compute dynamic Y-axis labels based on which metrics are active on each axis
+  const computeAxisLabel = (side: "left" | "right"): string => {
+    const metricsOnAxis = activeMetrics
+      .filter((id) => getAxis(id) === side)
+      .map((id) => allMetrics.find((m) => m.id === id))
+      .filter(Boolean)
+    if (metricsOnAxis.length === 0) return ""
+    // Collect unique non-empty units
+    const units = [...new Set(metricsOnAxis.map((m) => m!.unit).filter(Boolean))]
+    if (units.length === 0) {
+      // All metrics have empty unit (e.g. thread count, GC count)
+      const names = [...new Set(metricsOnAxis.map((m) => m!.name))]
+      return names.length <= 2 ? names.join(" / ") : "Value"
+    }
+    if (units.length === 1) {
+      // Single unit — build a descriptive label
+      const unit = units[0]
+      const names = [...new Set(metricsOnAxis.map((m) => m!.name))]
+      if (names.length === 1) return `${names[0]} (${unit})`
+      // Summarise by unit type
+      if (unit === "μs") return "Duration (μs)"
+      if (unit === "MB") return "Memory (MB)"
+      if (unit === "%") return "CPU (%)"
+      if (unit === "ops") return "Operations (ops)"
+      if (unit === "ms") return `Time (${unit})`
+      return unit
+    }
+    // Multiple units — join them
+    return units.join(" / ")
+  }
+
+  const leftAxisLabel = computeAxisLabel("left")
+  const rightAxisLabel = computeAxisLabel("right")
 
   // Helper to map pixel X (page) to time value using the true plot area bounds
   const pageXToTime = (pageX: number, svgRect: DOMRect, domain: [number, number]) => {
@@ -593,178 +626,178 @@ export default function PerformanceGraph({
             />
             {selectedTimeRange ? (
               <ResponsiveContainer width="100%" height="100%">
-              {chartType === "line" ? (
-                <LineChart key={chartKey} data={visibleData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis
-                    dataKey="time"
-                    type="number"
-                    domain={selectedTimeRange ? [selectedTimeRange[0], selectedTimeRange[1]] : ["dataMin", "dataMax"]}
-                    allowDecimals={false}
-                    tickFormatter={(value) => formatSeconds(Number(value))}
-                    label={{ value: "Time (seconds)", position: "insideBottomRight", offset: -10 }}
-                    tick={{ fontSize: 11 }}
-                    stroke="#94a3b8"
-                  />
-                  <YAxis
-                    yAxisId="left"
-                    label={{ value: "Duration (μs)", angle: -90, position: "insideLeft" }}
-                    domain={["auto", "auto"]}
-                    tick={{ fontSize: 11 }}
-                    stroke="#94a3b8"
-                    hide={leftAxisMetrics === 0}
-                  />
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    label={{ value: "Count / Value", angle: -90, position: "insideRight" }}
-                    domain={["auto", "auto"]}
-                    tick={{ fontSize: 11 }}
-                    stroke="#94a3b8"
-                    hide={rightAxisMetrics === 0}
-                  />
-                  <RechartsTooltip
-                    formatter={tooltipFormatter}
-                    labelFormatter={tooltipLabelFormatter}
-                    contentStyle={{
-                      backgroundColor: "white",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "6px",
-                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                    }}
-                  />
-                  <Legend />
-
-                  {/* Zoom brush removed to avoid numeric/lexicographic issues causing capping */}
-
-                  {/* Render all active metrics */}
-                  {allMetrics
-                    .filter((metric) => {
-                      const isActive = activeMetrics.includes(metric.id)
-                      if (isActive) {
-                        // Check if data exists for this metric
-                        const hasData = chartData.some(point => point[metric.id] !== undefined && point[metric.id] !== null)
-                        if (!hasData) {
-                          console.warn(`Metric ${metric.id} is active but no data found in chartData`)
-                        }
-                      }
-                      return isActive
-                    })
-                    .map((metric) => (
-                      <Line
-                        key={metric.id}
-                        yAxisId={getAxis(metric.id)}
-                        type="monotone"
-                        dataKey={metric.id}
-                        stroke={metric.color}
-                        strokeWidth={2}
-                        dot={false}
-                        name={metric.name}
-                        connectNulls={true}
-                      />
-                    ))}
-
-                  {/* Event markers */}
-                  {events?.filter(e => typeof e?.timeOffsetSecs === 'number' && Number.isFinite(e.timeOffsetSecs)).map((e, i) => (
-                    <ReferenceLine
-                      key={`evt-${i}`}
+                {chartType === "line" ? (
+                  <LineChart key={chartKey} data={visibleData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis
+                      dataKey="time"
+                      type="number"
+                      domain={selectedTimeRange ? [selectedTimeRange[0], selectedTimeRange[1]] : ["dataMin", "dataMax"]}
+                      allowDecimals={false}
+                      tickFormatter={(value) => formatSeconds(Number(value))}
+                      label={{ value: "Time (seconds)", position: "insideBottomRight", offset: -10 }}
+                      tick={{ fontSize: 11 }}
+                      stroke="#94a3b8"
+                    />
+                    <YAxis
                       yAxisId="left"
-                      x={Number(e.timeOffsetSecs)}
-                      stroke={(e.params?.description || e.params?.type || 'Event').includes('resolves') ? '#111827' : '#ef4444'}
-                      strokeWidth={3}
-                      strokeDasharray={(e.params?.description || e.params?.type || 'Event').includes('resolves') ? "6 3" : "6 2"}
-                    >
-                      <Label value={e.params?.description || e.params?.type || 'Event'} position="insideTop" fill="#111827" fontSize={12} />
-                    </ReferenceLine>
-                  ))}
-                </LineChart>
-              ) : (
-                <RechartsAreaChart key={chartKey} data={visibleData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis
-                    dataKey="time"
-                    type="number"
-                    domain={selectedTimeRange ? [selectedTimeRange[0], selectedTimeRange[1]] : ["dataMin", "dataMax"]}
-                    allowDecimals={false}
-                    tickFormatter={(value) => formatSeconds(Number(value))}
-                    label={{ value: "Time (seconds)", position: "insideBottomRight", offset: -10 }}
-                    tick={{ fontSize: 11 }}
-                    stroke="#94a3b8"
-                  />
-                  <YAxis
-                    yAxisId="left"
-                    label={{ value: "Duration (μs)", angle: -90, position: "insideLeft" }}
-                    domain={["auto", "auto"]}
-                    tick={{ fontSize: 11 }}
-                    stroke="#94a3b8"
-                    hide={leftAxisMetrics === 0}
-                  />
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    label={{ value: "Count / Value", angle: -90, position: "insideRight" }}
-                    domain={["auto", "auto"]}
-                    tick={{ fontSize: 11 }}
-                    stroke="#94a3b8"
-                    hide={rightAxisMetrics === 0}
-                  />
-                  <RechartsTooltip
-                    formatter={tooltipFormatter}
-                    labelFormatter={tooltipLabelFormatter}
-                    contentStyle={{
-                      backgroundColor: "white",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "6px",
-                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                    }}
-                  />
-                  <Legend />
+                      label={{ value: leftAxisLabel, angle: -90, position: "insideLeft" }}
+                      domain={["auto", "auto"]}
+                      tick={{ fontSize: 11 }}
+                      stroke="#94a3b8"
+                      hide={leftAxisMetrics === 0}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      label={{ value: rightAxisLabel, angle: -90, position: "insideRight" }}
+                      domain={["auto", "auto"]}
+                      tick={{ fontSize: 11 }}
+                      stroke="#94a3b8"
+                      hide={rightAxisMetrics === 0}
+                    />
+                    <RechartsTooltip
+                      formatter={tooltipFormatter}
+                      labelFormatter={tooltipLabelFormatter}
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "6px",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                      }}
+                    />
+                    <Legend />
 
-                  {/* Zoom brush removed to avoid numeric/lexicographic issues causing capping */}
+                    {/* Zoom brush removed to avoid numeric/lexicographic issues causing capping */}
 
-                  {/* Render all active metrics as areas */}
-                  {allMetrics
-                    .filter((metric) => {
-                      const isActive = activeMetrics.includes(metric.id)
-                      if (isActive) {
-                        // Check if data exists for this metric
-                        const hasData = chartData.some(point => point[metric.id] !== undefined && point[metric.id] !== null)
-                        if (!hasData) {
-                          console.warn(`Metric ${metric.id} is active but no data found in chartData`)
+                    {/* Render all active metrics */}
+                    {allMetrics
+                      .filter((metric) => {
+                        const isActive = activeMetrics.includes(metric.id)
+                        if (isActive) {
+                          // Check if data exists for this metric
+                          const hasData = chartData.some(point => point[metric.id] !== undefined && point[metric.id] !== null)
+                          if (!hasData) {
+                            console.warn(`Metric ${metric.id} is active but no data found in chartData`)
+                          }
                         }
-                      }
-                      return isActive
-                    })
-                    .map((metric) => (
-                      <Area
-                        key={metric.id}
-                        yAxisId={getAxis(metric.id)}
-                        type="monotone"
-                        dataKey={metric.id}
-                        stroke={metric.color}
-                        fill={`${metric.color}20`}
-                        strokeWidth={2}
-                        name={metric.name}
-                        connectNulls={true}
-                      />
-                    ))}
+                        return isActive
+                      })
+                      .map((metric) => (
+                        <Line
+                          key={metric.id}
+                          yAxisId={getAxis(metric.id)}
+                          type="monotone"
+                          dataKey={metric.id}
+                          stroke={metric.color}
+                          strokeWidth={2}
+                          dot={false}
+                          name={metric.name}
+                          connectNulls={true}
+                        />
+                      ))}
 
-                  {/* Event markers */}
-                  {events?.filter(e => typeof e?.timeOffsetSecs === 'number' && Number.isFinite(e.timeOffsetSecs)).map((e, i) => (
-                    <ReferenceLine
-                      key={`evt-${i}`}
+                    {/* Event markers */}
+                    {events?.filter(e => typeof e?.timeOffsetSecs === 'number' && Number.isFinite(e.timeOffsetSecs)).map((e, i) => (
+                      <ReferenceLine
+                        key={`evt-${i}`}
+                        yAxisId="left"
+                        x={Number(e.timeOffsetSecs)}
+                        stroke={(e.params?.description || e.params?.type || 'Event').includes('resolves') ? '#111827' : '#ef4444'}
+                        strokeWidth={3}
+                        strokeDasharray={(e.params?.description || e.params?.type || 'Event').includes('resolves') ? "6 3" : "6 2"}
+                      >
+                        <Label value={e.params?.description || e.params?.type || 'Event'} position="insideTop" fill="#111827" fontSize={12} />
+                      </ReferenceLine>
+                    ))}
+                  </LineChart>
+                ) : (
+                  <RechartsAreaChart key={chartKey} data={visibleData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis
+                      dataKey="time"
+                      type="number"
+                      domain={selectedTimeRange ? [selectedTimeRange[0], selectedTimeRange[1]] : ["dataMin", "dataMax"]}
+                      allowDecimals={false}
+                      tickFormatter={(value) => formatSeconds(Number(value))}
+                      label={{ value: "Time (seconds)", position: "insideBottomRight", offset: -10 }}
+                      tick={{ fontSize: 11 }}
+                      stroke="#94a3b8"
+                    />
+                    <YAxis
                       yAxisId="left"
-                      x={Number(e.timeOffsetSecs)}
-                      stroke={(e.params?.description || e.params?.type || 'Event').includes('resolves') ? '#111827' : '#ef4444'}
-                      strokeWidth={3}
-                      strokeDasharray={(e.params?.description || e.params?.type || 'Event').includes('resolves') ? "6 3" : "6 2"}
-                    >
-                      <Label value={e.params?.description || e.params?.type || 'Event'} position="insideTop" fill="#111827" fontSize={12} />
-                    </ReferenceLine>
-                  ))}
-                </RechartsAreaChart>
-              )}
-            </ResponsiveContainer>
+                      label={{ value: leftAxisLabel, angle: -90, position: "insideLeft" }}
+                      domain={["auto", "auto"]}
+                      tick={{ fontSize: 11 }}
+                      stroke="#94a3b8"
+                      hide={leftAxisMetrics === 0}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      label={{ value: rightAxisLabel, angle: -90, position: "insideRight" }}
+                      domain={["auto", "auto"]}
+                      tick={{ fontSize: 11 }}
+                      stroke="#94a3b8"
+                      hide={rightAxisMetrics === 0}
+                    />
+                    <RechartsTooltip
+                      formatter={tooltipFormatter}
+                      labelFormatter={tooltipLabelFormatter}
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "6px",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                      }}
+                    />
+                    <Legend />
+
+                    {/* Zoom brush removed to avoid numeric/lexicographic issues causing capping */}
+
+                    {/* Render all active metrics as areas */}
+                    {allMetrics
+                      .filter((metric) => {
+                        const isActive = activeMetrics.includes(metric.id)
+                        if (isActive) {
+                          // Check if data exists for this metric
+                          const hasData = chartData.some(point => point[metric.id] !== undefined && point[metric.id] !== null)
+                          if (!hasData) {
+                            console.warn(`Metric ${metric.id} is active but no data found in chartData`)
+                          }
+                        }
+                        return isActive
+                      })
+                      .map((metric) => (
+                        <Area
+                          key={metric.id}
+                          yAxisId={getAxis(metric.id)}
+                          type="monotone"
+                          dataKey={metric.id}
+                          stroke={metric.color}
+                          fill={`${metric.color}20`}
+                          strokeWidth={2}
+                          name={metric.name}
+                          connectNulls={true}
+                        />
+                      ))}
+
+                    {/* Event markers */}
+                    {events?.filter(e => typeof e?.timeOffsetSecs === 'number' && Number.isFinite(e.timeOffsetSecs)).map((e, i) => (
+                      <ReferenceLine
+                        key={`evt-${i}`}
+                        yAxisId="left"
+                        x={Number(e.timeOffsetSecs)}
+                        stroke={(e.params?.description || e.params?.type || 'Event').includes('resolves') ? '#111827' : '#ef4444'}
+                        strokeWidth={3}
+                        strokeDasharray={(e.params?.description || e.params?.type || 'Event').includes('resolves') ? "6 3" : "6 2"}
+                      >
+                        <Label value={e.params?.description || e.params?.type || 'Event'} position="insideTop" fill="#111827" fontSize={12} />
+                      </ReferenceLine>
+                    ))}
+                  </RechartsAreaChart>
+                )}
+              </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <div className="text-center">
@@ -791,7 +824,7 @@ export default function PerformanceGraph({
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </div>
-                
+
                 {/* Data availability summary */}
                 <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-md border border-blue-200 dark:border-blue-800">
                   <div className="text-xs text-blue-700 dark:text-blue-300">
@@ -822,7 +855,7 @@ export default function PerformanceGraph({
                       {metrics.map((metric) => {
                         const hasData = metricsWithData.has(metric.id)
                         const isActive = activeMetrics.includes(metric.id)
-                        
+
                         return (
                           <div key={metric.id} className="flex items-center space-x-2">
                             <div
@@ -836,13 +869,12 @@ export default function PerformanceGraph({
                               title={hasData ? "Click to toggle" : "No data available"}
                             />
                             <span
-                              className={`text-xs cursor-pointer flex-1 ${
-                                !hasData 
+                              className={`text-xs cursor-pointer flex-1 ${!hasData
                                   ? "text-red-400 line-through opacity-60"
-                                  : isActive 
-                                    ? "text-foreground" 
+                                  : isActive
+                                    ? "text-foreground"
                                     : "text-muted-foreground"
-                              }`}
+                                }`}
                               onClick={() => hasData && toggleMetric(metric.id)}
                               title={hasData ? "Click to toggle" : "No data available for this metric"}
                             >
