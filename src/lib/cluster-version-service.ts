@@ -9,6 +9,7 @@ export interface ClusterVersion {
 }
 
 import { getClusterVersionColor as getColorFromUtils } from './core-ui-utilities'
+import { AVAILABLE_CLUSTER_VERSIONS } from '@/src/lib/config/defaults'
 
 // Cache for cluster versions
 let cachedClusterVersions: ClusterVersion[] | null = null
@@ -24,12 +25,12 @@ export async function getAvailableClusterVersions(): Promise<ClusterVersion[]> {
     // For server-side calls, import and use the database service directly
     // This avoids the fetch() issue during SSR
     let clusterIds: string[]
-    
+
     if (typeof window === 'undefined') {
       // Server-side: use database service directly
       const { getDatabaseService } = await import('@/src/lib/database-connection-pool')
       const databaseService = await getDatabaseService()
-      
+
       const query = `
         SELECT DISTINCT 
           COALESCE(params->>'cluster_version', 'unknown') as cluster_version
@@ -38,7 +39,7 @@ export async function getAvailableClusterVersions(): Promise<ClusterVersion[]> {
           AND params->>'cluster_version' != ''
         ORDER BY cluster_version
       `
-      
+
       const results = await databaseService.pool.query(query, [])
       clusterIds = results.rows.map((row: any) => row.cluster_version)
     } else {
@@ -49,13 +50,17 @@ export async function getAvailableClusterVersions(): Promise<ClusterVersion[]> {
       }
       clusterIds = await response.json()
     }
-    
+
+    // Filter to only curated cluster versions
+    // Users can run against arbitrary cluster versions, but front pages only show curated results
+    clusterIds = clusterIds.filter(id => (AVAILABLE_CLUSTER_VERSIONS as readonly string[]).includes(id))
+
     // Transform database cluster IDs into ClusterVersion objects
     const clusterVersions: ClusterVersion[] = clusterIds.map((id, index) => {
       // Extract version number from ID (e.g., "7.1.1-3175-enterprise" -> "7.1.1")
       const versionMatch = id.match(/^(\d+\.\d+\.\d+)/)
       const versionName = versionMatch ? versionMatch[1] : id
-      
+
       return {
         id: id,
         name: versionName,
@@ -65,34 +70,28 @@ export async function getAvailableClusterVersions(): Promise<ClusterVersion[]> {
         description: `Cluster version ${versionName} from performance database`
       }
     })
-    
+
     // Cache the results
     cachedClusterVersions = clusterVersions
     return clusterVersions
-    
+
   } catch (error) {
     console.error('Error fetching cluster versions:', error)
-    
-    // Fallback to default versions if API fails
-    const fallbackVersions: ClusterVersion[] = [
-      {
-        id: "7.1.1-3175-enterprise",
-        name: "7.1.1",
-        color: getColorFromUtils("7.1.1-3175-enterprise"),
-        releaseDate: "2021-09-15",
+
+    // Fallback to curated versions if API fails
+    const fallbackVersions: ClusterVersion[] = AVAILABLE_CLUSTER_VERSIONS.map((id) => {
+      const versionMatch = id.match(/^(\d+\.\d+\.\d+)/)
+      const versionName = versionMatch ? versionMatch[1] : id
+      return {
+        id,
+        name: versionName,
+        color: getColorFromUtils(id),
+        releaseDate: "2023-01-01",
         isActive: true,
-        description: "Baseline version with standard performance",
-      },
-      {
-        id: "7.1.2-3454-enterprise",
-        name: "7.1.2",
-        color: getColorFromUtils("7.1.2-3454-enterprise"),
-        releaseDate: "2022-02-10",
-        isActive: true,
-        description: "Performance improvements for KV operations",
+        description: `Cluster version ${versionName}`,
       }
-    ]
-    
+    })
+
     cachedClusterVersions = fallbackVersions
     return fallbackVersions
   }
@@ -104,11 +103,11 @@ export function getClusterVersionById(id: string): ClusterVersion | undefined {
   if (cachedClusterVersions) {
     return cachedClusterVersions.find((version) => version.id === id)
   }
-  
+
   // Fallback: create a temporary cluster version object if data isn't loaded yet
   const versionMatch = id.match(/^(\d+\.\d+\.\d+)/)
   const versionName = versionMatch ? versionMatch[1] : id
-  
+
   return {
     id: id,
     name: versionName,
