@@ -60,7 +60,7 @@ export const CustomTooltip: React.FC<TooltipProps> = ({
                   <span>Cluster {item.clusterName}</span>
                 </div>
               )}
-              {showRunCount && item.runCount && (
+              {showRunCount && item.runCount > 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
                   {item.runCount} run{item.runCount !== 1 ? "s" : ""}
                 </p>
