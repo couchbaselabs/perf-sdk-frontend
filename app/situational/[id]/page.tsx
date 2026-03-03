@@ -288,6 +288,7 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
                   {/* <TableHead>CSP</TableHead> */}
                   <TableHead>Status</TableHead>
                   <TableHead>Score</TableHead>
+                  <TableHead>CI</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -321,6 +322,35 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
                       </TableCell>
                       <TableCell>
                         <ScoreBadge value={run.score} />
+                      </TableCell>
+                      <TableCell>
+                        {run.ciUrl && run.ciUrl !== 'not-available' ? (() => {
+                          const isGitHub = run.ciUrl.includes('github.com')
+                          const isJenkins = run.ciUrl.includes('jenkins')
+                          // Extract run/build number from URL
+                          // GHA:     https://github.com/couchbaselabs/fit-app-deployment/actions/runs/22302891436
+                          // Jenkins: https://sdk.jenkins.couchbase.com/job/jvm/job/transactions/job/TransactionsFITPerformer_SinglePerformer/1803/
+                          const runIdMatch = isGitHub
+                            ? run.ciUrl.match(/\/runs\/(\d+)/)
+                            : run.ciUrl.match(/\/(\d+)\/?$/)
+                          const runNumber = runIdMatch?.[1] || ''
+                          const label = isGitHub ? 'GitHub' : isJenkins ? 'Jenkins' : 'CI'
+                          const badgeColor = 'bg-white text-slate-900 border border-slate-200 hover:bg-slate-50'
+
+                          return (
+                            <a
+                              href={run.ciUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors shadow-sm ${badgeColor}`}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              {label}{runNumber ? ` #${runNumber}` : ''}
+                            </a>
+                          )
+                        })() : (
+                          <span className="text-slate-400 text-sm">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <Link href={`/situational/${resolvedParams.id}/run/${run.id}`}>
@@ -448,6 +478,6 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
           </Card>
         </div>
       </div>
-    </AppLayout>
+    </AppLayout >
   )
 }

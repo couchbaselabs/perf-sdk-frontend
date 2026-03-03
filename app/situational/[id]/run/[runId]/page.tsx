@@ -362,14 +362,34 @@ export default function SituationalRunDetailPage({
                   <span className="font-medium">Run ID:</span>{" "}
                   <span className="font-mono text-muted-foreground">{runData.id}</span>
                 </div>
-                {runData.ciUrl && runData.ciUrl !== 'not-available' && (
-                  <div>
-                    <span className="font-medium">CI Job:</span>{" "}
-                    <a href={runData.ciUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                      View CI Job
-                    </a>
-                  </div>
-                )}
+                {runData.ciUrl && runData.ciUrl !== 'not-available' && (() => {
+                  const isGitHub = runData.ciUrl.includes('github.com')
+                  const isJenkins = runData.ciUrl.includes('jenkins')
+                  // Extract run/build number from URL
+                  // GHA:     https://github.com/couchbaselabs/fit-app-deployment/actions/runs/22302891436
+                  // Jenkins: https://sdk.jenkins.couchbase.com/job/jvm/job/transactions/job/TransactionsFITPerformer_SinglePerformer/1803/
+                  const runIdMatch = isGitHub
+                    ? runData.ciUrl.match(/\/runs\/(\d+)/)
+                    : runData.ciUrl.match(/\/(\d+)\/?$/)
+                  const runNumber = runIdMatch?.[1] || ''
+                  const label = isGitHub ? 'GitHub Actions' : isJenkins ? 'Jenkins' : 'CI'
+                  const badgeColor = 'bg-white text-slate-900 border border-slate-200 hover:bg-slate-50'
+
+                  return (
+                    <div>
+                      <span className="font-medium">CI Job:</span>{" "}
+                      <a
+                        href={runData.ciUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors shadow-sm ${badgeColor}`}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        {label}{runNumber ? ` #${runNumber}` : ''}
+                      </a>
+                    </div>
+                  )
+                })()}
                 {runData.openShiftProject && (
                   <div>
                     <span className="font-medium">OpenShift Project:</span>{" "}

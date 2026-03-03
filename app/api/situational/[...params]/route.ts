@@ -83,7 +83,7 @@ async function handleAllSituationalRuns(request: NextRequest) {
   const database = await getDatabaseService()
   const url = new URL(request.url)
   const params = url.searchParams
-  
+
   const rows = await database.getSituationalRuns()
 
   // Normalize to the front-end SituationalRun shape
@@ -103,6 +103,8 @@ async function handleAllSituationalRuns(request: NextRequest) {
     const description = details?.workload?.situational ?? details?.workload?.name ?? null
     const clusterVersion = details?.cluster?.version ?? details?.clusterVersion ?? details?.vars?.clusterVersion ?? '-'
 
+    const ciUrl = details?.debug?.ciUrl ?? undefined
+
     return {
       id,
       started,
@@ -115,6 +117,7 @@ async function handleAllSituationalRuns(request: NextRequest) {
       environment,
       clusterVersion,
       description,
+      ciUrl,
     }
   })
 
@@ -154,6 +157,7 @@ async function handleSituationalRunsList(request: NextRequest, situationalRunId:
       clusterVersion: params?.cluster?.version ?? '-',
       environment: params?.vars?.environment ?? '-',
       status: 'completed' as const,
+      ciUrl: params?.debug?.ciUrl ?? undefined,
     }
   })
 
@@ -170,14 +174,14 @@ async function handleSpecificRunDetails(request: NextRequest, situationalRunId: 
     situationalRunId,
     runId
   }
-  
+
   logger.info('Getting situational run-run details', query)
   const dashboardService = await getDashboardService()
   const databaseService = await getDatabaseService()
-  
+
   // Get the run details first
   const runDetails = await dashboardService.genSituationalRunRun(query)
-  
+
   // Get buckets to determine first bucket time for correct event timing
   const buckets = await databaseService.getBucketsByRunId(runId)
   // The first bucket time should be the datetime of the first bucket data point
@@ -186,7 +190,7 @@ async function handleSpecificRunDetails(request: NextRequest, situationalRunId: 
     firstBucketTime = new Date(buckets[0].datetime).getTime()
     logger.debug('First bucket time computed', { datetime: buckets[0].datetime, firstBucketTime })
   }
-  
+
   // Get events with correct timing and error summary
   const [rawEvents, errorsSummary] = await Promise.all([
     databaseService.getEvents(runId, firstBucketTime, false),
@@ -199,7 +203,7 @@ async function handleSpecificRunDetails(request: NextRequest, situationalRunId: 
     datetime: e?.datetime,
     params: e?.params ?? {}
   }))
-  
+
   const resp: ApiResponse<SituationalRunDetailResponse> = { success: true, data: { runDetails, events, errorsSummary } }
   return NextResponse.json(resp)
 }
