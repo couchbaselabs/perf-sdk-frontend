@@ -117,21 +117,6 @@ export const AVAILABLE_METRICS = [
   { id: "operations_total", label: "Total Operations", unit: "ops" },
   { id: "operations_success", label: "Successful Operations", unit: "ops" },
   { id: "operations_failed", label: "Failed Operations", unit: "ops" },
-  // System metrics - memory (reported by performers)
-  // { id: "memHeapUsedMB", label: "Heap Memory Used (MB)", unit: "MB" },
-  // { id: "memHeapMaxMB", label: "Heap Memory Max (MB)", unit: "MB" },
-  // { id: "memDirectUsedMB", label: "Direct Memory Used (MB)", unit: "MB" },
-  // { id: "memDirectMaxMB", label: "Direct Memory Max (MB)", unit: "MB" },
-  // { id: "memRssUsedMB", label: "RSS Memory Used (MB)", unit: "MB" },
-  // { id: "memVmsMB", label: "VMS Memory (MB)", unit: "MB" },
-  // { id: "freeSwapSizeMB", label: "Free Swap Size (MB)", unit: "MB" },
-  // // System metrics - CPU (reported by performers)
-  // { id: "processCpu", label: "Process CPU (%)", unit: "%" },
-  // { id: "systemCpu", label: "System CPU (%)", unit: "%" },
-  // // System metrics - threads & GC (reported by performers)
-  // { id: "threadCount", label: "Thread Count", unit: "" },
-  // { id: "gc0AccTimeMs", label: "GC Accumulated Time (ms)", unit: "ms" },
-  // { id: "gc0Count", label: "GC Collection Count", unit: "" },
 ] as const
 
 // Language mappings
