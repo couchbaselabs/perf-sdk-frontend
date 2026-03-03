@@ -41,10 +41,10 @@ interface HomeContentProps {
 
 export default function HomeContent({ initialData }: HomeContentProps) {
   const searchParams = useSearchParams()
-  
+
   const [activeTab, setActiveTab] = useState("classic")
   const [excludeSnapshots, setExcludeSnapshots] = useState(true)
-  const [selectedClusterVersions, setSelectedClusterVersions] = useState<string[]>([...DEFAULT_CLUSTERS])
+  const [selectedClusterVersion, setSelectedClusterVersion] = useState<string>(DEFAULT_CLUSTERS[0])
   const [visibleOperations, setVisibleOperations] = useState<string[]>(CORE_OPERATIONS.slice(0, 3).map((op) => op.id))
   const [visibleScaling, setVisibleScaling] = useState<string[]>(SCALING_OPERATIONS.map((op) => op.id))
   const [visibleMetrics, setVisibleMetrics] = useState<string[]>(SYSTEM_METRICS.map((op) => op.id))
@@ -58,7 +58,6 @@ export default function HomeContent({ initialData }: HomeContentProps) {
 
   // Derived from queries
   const [allVersions, setAllVersions] = useState<string[]>([])
-  const [allClusters, setAllClusters] = useState<string[]>(['7.1.1-3175-enterprise'])
   const [reloadTrigger, setReloadTrigger] = useState(0)
 
   // Load versions and clusters with React Query
@@ -70,13 +69,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     refetchOnWindowFocus: true,
     staleTime: 0,
   })
-  const clustersQuery = useQuery({
-    queryKey: ['clusters'],
-    queryFn: async () => apiClient.getClusters(),
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    staleTime: 0,
-  })
+
 
   // Runs query (refetch every time the page becomes active)
   const runsQuery = useQuery({
@@ -121,18 +114,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     }
   }, [versionsQuery.data, includeSnapshots])
 
-  useEffect(() => {
-    if (clustersQuery.data?.success) {
-      setAllClusters(clustersQuery.data.data)
-      logger.debug('Loaded clusters:', { count: clustersQuery.data.data.length })
-      if (!selectedClusterVersions || selectedClusterVersions.length === 0) {
-        const defaults = DEFAULT_CLUSTERS.filter((c) => clustersQuery.data!.data.includes(c))
-        if (defaults.length > 0) {
-          setSelectedClusterVersions(defaults)
-        }
-      }
-    }
-  }, [clustersQuery.data])
+
 
   // SDK change logging
   useEffect(() => {
@@ -171,43 +153,48 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     if (isLoading || !runsData || (runsData as any[]).length === 0) {
       return []
     }
-    
+
     let relevantRuns = (runsData as any[]).filter((run: any) => {
       const clusterVersion = run.params?.cluster?.version || ''
       const statusMatch = run.status === 'completed'
-      const clusterMatch = selectedClusterVersions.length === 0 || selectedClusterVersions.includes(clusterVersion)
+      const clusterMatch = clusterVersion === selectedClusterVersion
       const version: string = run.params?.impl?.version || ''
       const isGerrit = version.startsWith('refs/')
       return clusterMatch && statusMatch && !isGerrit
     })
 
     if (excludeSnapshots) {
-      relevantRuns = relevantRuns.filter(run => 
+      relevantRuns = relevantRuns.filter(run =>
         !run.params.impl?.version?.includes('-')
       )
     }
 
     return relevantRuns
-  }, [runsData, selectedClusterVersions, excludeSnapshots, isLoading])
+  }, [runsData, selectedClusterVersion, excludeSnapshots, isLoading])
 
   // Chart data using shared utilities
   const chartData = useMemo(() => {
     return aggregateHomeChartData(
       filteredRuns,
-      selectedClusterVersions,
+      [selectedClusterVersion],
       currentSdk,
       selectedMetric,
       allVersions,
       [...ALL_OPERATIONS],
       getSdkVersionById
     )
-  }, [filteredRuns, selectedClusterVersions, currentSdk, selectedMetric, allVersions])
+  }, [filteredRuns, selectedClusterVersion, currentSdk, selectedMetric, allVersions])
 
   // Event handlers
   const handleExcludeSnapshotsChange = (checked: boolean) => setExcludeSnapshots(checked)
-  const { handleRefresh } = useRefreshHandler(() => setReloadTrigger(prev => prev + 1))
-  const handleClusterVersionsChange = useCallback((versions: string[]) => setSelectedClusterVersions(versions), [])
-  const activeClusterVersion = selectedClusterVersions[0] ?? DEFAULT_CLUSTERS[0]
+  const { handleRefresh } = useRefreshHandler(async () => {
+    await Promise.all([
+      runsQuery.refetch(),
+      versionsQuery.refetch(),
+    ])
+    setReloadTrigger(prev => prev + 1)
+  })
+  const activeClusterVersion = selectedClusterVersion || DEFAULT_CLUSTERS[0]
 
   const toggleOperation = useCallback((operationId: string) => {
     if (visibleOperations.includes(operationId)) {
@@ -251,14 +238,10 @@ export default function HomeContent({ initialData }: HomeContentProps) {
 
   const generateTitle = useCallback(() => {
     const sdkInfo = getSdkVersionById(currentSdk)
-    const clusterCount = selectedClusterVersions.length
-
-    if (clusterCount === 1) {
-      return `${sdkInfo?.name || "SDK"} Performance: Cluster ${selectedClusterVersions[0]}`
-    } else {
-      return `${sdkInfo?.name || "SDK"} Performance: Multiple Clusters`
-    }
-  }, [currentSdk, selectedClusterVersions])
+    const versionMatch = selectedClusterVersion.match(/^(\d+\.\d+\.\d+)/)
+    const versionLabel = versionMatch ? versionMatch[1] : selectedClusterVersion
+    return `${sdkInfo?.name || "SDK"} Performance: Cluster ${versionLabel}`
+  }, [currentSdk, selectedClusterVersion])
 
   const exportAllData = useCallback(() => {
     if (!chartData) return
@@ -297,7 +280,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     <AppLayout>
       <div className="container mx-auto py-6 px-6 max-w-7xl overflow-x-hidden">
         {/* Use the new HeaderSection */}
-        <HeaderSection 
+        <HeaderSection
           title={generateTitle()}
           onRefresh={handleRefresh}
           onExport={exportAllData}
@@ -305,8 +288,8 @@ export default function HomeContent({ initialData }: HomeContentProps) {
 
         {/* Use the new FiltersSection */}
         <FiltersSection
-          selectedClusterVersions={selectedClusterVersions}
-          onClusterVersionsChange={handleClusterVersionsChange}
+          selectedClusterVersion={selectedClusterVersion}
+          onClusterVersionChange={setSelectedClusterVersion}
           excludeSnapshots={excludeSnapshots}
           onExcludeSnapshotsChange={handleExcludeSnapshotsChange}
         />

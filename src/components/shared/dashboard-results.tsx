@@ -47,13 +47,13 @@ interface DashboardResultsProps {
 function JsonPopup({ data, title, triggerText }: { data: any, title: string, triggerText: string }) {
   const [isOpen, setIsOpen] = useState(false)
   const [copied, setCopied] = useState(false)
-  
+
   if (!data) return null
-  
+
   // Count the number of fields in the object
   const fieldCount = typeof data === 'object' ? Object.keys(data).length : 0
   const jsonString = JSON.stringify(data, null, 2)
-  
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(jsonString)
@@ -63,20 +63,20 @@ function JsonPopup({ data, title, triggerText }: { data: any, title: string, tri
       console.error('Failed to copy:', err)
     }
   }
-  
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="h-8 px-2 text-xs font-normal bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md shadow-sm text-blue-700 hover:text-blue-800"
         >
           <Info className="h-3 w-3 mr-1" />
           {triggerText}
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
+      <PopoverContent
         className="w-[700px] max-h-[600px] overflow-hidden p-0 shadow-2xl border border-gray-300 bg-white rounded-lg"
         align="start"
         side="top"
@@ -98,7 +98,7 @@ function JsonPopup({ data, title, triggerText }: { data: any, title: string, tri
             {copied ? 'Copied!' : 'Copy JSON'}
           </Button>
         </div>
-        
+
         {/* JSON content */}
         <div className="p-6">
           <div className="max-h-[450px] overflow-y-auto bg-gray-50 p-4 rounded-md border">
@@ -128,8 +128,8 @@ export default function DashboardResults({ input, title, description, keyProp, s
   const [errors, setErrors] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showRuns, setShowRuns] = useState(false)
-  const [lastRequestId, setLastRequestId] = useState(0)
-  
+
+
   // Use ref to track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true)
   useEffect(() => {
@@ -141,18 +141,18 @@ export default function DashboardResults({ input, title, description, keyProp, s
 
   // Determine if this is a single run input
   const isSingleRun = 'runId' in input
-  
+
   // Extract SDK language from input for dynamic props
-  const sdkLanguage = !isSingleRun && 'databaseCompare' in input 
+  const sdkLanguage = !isSingleRun && 'databaseCompare' in input
     ? String((input as DashboardInput).databaseCompare?.impl?.language || 'Java')
     : 'Java'
-  
+
   // Memoize input serialization to prevent unnecessary re-renders
   // This is the key fix - we serialize the input object to detect actual changes
   const inputKey = useMemo(() => {
     return JSON.stringify(input)
   }, [input])
-  
+
   const query = useQuery({
     // CRITICAL FIX: Include title in queryKey to prevent cache conflicts between different chart types
     // This ensures each chart maintains its own cache and doesn't interfere with others
@@ -175,9 +175,9 @@ export default function DashboardResults({ input, title, description, keyProp, s
   })
 
   useEffect(() => {
-    if (query.isLoading) setIsLoading(true)
+    if (query.isFetching) setIsLoading(true)
     else setIsLoading(false)
-  }, [query.isLoading])
+  }, [query.isFetching])
 
   useEffect(() => {
     if (query.error) setErrors((query.error as Error).message)
@@ -201,10 +201,10 @@ export default function DashboardResults({ input, title, description, keyProp, s
   // Only manually refetch when keyProp changes (for SDK selection refresh)
   // FIXED: Remove 'query' from dependencies to prevent infinite loop
   useEffect(() => {
-    if (keyProp) { 
+    if (keyProp) {
       console.log("DashboardResults: Refreshing due to keyProp change", { title, keyProp })
-      // Clear state and trigger fresh fetch
-      setResults(null)
+      // Don't clear results - keep displaying existing data until new data arrives
+      // Setting results to null caused a race condition where "No data available" would flash
       setErrors(null)
       query.refetch()
     }
@@ -247,15 +247,15 @@ export default function DashboardResults({ input, title, description, keyProp, s
           return { label: "Failed Operations", unit: "ops" }
       }
     }
-    
+
     // Fallback to AVAILABLE_METRICS for duration-based metrics
-    return AVAILABLE_METRICS.find(m => m.id === selectedMetric) || 
-           { label: "Performance", unit: "units" }
+    return AVAILABLE_METRICS.find(m => m.id === selectedMetric) ||
+      { label: "Performance", unit: "units" }
   }, [input, selectedMetric])
 
   const metricInfo = getMetricInfo()
 
-  if (isLoading) {
+  if (isLoading && !results) {
     return (
       <Card className="w-full">
         <CardHeader>
@@ -295,9 +295,9 @@ export default function DashboardResults({ input, title, description, keyProp, s
             <AlertDescription>{errors}</AlertDescription>
           </Alert>
           <div className="flex gap-2 mt-4">
-            <Button 
-              onClick={handleRefresh} 
-              variant="outline" 
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
               size="sm"
               disabled={isLoading}
             >
@@ -345,9 +345,17 @@ export default function DashboardResults({ input, title, description, keyProp, s
   return (
     <div className="w-full space-y-4">
       {/* Chart rendering - matches Vue Results.vue */}
-      <div className="graph">
+      <div className="graph relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 z-10 flex items-center justify-center rounded-lg">
+            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-full shadow-md border">
+              <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />
+              <span className="text-sm text-muted-foreground">Refreshing...</span>
+            </div>
+          </div>
+        )}
         {results.data?.type === 'bar' && (
-          <PerformanceBarChart 
+          <PerformanceBarChart
             title={title}
             description={description}
             metric={selectedMetric}
@@ -375,7 +383,7 @@ export default function DashboardResults({ input, title, description, keyProp, s
         )}
         {results.data?.type === 'line' && (
           <>
-            <PerformanceGraph 
+            <PerformanceGraph
               runId={""}
               data={results.data?.data as any}
               title={title}
@@ -383,7 +391,7 @@ export default function DashboardResults({ input, title, description, keyProp, s
               height={400}
             />
             <div className="text-sm text-muted-foreground mt-2">
-              Time: All runs are shown starting from time '0' to allow them to be displayed together. 
+              Time: All runs are shown starting from time '0' to allow them to be displayed together.
               Mouseover points to see the wallclock times.
             </div>
           </>
@@ -429,100 +437,100 @@ export default function DashboardResults({ input, title, description, keyProp, s
           {/* Run details table - improved version */}
           {showRuns && results.data?.runs && results.data.runs.length > 0 && (
             <div className="mt-4">
-            <div className="space-y-4">
-              <h4 className="font-medium">Matched Runs ({results.data.runs.length}):</h4>
-              <div className="max-h-96 overflow-y-auto border rounded-lg">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background">
-                    <TableRow>
-                      <TableHead className="w-[140px]">Date & Time</TableHead>
-                      <TableHead className="w-[120px]">Run ID</TableHead>
-                      <TableHead className="w-[120px]">SDK Version</TableHead>
-                      <TableHead className="w-[150px]">Cluster</TableHead>
-                      <TableHead className="w-[150px]">Workload</TableHead>
-                      <TableHead className="w-[150px]">Vars</TableHead>
-                      <TableHead className="text-right w-[100px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {results.data.runs
-                      .sort((a: any, b: any) => {
-                        // Sort by datetime in descending order (most recent first)
-                        const dateA = new Date(a.datetime).getTime()
-                        const dateB = new Date(b.datetime).getTime()
-                        return dateB - dateA
-                      })
-                      .map((run: any, index: number) => {
-                      const runId = run.run_id || run.id || `Run ${index + 1}`
-                      const formatDate = (dateStr: string) => {
-                        try {
-                          return new Date(dateStr).toLocaleString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })
-                        } catch {
-                          return dateStr
-                        }
-                      }
-                      
-                      return (
-                        <TableRow key={runId} className="hover:bg-muted/50">
-                          <TableCell className="font-medium text-sm">{formatDate(run.datetime)}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="font-mono text-xs">
-                              {runId.length > 8 ? `${runId.slice(0, 8)}...` : runId}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {run.params?.impl && (
-                              <div className="space-y-1">
-                                <SdkBadge value={run.params.impl.language} />
-                                <VersionBadge 
-                                  value={run.params.impl.version?.length > 12 
-                                    ? `${run.params.impl.version.slice(0, 12)}...` 
-                                    : run.params.impl.version}
+              <div className="space-y-4">
+                <h4 className="font-medium">Matched Runs ({results.data.runs.length}):</h4>
+                <div className="max-h-96 overflow-y-auto border rounded-lg">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-background">
+                      <TableRow>
+                        <TableHead className="w-[140px]">Date & Time</TableHead>
+                        <TableHead className="w-[120px]">Run ID</TableHead>
+                        <TableHead className="w-[120px]">SDK Version</TableHead>
+                        <TableHead className="w-[150px]">Cluster</TableHead>
+                        <TableHead className="w-[150px]">Workload</TableHead>
+                        <TableHead className="w-[150px]">Vars</TableHead>
+                        <TableHead className="text-right w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {results.data.runs
+                        .sort((a: any, b: any) => {
+                          // Sort by datetime in descending order (most recent first)
+                          const dateA = new Date(a.datetime).getTime()
+                          const dateB = new Date(b.datetime).getTime()
+                          return dateB - dateA
+                        })
+                        .map((run: any, index: number) => {
+                          const runId = run.run_id || run.id || `Run ${index + 1}`
+                          const formatDate = (dateStr: string) => {
+                            try {
+                              return new Date(dateStr).toLocaleString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            } catch {
+                              return dateStr
+                            }
+                          }
+
+                          return (
+                            <TableRow key={runId} className="hover:bg-muted/50">
+                              <TableCell className="font-medium text-sm">{formatDate(run.datetime)}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  {runId.length > 8 ? `${runId.slice(0, 8)}...` : runId}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {run.params?.impl && (
+                                  <div className="space-y-1">
+                                    <SdkBadge value={run.params.impl.language} />
+                                    <VersionBadge
+                                      value={run.params.impl.version?.length > 12
+                                        ? `${run.params.impl.version.slice(0, 12)}...`
+                                        : run.params.impl.version}
+                                    />
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <JsonPopup
+                                  data={run.params?.cluster}
+                                  title="Cluster Configuration"
+                                  triggerText="Cluster"
                                 />
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="p-2">
-                            <JsonPopup
-                              data={run.params?.cluster}
-                              title="Cluster Configuration"
-                              triggerText="Cluster"
-                            />
-                          </TableCell>
-                          <TableCell className="p-2">
-                            <JsonPopup
-                              data={run.params?.workload}
-                              title="Workload Configuration"
-                              triggerText="Workload"
-                            />
-                          </TableCell>
-                          <TableCell className="p-2">
-                            <JsonPopup
-                              data={run.params?.vars}
-                              title="Variables Configuration"
-                              triggerText="Variables"
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/run/${runId}?metric=${encodeURIComponent(selectedMetric)}`}>
-                                <ExternalLink className="h-3 w-3" />
-                              </Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <JsonPopup
+                                  data={run.params?.workload}
+                                  title="Workload Configuration"
+                                  triggerText="Workload"
+                                />
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <JsonPopup
+                                  data={run.params?.vars}
+                                  title="Variables Configuration"
+                                  triggerText="Variables"
+                                />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button variant="ghost" size="sm" asChild>
+                                  <Link href={`/run/${runId}?metric=${encodeURIComponent(selectedMetric)}`}>
+                                    <ExternalLink className="h-3 w-3" />
+                                  </Link>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
-            </div>
             </div>
           )}
         </CardContent>

@@ -1,70 +1,90 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Checkbox } from "@/src/components/ui/checkbox"
 import { Label } from "@/src/components/ui/label"
-import VersionSelector from "@/src/components/shared/version-selector"
-import { Badge } from "@/src/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/src/components/ui/tooltip"
-import { Button } from "@/src/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/src/components/ui/card"
 import { getClusterVersionById, getAvailableClusterVersions } from "@/src/lib/cluster-version-service"
+import type { ClusterVersion } from "@/src/lib/cluster-version-service"
 
 interface FiltersSectionProps {
-  selectedClusterVersions: string[]
-  onClusterVersionsChange: (versions: string[]) => void
+  selectedClusterVersion: string
+  onClusterVersionChange: (version: string) => void
   excludeSnapshots: boolean
   onExcludeSnapshotsChange: (checked: boolean) => void
 }
 
 export function FiltersSection({
-  selectedClusterVersions,
-  onClusterVersionsChange,
+  selectedClusterVersion,
+  onClusterVersionChange,
   excludeSnapshots,
   onExcludeSnapshotsChange
 }: FiltersSectionProps) {
+  const [availableVersions, setAvailableVersions] = useState<ClusterVersion[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const loadVersions = async () => {
+      try {
+        setIsLoading(true)
+        const versions = await getAvailableClusterVersions()
+        setAvailableVersions(versions)
+      } catch (err) {
+        console.error('Error fetching cluster versions:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadVersions()
+  }, [])
+
+  const selectedInfo = getClusterVersionById(selectedClusterVersion)
+
   return (
     <div className="grid grid-cols-1 gap-4 mb-6">
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Cluster Versions</CardTitle>
-          <CardDescription>Select cluster versions to compare</CardDescription>
+          <CardTitle className="text-sm font-medium">Cluster Version</CardTitle>
+          <CardDescription>Select the cluster version to view results for</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-3">
-            <VersionSelector
-              title="Cluster Versions"
-              selectedVersions={selectedClusterVersions}
-              onChange={onClusterVersionsChange}
-              maxSelections={3}
-              fetchVersions={async () => {
-                const versions = await getAvailableClusterVersions()
-                return versions.map((version: any) => ({
-                  id: version.id,
-                  name: version.name,
-                  color: version.color
-                }))
-              }}
-              placeholder="Select Cluster Versions"
-            />
+            <div className="flex items-center gap-3">
+              <Select
+                value={selectedClusterVersion}
+                onValueChange={onClusterVersionChange}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue placeholder={isLoading ? "Loading..." : "Select Cluster Version"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableVersions.map((version) => (
+                    <SelectItem key={version.id} value={version.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full border"
+                          style={{ backgroundColor: version.color }}
+                        />
+                        <span>Cluster {version.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            {selectedClusterVersions.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {selectedClusterVersions.map((version) => {
-                  const clusterInfo = getClusterVersionById(version)
-                  return (
-                    <Badge
-                      key={version}
-                      variant="outline"
-                      className="flex items-center gap-1 px-3 py-1"
-                      style={{ borderColor: clusterInfo?.color }}
-                    >
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: clusterInfo?.color }} />
-                      <span>Cluster {clusterInfo?.name}</span>
-                    </Badge>
-                  )
-                })}
-              </div>
-            )}
+              {selectedInfo && (
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: selectedInfo.color }}
+                  />
+                  <span>{selectedInfo.id}</span>
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center space-x-2 pt-2 border-t">
               <Checkbox
