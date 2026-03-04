@@ -86,7 +86,7 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
         const clusterValues: string[] = Array.from(new Set(runsData.map((r: any) => r.clusterVersion).filter(Boolean)))
         const envValues: string[] = Array.from(new Set(runsData.map((r: any) => r.environment).filter(Boolean)))
         const started = runsData[0]?.started || new Date().toISOString()
-        const score = runsData.length ? Math.round(runsData.reduce((a: number, r: any) => a + (r.score ?? 0), 0) / runsData.length) : 0
+        const score = runsData.reduce((a: number, r: any) => a + (r.score ?? 0), 0)
 
         const summary: SituationalRun = {
           id: resolvedParams.id,
