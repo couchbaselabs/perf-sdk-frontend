@@ -513,13 +513,24 @@ export class DatabaseService {
     }
   }
 
-  async getEvents(runId: string, firstBucketTime: any, displayOnGraphOnly: boolean): Promise<RunEvent[]> {
+  async getEventsCount(runId: string): Promise<number> {
+    const result = await this.pool.query(
+      `SELECT COUNT(*) FROM run_events WHERE run_id = $1`,
+      [runId]
+    )
+    return parseInt(result.rows[0].count, 10)
+  }
+
+  async getEvents(runId: string, firstBucketTime: any, displayOnGraphOnly: boolean, limit?: number, offset?: number): Promise<RunEvent[]> {
+    const pagination = (typeof limit === 'number')
+      ? ` ORDER BY r.datetime ASC LIMIT ${limit} OFFSET ${offset ?? 0}`
+      : ' ORDER BY r.datetime ASC'
     const st = `
         SELECT r.datetime,
                r.params
         FROM run_events AS r
         WHERE r.run_id = '${runId}'
-            ${displayOnGraphOnly ? ` AND cast(params::jsonb->>'displayOnGraph' as bool) = true` : ''};`
+            ${displayOnGraphOnly ? ` AND cast(params::jsonb->>'displayOnGraph' as bool) = true` : ''}${pagination};`
 
     const label = "getEvents: " + st
     logger.time(label);
