@@ -247,7 +247,7 @@ export default function OperationsSection({
             <div key={operation.id} className="mb-6">
               <DashboardResults
                 input={dashboardInput}
-                title={`${operation.title} - ${sdkInfo?.name}`}
+                title={`${operation.title} (${operation.threads} thread${operation.threads > 1 ? 's' : ''}) - ${sdkInfo?.name}`}
                 description={operation.description}
                 keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
