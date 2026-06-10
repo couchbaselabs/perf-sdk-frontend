@@ -264,7 +264,8 @@ export function createTransactionInput(
   threads: number,
   excludeSnapshots: boolean = false,
   excludeGerrit: boolean = true,
-  clusterVersion?: string
+  clusterVersion?: string,
+  metricColumn: string = "duration_average_us"
 ): DashboardInput {
   const actualLanguage = LANGUAGE_MAP[language] || language
 
@@ -274,10 +275,9 @@ export function createTransactionInput(
       databaseField: "impl.version",
       resultType: "VersionSemver"
     },
-    // CRITICAL: Vue uses operations_total (throughput) for transactions, not duration_average_us
     yAxes: [{
       type: "buckets",
-      column: "operations_total",
+      column: metricColumn,
       yAxisID: "y"
     }],
     databaseCompare: {
@@ -318,7 +318,8 @@ export function createTransactionReadOnlyInput(
   threads: number,
   excludeSnapshots: boolean = false,
   excludeGerrit: boolean = true,
-  clusterVersion?: string
+  clusterVersion?: string,
+  metricColumn: string = "duration_average_us"
 ): DashboardInput {
   const actualLanguage = LANGUAGE_MAP[language] || language
 
@@ -330,7 +331,7 @@ export function createTransactionReadOnlyInput(
     },
     yAxes: [{
       type: "buckets",
-      column: "duration_average_us",  // Vue uses duration for readonly transactions
+      column: metricColumn,
       yAxisID: "y"
     }],
     databaseCompare: {
