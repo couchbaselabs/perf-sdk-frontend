@@ -23,11 +23,12 @@ import {
   StatusBadge,
   CspBadge,
   ClusterBadge,
-  PrivateLinkBadge
+  PrivateEndpointBadge
 } from "@/src/components/shared/BadgeSystem"
 import JsonViewer from "@/src/components/shared/json-viewer"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
 import { generateS3ConsoleUrl, S3_CONFIG } from "@/src/lib/utils/s3-utils"
+import { privateEndpointLabel } from "@/src/lib/utils/formatting"
 import React from "react"
 
 
@@ -98,8 +99,6 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
           version: versionValues.length <= 1 ? (versionValues[0] || 'unknown') : versionValues,
           description: `Run details for ${resolvedParams.id}`,
           csp: cspValues.length <= 1 ? (cspValues[0] || 'Unknown') : cspValues,
-          privateLink: '',
-          pl: false,
           clusterVersion: clusterValues.length <= 1 ? (clusterValues[0] || 'unknown') : clusterValues,
           environment: envValues[0] || 'Development',
         }
@@ -127,8 +126,6 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
             version: 'unknown',
             description: `Run details for ${resolvedParams.id}`,
             csp: 'Unknown',
-            privateLink: '',
-            pl: false,
             clusterVersion: 'unknown',
             environment: 'Development',
           })
@@ -256,11 +253,6 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
                 </div>
 
                 <div className="mb-4">
-                  <p className="text-gray-500 mb-2">Private Link:</p>
-                  <PrivateLinkBadge value={situationalRun.pl} />
-                </div>
-
-                <div className="mb-4">
                   <p className="text-gray-500 mb-2">
                     Started: {startedDate.toLocaleDateString()} {startedDate.toLocaleTimeString()}
                   </p>
@@ -286,6 +278,7 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
                   <TableHead>SDK</TableHead>
                   <TableHead>Version</TableHead>
                   {/* <TableHead>CSP</TableHead> */}
+                  <TableHead>Private Endpoints</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Score</TableHead>
                   <TableHead>CI</TableHead>
@@ -312,11 +305,14 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
                       <TableCell>
                         <VersionBadge value={run.version} />
                       </TableCell>
-                      {/* 
+                      {/*
                       <TableCell>
                         <CspBadge value={run.csp} />
                       </TableCell>
                       */}
+                      <TableCell>
+                        <PrivateEndpointBadge value={privateEndpointLabel(run.privateEndpointsEnabled)} />
+                      </TableCell>
                       <TableCell>
                         <StatusBadge value={run.status} />
                       </TableCell>
@@ -444,12 +440,6 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
                         <div className="flex flex-col">
                           <dt className="text-sm text-muted-foreground">Runs</dt>
                           <dd>{situationalRun.runs}</dd>
-                        </div>
-                        <div className="flex flex-col">
-                          <dt className="text-sm text-muted-foreground">Private Link</dt>
-                          <dd>
-                            <PrivateLinkBadge value={situationalRun.pl} />
-                          </dd>
                         </div>
                         <div className="flex flex-col">
                           <dt className="text-sm text-muted-foreground">Started</dt>

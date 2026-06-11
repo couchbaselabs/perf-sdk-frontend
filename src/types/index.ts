@@ -13,7 +13,7 @@ export interface SituationalRunSummary {
   sdk?: string
   version?: string
   csp?: string
-  pl?: boolean
+  privateEndpointsEnabled?: boolean | null
   clusterVersion?: string
   environment?: string
   description?: string | null

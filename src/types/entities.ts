@@ -71,8 +71,6 @@ export interface SituationalRun extends BaseEntity {
   version?: string | string[]
   description?: string
   csp?: string | string[]
-  privateLink?: string
-  pl?: boolean
   clusterVersion?: string | string[]
   environment?: string
 }
@@ -92,8 +90,7 @@ export interface IndividualRun extends BaseEntity {
   sdk: string
   version: string
   csp: string
-  privateLink: string
-  pl: boolean
+  privateEndpointsEnabled?: boolean
   clusterVersion: string
   environment: string
   metrics: PerformanceMetrics
