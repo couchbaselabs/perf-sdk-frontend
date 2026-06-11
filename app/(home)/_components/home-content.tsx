@@ -16,7 +16,7 @@ import {
   SCALING_OPERATIONS,
   SYSTEM_METRICS,
   TRANSACTION_OPERATIONS,
-  API_COMPARISON_OPERATIONS,
+  SDK_API_COMPARISONS,
   ALL_OPERATIONS,
   AVAILABLE_METRICS
 } from '@/src/lib/config/constants'
@@ -49,7 +49,9 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   const [visibleScaling, setVisibleScaling] = useState<string[]>(SCALING_OPERATIONS.map((op) => op.id))
   const [visibleMetrics, setVisibleMetrics] = useState<string[]>(SYSTEM_METRICS.map((op) => op.id))
   const [visibleTransactions, setVisibleTransactions] = useState<string[]>(TRANSACTION_OPERATIONS.map((op) => op.id))
-  const [visibleApiComparisons, setVisibleApiComparisons] = useState<string[]>(API_COMPARISON_OPERATIONS.map((op) => op.id))
+  const [visibleApiComparisons, setVisibleApiComparisons] = useState<string[]>(
+    (Object.values(SDK_API_COMPARISONS) as readonly (typeof SDK_API_COMPARISONS[keyof typeof SDK_API_COMPARISONS])[]).flat().map((op) => op.id)
+  )
   const [selectedMetric, setSelectedMetric] = useState("duration_average_us")
   const [currentSdk, setCurrentSdk] = useState<string>(() => {
     const urlSdk = searchParams?.get('sdk')
@@ -254,7 +256,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
       ...SCALING_OPERATIONS.map(op => ({ ...op, category: 'Horizontal Scaling' })),
       ...SYSTEM_METRICS.map(op => ({ ...op, category: 'System Metrics' })),
       ...TRANSACTION_OPERATIONS.map(op => ({ ...op, category: 'Transactions' })),
-      ...API_COMPARISON_OPERATIONS.map(op => ({ ...op, category: 'API Comparisons' }))
+      ...(Object.values(SDK_API_COMPARISONS) as readonly (typeof SDK_API_COMPARISONS[keyof typeof SDK_API_COMPARISONS])[]).flat().map(op => ({ ...op, category: 'API Comparisons' }))
     ]
 
     Object.entries(chartData).forEach(([operationId, data]) => {
