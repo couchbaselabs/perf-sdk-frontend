@@ -481,7 +481,8 @@ export default function DashboardResults({ input, title, description, keyProp, s
                                 month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
-                                minute: '2-digit'
+                                minute: '2-digit',
+                                timeZoneName: 'short'
                               })
                             } catch {
                               return dateStr

@@ -20,7 +20,7 @@ export const dateFormatters = {
         return (dateInput as any).date ?? (dateInput as any).started ?? (dateInput as any).value ?? (dateInput as any).defined ?? String(dateInput)
       })()
       const d = new Date(String(raw))
-      return Number.isFinite(d.getTime()) ? d.toLocaleString() : String(raw ?? 'Invalid date')
+      return Number.isFinite(d.getTime()) ? d.toLocaleString('en-US', { timeZoneName: 'short' }) : String(raw ?? 'Invalid date')
     } catch (e) {
       return String(dateInput ?? 'Invalid date')
     }
