@@ -164,12 +164,9 @@ export default function DashboardResults({ input, title, description, keyProp, s
       }
       return apiClient.getDashboardQuery(input)
     },
-    // CRITICAL FIX: Disable automatic caching to ensure fresh data on navigation
-    staleTime: 0,
-    gcTime: 0, // Previously cacheTime in older versions
-    refetchOnMount: 'always',
+    // Inherit cache settings from the global QueryClient (providers.tsx) so
+    // results are reused across tab switches and revisits instead of refetched.
     refetchOnWindowFocus: false, // Prevent unwanted refetches
-    // Enable retries for better reliability
     retry: 2,
     retryDelay: 1000
   })

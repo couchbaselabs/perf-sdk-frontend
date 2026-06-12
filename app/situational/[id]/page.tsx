@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useSituationalRunsList } from "@/src/shared/hooks/use-data"
 import { Button } from "@/src/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/src/components/ui/table"
 import { Badge } from "@/src/components/ui/badge"
@@ -60,85 +61,47 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
     }
     return params
   }, [params])
-  const [runs, setRuns] = useState<any[]>([])
-  const [situationalRun, setSituationalRun] = useState<SituationalRun | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  // Fetch the individual runs via React Query (cached; replaces the old
+  // useEffect + cache:'no-store' fetch so revisits are instant).
+  const { data: runs = [], isLoading } = useSituationalRunsList(resolvedParams.id)
 
-  // Remove mock generation; fetch real runs for this situational id
+  // Derive the situational-run summary from the individual runs.
+  const situationalRun = useMemo<SituationalRun | null>(() => {
+    const runsData = runs as any[]
+    const sdkValues: string[] = Array.from(new Set(runsData.map((r: any) => r.sdk).filter(Boolean)))
+    const versionValues: string[] = Array.from(new Set(runsData.map((r: any) => r.version).filter(Boolean)))
+    const cspValues: string[] = Array.from(new Set(runsData.map((r: any) => r.csp).filter(Boolean)))
+    const clusterValues: string[] = Array.from(new Set(runsData.map((r: any) => r.clusterVersion).filter(Boolean)))
+    const envValues: string[] = Array.from(new Set(runsData.map((r: any) => r.environment).filter(Boolean)))
+    const started = runsData[0]?.started || new Date().toISOString()
+    const score = runsData.reduce((a: number, r: any) => a + (r.score ?? 0), 0)
 
-  useEffect(() => {
-    let cancelled = false
-    const fetchDetails = async () => {
-      try {
-        setIsLoading(true)
-        const [runsRes] = await Promise.all([
-          fetch(`/api/situational/${resolvedParams.id}/runs`, { cache: 'no-store' }),
-        ])
-
-        const runsPayload = runsRes.ok ? await runsRes.json() : { data: [] as any[] }
-        if (cancelled) return
-        const runsData = Array.isArray(runsPayload) ? runsPayload : (runsPayload?.data ?? [])
-        setRuns(runsData)
-
-        // Derive situationalRun summary from the runs
-        const sdkValues: string[] = Array.from(new Set(runsData.map((r: any) => r.sdk).filter(Boolean)))
-        const versionValues: string[] = Array.from(new Set(runsData.map((r: any) => r.version).filter(Boolean)))
-        const cspValues: string[] = Array.from(new Set(runsData.map((r: any) => r.csp).filter(Boolean)))
-        const clusterValues: string[] = Array.from(new Set(runsData.map((r: any) => r.clusterVersion).filter(Boolean)))
-        const envValues: string[] = Array.from(new Set(runsData.map((r: any) => r.environment).filter(Boolean)))
-        const started = runsData[0]?.started || new Date().toISOString()
-        const score = runsData.reduce((a: number, r: any) => a + (r.score ?? 0), 0)
-
-        const summary: SituationalRun = {
-          id: resolvedParams.id,
-          started,
-          datetime: started,
-          score,
-          runs: runsData.length,
-          sdk: sdkValues.length <= 1 ? (sdkValues[0] || 'unknown') : sdkValues,
-          version: versionValues.length <= 1 ? (versionValues[0] || 'unknown') : versionValues,
-          description: `Run details for ${resolvedParams.id}`,
-          csp: cspValues.length <= 1 ? (cspValues[0] || 'Unknown') : cspValues,
-          clusterVersion: clusterValues.length <= 1 ? (clusterValues[0] || 'unknown') : clusterValues,
-          environment: envValues[0] || 'Development',
-        }
-        setSituationalRun(summary)
-
-        // Add SDK to URL if not already present (for sidebar highlighting)
-        const detectedSdk = Array.isArray(summary.sdk) ? summary.sdk[0] : summary.sdk
-        const normalizedSdk = normalizeDetectedSdk(detectedSdk || '')
-        const currentUrlSdk = searchParams?.get('sdk') || ''
-        if (normalizedSdk && normalizedSdk !== currentUrlSdk) {
-          // Use replace to avoid adding to history
-          router.replace(`/situational/${resolvedParams.id}?sdk=${normalizedSdk}`)
-        }
-      } catch (e) {
-        if (!cancelled) {
-          console.error('Failed to load situational run details:', e)
-          setRuns([])
-          setSituationalRun({
-            id: resolvedParams.id,
-            started: new Date().toISOString(),
-            datetime: new Date().toISOString(),
-            score: 0,
-            runs: 0,
-            sdk: 'unknown',
-            version: 'unknown',
-            description: `Run details for ${resolvedParams.id}`,
-            csp: 'Unknown',
-            clusterVersion: 'unknown',
-            environment: 'Development',
-          })
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
+    return {
+      id: resolvedParams.id,
+      started,
+      datetime: started,
+      score,
+      runs: runsData.length,
+      sdk: sdkValues.length <= 1 ? (sdkValues[0] || 'unknown') : sdkValues,
+      version: versionValues.length <= 1 ? (versionValues[0] || 'unknown') : versionValues,
+      description: `Run details for ${resolvedParams.id}`,
+      csp: cspValues.length <= 1 ? (cspValues[0] || 'Unknown') : cspValues,
+      clusterVersion: clusterValues.length <= 1 ? (clusterValues[0] || 'unknown') : clusterValues,
+      environment: envValues[0] || 'Development',
     }
-    fetchDetails()
-    return () => { cancelled = true }
-  }, [resolvedParams.id, searchParams, router])
+  }, [runs, resolvedParams.id])
 
-  // (Removed legacy mock-based effect)
+  // Keep the sidebar SDK highlight in sync with the detected SDK (URL side-effect).
+  useEffect(() => {
+    if (!situationalRun) return
+    const detectedSdk = Array.isArray(situationalRun.sdk) ? situationalRun.sdk[0] : situationalRun.sdk
+    const normalizedSdk = normalizeDetectedSdk(detectedSdk || '')
+    const currentUrlSdk = searchParams?.get('sdk') || ''
+    if (normalizedSdk && normalizedSdk !== currentUrlSdk) {
+      // Use replace to avoid adding to history
+      router.replace(`/situational/${resolvedParams.id}?sdk=${normalizedSdk}`)
+    }
+  }, [situationalRun, searchParams, router, resolvedParams.id])
 
 
   // Using shared getScoreBadgeColor from @/lib/utils/status

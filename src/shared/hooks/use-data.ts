@@ -115,6 +115,43 @@ export function useSituationalRun(id: string) {
   )
 }
 
+/**
+ * Individual runs within a situational run group.
+ * Hits the consolidated /api/situational/[id]/runs route (same URL the page
+ * previously fetched by hand) but caches the result via React Query, so
+ * back/forward and revisits within the staleTime window are instant.
+ * Returns the runs array directly as `data`.
+ */
+export function useSituationalRunsList(situationalId: string) {
+  return useQuery({
+    queryKey: ['situational', situationalId, 'runs'],
+    queryFn: async (): Promise<any[]> => {
+      const res = await fetch(`/api/situational/${situationalId}/runs`)
+      const payload = res.ok ? await res.json() : { data: [] as any[] }
+      return Array.isArray(payload) ? payload : (payload?.data ?? [])
+    },
+    enabled: !!situationalId,
+  })
+}
+
+/**
+ * Detailed data (runDetails, events, errorsSummary) for a specific run within
+ * a situational run. Mirrors the page's former hand-rolled fetch + fallback,
+ * now cached via React Query. Returns the API `data` payload as `data`.
+ */
+export function useSituationalRunDetail(situationalId: string, runId: string) {
+  return useQuery({
+    queryKey: ['situational', situationalId, 'run', runId],
+    queryFn: async (): Promise<any> => {
+      const res = await fetch(`/api/situational/${situationalId}/run/${runId}`)
+      const fallback = { runDetails: { runs: [] }, events: [], errorsSummary: [] }
+      const payload = res.ok ? await res.json() : { success: false, data: fallback }
+      return payload?.data || fallback
+    },
+    enabled: !!situationalId && !!runId,
+  })
+}
+
 // ==========================================
 // FAAS HOOKS
 // ==========================================

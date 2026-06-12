@@ -7,14 +7,15 @@ import {
 } from 'next-themes'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-// CRITICAL FIX: Configure QueryClient to prevent stale data issues
+// Performance data for a given run/version is immutable, so we cache it.
+// Cached results are served instantly on revisits; only genuinely new
+// selections hit the network.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Ensure fresh data on navigation and component mount
-      staleTime: 0,
+      staleTime: 1000 * 60, // 1 minute: reuse results instead of refetching on every interaction
       gcTime: 1000 * 60 * 5, // 5 minutes
-      refetchOnMount: 'always',
+      refetchOnMount: true, // refetch only when stale, not on every mount
       refetchOnWindowFocus: false,
       retry: 2,
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
