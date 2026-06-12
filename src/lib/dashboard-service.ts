@@ -279,7 +279,7 @@ export class DashboardService {
     let datasets: any[] = [];
     const annotations = {};
     const sp = new ShadeProvider()
-    let firstBucketTime = undefined
+    let firstBucketTime: number | undefined = undefined
 
     if (input.hAxis.type == 'dynamic') {
       const ha = input.hAxis as HorizontalAxisDynamic;
@@ -320,8 +320,11 @@ export class DashboardService {
 
       for (const ann of input.annotations) {
         if (ann.type == 'run-events') {
-          for (const run of runs) {
-            const events = await this.database.getEvents(run.id, firstBucketTime, true)
+          // Fetch events for all runs in parallel: one round-trip per run otherwise serializes against AWS latency.
+          const eventsPerRun = await Promise.all(
+            runs.map((run) => this.database.getEvents(run.id, firstBucketTime, true))
+          )
+          for (const events of eventsPerRun) {
             for (let i = 0; i < events.length; i++){
               const event = events[i];
               const x = event.timeOffsetSecs;
@@ -574,14 +577,19 @@ export class DashboardService {
     const excessiveProcessCpu = new Metrics("cast(metrics::json->>'processCpu' as float) > 90",
         "'Excessive process CPU usage, max=' || max(cast(metrics::json->>'processCpu' as float))")
 
-    out = out.concat(await this.database.getMetricsAlerts(input, excessiveThreads, "metrics"))
-    out = out.concat(await this.database.getMetricsAlerts(input, excessiveHeap, "metrics"))
-    out = out.concat(await this.database.getMetricsAlerts(input, excessiveProcessCpu, "metrics"))
-
     const anyFailures = new Metrics("operations_failed > 0",
         "'Operations failed, sum=' || sum(operations_failed)")
 
-    out = out.concat(await this.database.getMetricsAlerts(input, anyFailures, "buckets"))
+    // Run all alert queries in parallel: each is an independent DB round-trip to AWS.
+    const alertResults = await Promise.all([
+      this.database.getMetricsAlerts(input, excessiveThreads, "metrics"),
+      this.database.getMetricsAlerts(input, excessiveHeap, "metrics"),
+      this.database.getMetricsAlerts(input, excessiveProcessCpu, "metrics"),
+      this.database.getMetricsAlerts(input, anyFailures, "buckets"),
+    ])
+    for (const result of alertResults) {
+      out = out.concat(result)
+    }
 
     logger.info(`${out.length} total alerts`)
 

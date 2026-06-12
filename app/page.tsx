@@ -1,24 +1,25 @@
 import { Suspense } from "react"
 import AppLayout from "@/src/components/layout/app-layout"
-import HomeContent from "./(home)/_components/home-content"
-import { getInitialDashboardData } from "./(home)/_lib/server-actions"
-import { LoadingSpinner } from "@/src/components/shared/LoadingStates"
+import HomeLoader from "./(home)/_components/HomeLoader"
+import {
+  MetricCardsSkeleton,
+  ChartSkeleton,
+} from "@/src/components/shared/skeletons/PageSkeletons"
 
-export default async function Home() {
-  // Fetch initial data on the server
-  const initialData = await getInitialDashboardData()
-
+export default function Home() {
   return (
-    <Suspense fallback={
-      <AppLayout>
-        <LoadingSpinner message="Loading performance dashboard..." />
-      </AppLayout>
-    }>
-      <HomeContent initialData={{
-        ...initialData,
-        availableVersions: initialData.availableVersions.map(v => typeof v === 'string' ? v : v.name || v.id),
-        defaultClusters: [...initialData.defaultClusters]
-      }} />
+    <Suspense
+      fallback={
+        <AppLayout>
+          <div className="container mx-auto py-10 space-y-6">
+            <MetricCardsSkeleton count={4} />
+            <ChartSkeleton />
+            <ChartSkeleton />
+          </div>
+        </AppLayout>
+      }
+    >
+      <HomeLoader />
     </Suspense>
   )
 }
