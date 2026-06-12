@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useSituationalRunDetail } from "@/src/shared/hooks/use-data"
 import { Button } from "@/src/components/ui/button"
 import { useCallback } from "react"
 import { Badge } from "@/src/components/ui/badge"
@@ -52,8 +53,6 @@ export default function SituationalRunDetailPage({
   const router = useRouter()
   const searchParams = useSearchParams()
   const resolvedParams = params
-  const [runData, setRunData] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
   const [eventsPage, setEventsPage] = useState(0)
   const [eventsData, setEventsData] = useState<{ events: any[]; total: number; pageSize: number } | null>(null)
@@ -61,80 +60,67 @@ export default function SituationalRunDetailPage({
   const [eventsError, setEventsError] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
 
-  // No local mock data
+  // Fetch run detail via React Query (cached; replaces useEffect + cache:'no-store').
+  const { data, isLoading } = useSituationalRunDetail(resolvedParams.id, resolvedParams.runId)
 
-  useEffect(() => {
-    // Fetch real run details timeseries and events
-    const fetchRunDetails = async () => {
-      setIsLoading(true)
-
-      try {
-        const res = await fetch(`/api/situational/${resolvedParams.id}/run/${resolvedParams.runId}`, { cache: 'no-store' })
-        const payload = res.ok ? await res.json() : { success: false, data: { runDetails: { runs: [] }, events: [], errorsSummary: [] } }
-        const data = payload?.data || { runDetails: { runs: [] }, events: [], errorsSummary: [] }
-
-        // Extract run details from the API response (matches Vue structure)
-        const runDetails = data.runDetails?.runs?.[0]
-        const runParams = runDetails?.runParams || {}
-        const srjParams = runDetails?.srjParams || {}
-
-        // Compose runData object using actual API data
-        const transformed: any[] = []
-
-        setRunData({
-          id: resolvedParams.runId,
-          description: runParams?.workload?.situational || `Run details for ${resolvedParams.runId}`,
-          started: runDetails?.started || runDetails?.datetime || new Date().toISOString(),
-          environment: runParams?.vars?.environment || runParams?.debug?.environment || 'Unknown',
-          sdk: runParams?.impl?.language || 'unknown',
-          version: runParams?.impl?.version || 'unknown',
-          csp: runParams?.vars?.csp || runParams?.debug?.csp || 'Unknown',
-          status: 'completed',
-          score: Number(srjParams?.score) || 0,
-          scoreReasons: srjParams?.reasons || [],
-          transformedMetrics: transformed,
-          metrics: {},
-          cluster: runParams?.cluster || {},
-          privateEndpointsEnabled: runParams?.privateEndpointsEnabled ?? null,
-          workload: runParams?.workload || {},
-          events: data.events || [],
-          errorsSummary: data.errorsSummary || [],
-          ciUrl: runParams?.debug?.ciUrl,
-          openShiftProject: runParams?.debug?.openShiftProject,
-          situationalRunId: resolvedParams.id,
-        })
-
-        // Add SDK to URL if not already present (for sidebar highlighting)
-        const detectedSdk = runParams?.impl?.language || ''
-        const normalizedSdk = normalizeDetectedSdk(detectedSdk)
-        const currentUrlSdk = searchParams?.get('sdk') || ''
-        if (normalizedSdk && normalizedSdk !== currentUrlSdk) {
-          router.replace(`/situational/${resolvedParams.id}/run/${resolvedParams.runId}?sdk=${normalizedSdk}`)
-        }
-      } catch (error) {
-        console.error("Error fetching run details:", error)
-        // Create a minimal fallback run data object
-        setRunData({
-          id: resolvedParams.runId,
-          description: "Error loading run details",
-          started: new Date().toISOString(),
-          environment: "Unknown",
-          sdk: "Unknown",
-          version: "Unknown",
-          status: "unknown",
-          score: 0,
-          metrics: {},
-          cluster: {},
-          workload: {},
-          privateEndpointsEnabled: null,
-        })
-      } finally {
-        setIsLoading(false)
+  // Transform the API payload into the shape the page renders (matches Vue structure).
+  const runData = useMemo<any>(() => {
+    if (!data) {
+      // True fetch failure: minimal fallback object.
+      return {
+        id: resolvedParams.runId,
+        description: "Error loading run details",
+        started: new Date().toISOString(),
+        environment: "Unknown",
+        sdk: "Unknown",
+        version: "Unknown",
+        status: "unknown",
+        score: 0,
+        metrics: {},
+        cluster: {},
+        workload: {},
+        privateEndpointsEnabled: null,
       }
     }
 
-    fetchRunDetails()
-  }, [resolvedParams.id, resolvedParams.runId])
+    const runDetails = data.runDetails?.runs?.[0]
+    const runParams = runDetails?.runParams || {}
+    const srjParams = runDetails?.srjParams || {}
+
+    return {
+      id: resolvedParams.runId,
+      description: runParams?.workload?.situational || `Run details for ${resolvedParams.runId}`,
+      started: runDetails?.started || runDetails?.datetime || new Date().toISOString(),
+      environment: runParams?.vars?.environment || runParams?.debug?.environment || 'Unknown',
+      sdk: runParams?.impl?.language || 'unknown',
+      version: runParams?.impl?.version || 'unknown',
+      csp: runParams?.vars?.csp || runParams?.debug?.csp || 'Unknown',
+      status: 'completed',
+      score: Number(srjParams?.score) || 0,
+      scoreReasons: srjParams?.reasons || [],
+      transformedMetrics: [],
+      metrics: {},
+      cluster: runParams?.cluster || {},
+      privateEndpointsEnabled: runParams?.privateEndpointsEnabled ?? null,
+      workload: runParams?.workload || {},
+      events: data.events || [],
+      errorsSummary: data.errorsSummary || [],
+      ciUrl: runParams?.debug?.ciUrl,
+      openShiftProject: runParams?.debug?.openShiftProject,
+      situationalRunId: resolvedParams.id,
+    }
+  }, [data, resolvedParams.id, resolvedParams.runId])
+
+  // Keep the sidebar SDK highlight in sync (URL side-effect). Skip while loading
+  // or on a true fetch failure (matches the original, which only ran on success).
+  useEffect(() => {
+    if (isLoading || !data) return
+    const normalizedSdk = normalizeDetectedSdk(runData?.sdk || '')
+    const currentUrlSdk = searchParams?.get('sdk') || ''
+    if (normalizedSdk && normalizedSdk !== currentUrlSdk) {
+      router.replace(`/situational/${resolvedParams.id}/run/${resolvedParams.runId}?sdk=${normalizedSdk}`)
+    }
+  }, [isLoading, data, runData, searchParams, router, resolvedParams.id, resolvedParams.runId])
 
   const fetchEvents = useCallback(async (page: number) => {
     setEventsLoading(true)

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, RefreshCw, ExternalLink, ArrowUpDown, ChevronDown } from "lucide-react"
@@ -42,10 +43,6 @@ export default function VersionRunsPage({ params }: { params: { version: string 
   const transactionThreads = searchParams.get("transactionThreads")
   const reactiveAPI = searchParams.get("reactiveAPI")
 
-  const [isLoading, setIsLoading] = useState(true)
-  const [allRuns, setAllRuns] = useState<ExtendedRunSummary[]>([])
-  const [dashboardData, setDashboardData] = useState<any>(null)
-
   // CRITICAL FIX: Determine correct metric unit based on query type AND selected metric
   const getMetricInfo = () => {
     // For system metric queries, check what specific metric is selected
@@ -84,48 +81,32 @@ export default function VersionRunsPage({ params }: { params: { version: string 
 
   const metricInfo = getMetricInfo()
 
-  // Extract loadRuns function to be reusable
-  const loadRuns = async () => {
-    setIsLoading(true)
-    try {
-      // Build query parameters
-      const params = new URLSearchParams()
-      params.set('sdk', sdk)
-      params.set('metric', metric)
-      if (runIdsParam) {
-        params.set('runIds', runIdsParam)
-      }
-      
-      // CRITICAL FIX: Pass query type context to API
-      if (horizontalScaling) {
-        params.set('horizontalScaling', horizontalScaling)
-      }
-      if (systemMetric) {
-        params.set('systemMetric', systemMetric)
-      }
-      if (transactionThreads) {
-        params.set('transactionThreads', transactionThreads)
-      }
-      if (reactiveAPI) {
-        params.set('reactiveAPI', reactiveAPI)
-      }
-      
+  // Build the API query string from the current selection.
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams()
+    params.set('sdk', sdk)
+    params.set('metric', metric)
+    if (runIdsParam) params.set('runIds', runIdsParam)
+    // CRITICAL FIX: Pass query type context to API
+    if (horizontalScaling) params.set('horizontalScaling', horizontalScaling)
+    if (systemMetric) params.set('systemMetric', systemMetric)
+    if (transactionThreads) params.set('transactionThreads', transactionThreads)
+    if (reactiveAPI) params.set('reactiveAPI', reactiveAPI)
+    return params.toString()
+  }, [sdk, metric, runIdsParam, horizontalScaling, systemMetric, transactionThreads, reactiveAPI])
+
+  // Load runs via React Query using the unified API (cached; ensures chart/table
+  // consistency). Returns both the run summaries and the aggregated dashboard data.
+  const { data: queryResult, isLoading, refetch } = useQuery({
+    queryKey: ['versionRuns', decodedVersion, queryString],
+    queryFn: async () => {
       // Use the unified API that ensures chart/table consistency
-      const response = await fetch(`/api/runs/version/${encodeURIComponent(decodedVersion)}?${params.toString()}`)
-      
+      const response = await fetch(`/api/runs/version/${encodeURIComponent(decodedVersion)}?${queryString}`)
       if (!response.ok) {
         throw new Error('Failed to fetch runs from unified API')
       }
-      
       const result = await response.json()
-      
-      // Store the aggregated value for consistency checking
-      setDashboardData({
-        aggregatedValue: result.aggregatedValue,
-        version: result.version,
-        metric: result.metric
-      })
-      
+
       // Transform to ExtendedRunSummary format
       const summaries: ExtendedRunSummary[] = result.runs.map((run: any) => ({
         id: run.id,
@@ -145,28 +126,21 @@ export default function VersionRunsPage({ params }: { params: { version: string 
           operations: { total: 0, success: 0, failed: 0 }
         }
       }))
-      
-      setAllRuns(summaries)
-      
-      console.log(`✅ Loaded ${summaries.length} runs for version ${decodedVersion}`, {
-        aggregatedValue: result.aggregatedValue,
-        metric: result.metric,
-        firstRun: summaries[0]?.id
-      })
-      
-    } catch (error) {
-      console.error('❌ Error loading runs:', error)
-      setAllRuns([])
-      setDashboardData(null)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
-  // Load runs using the unified API to ensure consistency with chart data
-  useEffect(() => {
-    loadRuns()
-  }, [sdk, decodedVersion, runIdsParam, metric, horizontalScaling, systemMetric, transactionThreads, reactiveAPI])
+      return {
+        // Store the aggregated value for consistency checking
+        dashboardData: {
+          aggregatedValue: result.aggregatedValue,
+          version: result.version,
+          metric: result.metric,
+        },
+        summaries,
+      }
+    },
+  })
+
+  const allRuns: ExtendedRunSummary[] = queryResult?.summaries ?? []
+  const dashboardData = queryResult?.dashboardData ?? null
 
   // Filter runs for this specific version and cluster
   const versionRuns = useMemo(() => {
@@ -177,14 +151,10 @@ export default function VersionRunsPage({ params }: { params: { version: string 
     )
   }, [allRuns, decodedVersion, clusterVersion, runIdsParam])
 
-  useEffect(() => {
-    // No longer need this simulation since we have real async loading
-  }, [decodedVersion, metric, sdk, clusterVersion])
-
   const { handleRefresh } = useRefreshHandler(() => {
     // CRITICAL FIX: Actually refetch data instead of using fake timeout
     console.log('🔄 Refreshing runs data for version:', decodedVersion)
-    loadRuns()
+    refetch()
   })
 
   const { handleSort, sortColumn, sortDirection } = useSortHandler("datetime", "desc")
