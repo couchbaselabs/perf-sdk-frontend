@@ -8,6 +8,7 @@ import { Input } from "@/src/components/ui/input"
 import { Search } from "lucide-react"
 import Link from "next/link"
 import { apiClient } from '@/src/lib/api-client-unified'
+import TagsSkeleton from "./loading"
 
 interface TagSummary {
   tag: string
@@ -103,15 +104,7 @@ export default function FaasTagsPage() {
 
 
   if (isLoading) {
-    return (
-      <>
-        <div className="container mx-auto p-6">
-          <div className="text-center py-12">
-            <div className="text-lg font-medium">Loading tags from database...</div>
-          </div>
-        </div>
-      </>
-    )
+    return <TagsSkeleton />
   }
 
   if (error) {
