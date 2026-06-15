@@ -104,10 +104,9 @@ function AppLayoutContent({ children }: AppLayoutProps) {
   }
 
   const handleSdkChange = (sdk: string) => {
-    // Abort the current SDK's in-flight chart and runs requests before switching,
-    // so rapid SDK switching does not pile up uncancelled database calls.
+    // Abort the current SDK's in-flight chart requests before switching, so
+    // rapid SDK switching does not pile up uncancelled database calls.
     queryClient.cancelQueries({ queryKey: ['dashboardResults'] })
-    queryClient.cancelQueries({ queryKey: ['runs'] })
 
     setActiveSdk(sdk)
 
