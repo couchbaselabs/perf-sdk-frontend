@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useSituationalData, useLoadSituationalRuns } from "../situational-hooks"
+import SituationalListSkeleton from "../loading"
 import { HeaderSection } from "./sections/HeaderSection"
 import { FiltersSection } from "./sections/FiltersSection"
 import { RunsTable } from "./sections/RunsTable"
@@ -100,16 +101,7 @@ export function SituationalContent() {
   const activeFilterCount = Object.keys(columnFilters).length + (searchQuery ? 1 : 0)
 
   if (loading) {
-    return (
-      <div className="container mx-auto py-6 px-6 max-w-7xl">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="h-8 w-8 animate-spin mx-auto mb-4 border-2 border-blue-500 border-t-transparent rounded-full" />
-            <p>Loading situational runs...</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <SituationalListSkeleton />
   }
 
   if (error) {
