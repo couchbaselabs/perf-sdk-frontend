@@ -14,7 +14,7 @@ import { SituationalRun } from "@/src/types/entities"
 import { getStatusColor, getEnvironmentBadgeVariant, getScoreBadgeColor } from "@/src/lib/utils/status"
 import { getSdkColorByLanguage } from "@/src/lib/sdk-version-service"
 import { MixedProperty } from "../ui-helpers"
-import RunGroupSkeleton from "./loading"
+import { TableSkeleton, DetailHeaderSkeleton } from "@/src/components/shared/skeletons/PageSkeletons"
 import {
   UnifiedBadge,
   SdkBadge,
@@ -66,7 +66,7 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
   const { data: runs = [], isLoading } = useSituationalRunsList(resolvedParams.id)
 
   // Derive the situational-run summary from the individual runs.
-  const situationalRun = useMemo<SituationalRun | null>(() => {
+  const situationalRun = useMemo<SituationalRun>(() => {
     const runsData = runs as any[]
     const sdkValues: string[] = Array.from(new Set(runsData.map((r: any) => r.sdk).filter(Boolean)))
     const versionValues: string[] = Array.from(new Set(runsData.map((r: any) => r.version).filter(Boolean)))
@@ -108,14 +108,6 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
 
 
   // renderMixedProperty and isMixedProperty functions removed - using MixedProperty component from ui-helpers.tsx instead
-
-  if (isLoading) {
-    return <RunGroupSkeleton />
-  }
-
-  if (!situationalRun) {
-    return <>Situational Run not found.</>
-  }
 
   const startedDate = new Date(situationalRun.started)
   const now = new Date()
@@ -159,6 +151,13 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
           </CardContent>
         </Card>
 
+        {isLoading ? (
+          <div className="space-y-6">
+            <DetailHeaderSkeleton />
+            <TableSkeleton rows={6} columns={8} />
+          </div>
+        ) : (
+        <>
         <Card className="w-full border-slate-200 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200">
             <CardTitle className="text-2xl font-bold text-slate-800">{`Situational Run ${situationalRun.id}`}</CardTitle>
@@ -422,6 +421,8 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
             </CardContent>
           </Card>
         </div>
+        </>
+        )}
       </div>
     </>
   )
