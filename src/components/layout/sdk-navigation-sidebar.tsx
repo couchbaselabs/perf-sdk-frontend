@@ -138,11 +138,16 @@ export default function Sidebar({
       onModeChange(newMode)
     }
 
-    // Navigate to the appropriate page
+    // Carry the currently selected SDK across the mode switch so the destination
+    // page matches the SDK that stays highlighted in the sidebar. Without this,
+    // switching to Performance landed on "/" (which defaults to java) while the
+    // sidebar still showed the previously selected SDK.
+    const currentSdk = mode === "situational" ? localSelectedSdk : activeSdk
+
     if (newMode === "performance") {
-      router.push("/")
+      router.push(`/?sdk=${currentSdk || "java"}`)
     } else if (newMode === "situational") {
-      router.push("/situational")
+      router.push(currentSdk ? `/situational?sdk=${currentSdk}` : "/situational")
     }
   }
 
