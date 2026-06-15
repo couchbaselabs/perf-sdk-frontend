@@ -149,29 +149,18 @@ export class DashboardService {
         const dbRep2 = HorizontalAxisDynamicUtil.databaseRepresentation2(ha)
         const dbRep1 = HorizontalAxisDynamicUtil.databaseRepresentation1(ha)
 
-        if (input.filterRuns === FilterRuns.ALL) {
-          // "All" run selection is purely row-level, so the bar aggregation can
-          // filter inline rather than waiting for a separate run-id round-trip.
-          // Run the runs-list query (still needed for the response) in parallel
-          // so the two no longer execute sequentially. Pass a clone to the merged
-          // query so it never sees getRuns' in-place mutation of databaseCompare.
-          const aggCompare = JSON.parse(JSON.stringify(input.databaseCompare))
-          const [initial, mergedResults] = await Promise.all([
-            this.database.getRuns(input.databaseCompare, dbRep2),
-            this.database.getSimplifiedGraphAll(aggCompare, dbRep2, dbRep1, input, va),
-          ])
-          runs = this.filterRuns(initial, input)
-          results = mergedResults
-          logger.info(`Matched ${initial.length} runs, filtered to ${runs.length}`)
-        } else {
-          const initial = await this.database.getRuns(input.databaseCompare, dbRep2)
-          runs = this.filterRuns(initial, input)
-          logger.info(`Matched ${initial.length} runs, filtered to ${runs.length}`)
+        // Select the matching runs first, then aggregate their buckets by an
+        // explicit run-id list. The explicit list lets the planner use the
+        // buckets run_id index; aggregating via a CTE join instead makes it
+        // seq-scan the whole buckets hypertable (orders of magnitude slower on
+        // high-volume workloads like KV get).
+        const initial = await this.database.getRuns(input.databaseCompare, dbRep2)
+        runs = this.filterRuns(initial, input)
+        logger.info(`Matched ${initial.length} runs, filtered to ${runs.length}`)
 
-          const runIdsArray = runs.map((v) => v.id);
-          if (runIdsArray.length > 0) {
-            results = await this.database.getSimplifiedGraph(dbRep1, runIdsArray, input, va);
-          }
+        const runIdsArray = runs.map((v) => v.id);
+        if (runIdsArray.length > 0) {
+          results = await this.database.getSimplifiedGraph(dbRep1, runIdsArray, input, va);
         }
       } else if (yAxis.type == 'metric') {
         const va = yAxis as VerticalAxisMetric;
