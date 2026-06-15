@@ -102,17 +102,26 @@ function AppLayoutContent({ children }: AppLayoutProps) {
   }
 
   const handleSdkChange = (sdk: string) => {
-    console.log('AppLayout: handleSdkChange called with SDK:', sdk)
-    // Use Next.js router which is basePath-aware; this becomes /results/?sdk=...
-    router.push(`/?sdk=${sdk}`)
-
     setActiveSdk(sdk)
+
+    // On the performance home route, update the ?sdk= param via the History API
+    // instead of router.push. The page's initial server data is SDK independent, so
+    // a router.push would needlessly re-run the server render and blank the whole
+    // page behind loading.tsx. pushState updates useSearchParams without a server
+    // round-trip, so the static chrome stays on screen and only the chart areas show
+    // their own skeletons. From any other route we still navigate home as before.
+    const onHome = !pathname || pathname === "/"
+    if (onHome && typeof window !== "undefined") {
+      window.history.pushState(null, "", `${window.location.pathname}?sdk=${sdk}`)
+    } else {
+      router.push(`/?sdk=${sdk}`)
+    }
+
     // Always dispatch event, even if SDK hasn't changed, to ensure components update
     if (typeof window !== "undefined") {
       setTimeout(() => {
         const event = new CustomEvent("sdkChange", { detail: sdk })
         window.dispatchEvent(event)
-        console.log('AppLayout: Force dispatched sdkChange event with:', sdk)
       }, 100)
     }
   }

@@ -129,6 +129,11 @@ export default function DashboardResults({ input, title, description, keyProp, s
   const [isLoading, setIsLoading] = useState(false)
   const [showRuns, setShowRuns] = useState(false)
 
+  // Tracks which input the data in `results` belongs to. When the SDK (or any
+  // other input) changes, the current `results` are for the old selection, so we
+  // can show a skeleton instead of stale data until the new data arrives.
+  const resultsInputKeyRef = useRef<string | null>(null)
+
 
   // Use ref to track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true)
@@ -183,16 +188,10 @@ export default function DashboardResults({ input, title, description, keyProp, s
 
   useEffect(() => {
     if (query.data && isMountedRef.current) {
-      console.log('🔍 DashboardResults: Setting results from query.data:', {
-        title,
-        queryData: query.data,
-        hasData: !!query.data?.data,
-        dataType: query.data?.data?.type,
-        dataKeys: query.data?.data ? Object.keys(query.data.data) : []
-      })
       setResults(query.data)
+      resultsInputKeyRef.current = inputKey
     }
-  }, [query.data])
+  }, [query.data, inputKey])
 
   // CRITICAL FIX: Simplified data fetching logic - React Query handles this automatically
   // Only manually refetch when keyProp changes (for SDK selection refresh)
@@ -264,7 +263,12 @@ export default function DashboardResults({ input, title, description, keyProp, s
 
   const metricInfo = getMetricInfo()
 
-  if (isLoading && !results) {
+  // Show the skeleton whenever the data on screen doesn't match the current input
+  // (e.g. right after an SDK switch) as well as on the very first load. A new query
+  // is always in flight in that window, so this resolves as soon as it returns.
+  const showingStaleData = !!results && resultsInputKeyRef.current !== inputKey
+
+  if ((isLoading && !results) || showingStaleData) {
     return (
       <Card className="w-full">
         <CardHeader>
