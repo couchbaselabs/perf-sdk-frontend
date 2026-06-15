@@ -1,6 +1,0 @@
-Performance changes (2026-06-11)
-
-1. providers.tsx: Enabled React Query caching (staleTime 1m, refetchOnMount true) so interactions reuse data instead of refetching.
-2. dashboard-results.tsx: Removed per-chart cache-disabling overrides (gcTime:0, staleTime:0, refetchOnMount:'always') so charts share the cache.
-3. dashboard-service.ts (genMetrics): Run the 4 metric-alert DB queries in parallel via Promise.all instead of sequentially.
-4. dashboard-service.ts (events annotations): Fetch per-run events in parallel instead of one serial DB round-trip per run.
