@@ -443,6 +443,65 @@ export class DatabaseService {
     return DatabaseService.sort(result.rows.map((x: any) => new Result(x.grouping, x.value, x.run_ids)), input)
   }
 
+  /**
+   * Combined run-selection + Simplified bar aggregation in a single query.
+   *
+   * For the common filterRuns="All" buckets path the run selection is purely
+   * row-level (containment + gerrit/snapshot/excluded-field filters), so the bar
+   * aggregation can filter inline via a CTE instead of waiting for getRuns to
+   * return run ids in a separate round-trip. This is only equivalent for "All";
+   * the semver "latest" filtering stays in the two-query getRuns path.
+   */
+  async getSimplifiedGraphAll(
+    compareInput: DatabaseCompare,
+    groupByPath: string,
+    groupByDbField: string,
+    input: Input,
+    yAxis: VerticalAxisBucketsColumn): Promise<Array<Result>> {
+    // Clone so we never mutate the caller's compare (getRuns may use it in parallel).
+    const compare: DatabaseCompare = JSON.parse(JSON.stringify(compareInput))
+    const excluded = this.findAndRemoveExcluded(compare)
+
+    const mergingOp = this.mapMerging(input.mergingType as unknown as MergingAlgorithm)
+    const columnName = yAxis.column
+
+    // Row-level filters mirroring filterRuns() for the "All" case.
+    const filters: string[] = []
+    if (input.excludeGerrit) filters.push(`NOT (params->'impl'->>'version' LIKE 'refs/%')`)
+    if (input.excludeSnapshots) filters.push(`NOT (params->'impl'->>'version' LIKE '%-%')`)
+    const addExcluded = (section: string, keys?: string[]) =>
+      (keys || []).forEach(k => filters.push(`NOT COALESCE(params->'${section}' ? '${k}', false)`))
+    addExcluded('cluster', excluded.cluster)
+    addExcluded('impl', excluded.impl)
+    addExcluded('vars', excluded.vars)
+    addExcluded('workload', excluded.workload)
+    const filterClause = filters.length ? ` AND ${filters.join(' AND ')}` : ''
+
+    const st = `
+        WITH matched AS (
+          SELECT id, params
+          FROM runs
+          WHERE params @> ('${JSON.stringify(compare)}'::jsonb #- '${groupByPath}')${filterClause}
+        )
+        SELECT array_agg(run_id) as run_ids,
+               avg(sub.value) as value,
+               ${groupByDbField} as grouping
+        FROM (SELECT run_id, ${mergingOp}(buckets.${columnName}) as value
+              FROM buckets JOIN matched ON buckets.run_id = matched.id
+              WHERE buckets.time_offset_secs >= ${input.trimmingSeconds}
+              GROUP BY run_id) as sub
+        JOIN matched ON sub.run_id = matched.id
+        GROUP BY grouping
+        ORDER BY grouping`
+
+    const label = "getSimplifiedGraphAll"
+    logger.time(label);
+    const result = await this.pool.query(st);
+    logger.timeEnd(label);
+
+    return DatabaseService.sort(result.rows.map((x: any) => new Result(x.grouping, x.value, x.run_ids)), input)
+  }
+
   async getSimplifiedGraphForMetric(runIds: readonly string[],
                                     hAxis: HorizontalAxisDynamic,
                                     yAxis: VerticalAxisMetric,
