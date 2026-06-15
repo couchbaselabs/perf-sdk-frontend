@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/src/components/ui/card"
+import { Skeleton } from "@/src/components/ui/skeleton"
 import { Button } from "@/src/components/ui/button"
 import { Download, RefreshCw, HelpCircle, LineChartIcon, AreaChart, ChevronDown } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/src/components/ui/popover"
@@ -295,11 +296,8 @@ export default function PerformanceGraph({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="flex justify-center items-center h-[400px]">
-          <div className="text-muted-foreground flex flex-col items-center">
-            <RefreshCw className="h-8 w-8 animate-spin mb-4" />
-            <p>Loading performance data from database...</p>
-          </div>
+        <CardContent>
+          <Skeleton className="w-full" style={{ height }} />
         </CardContent>
       </Card>
     )
@@ -407,14 +405,6 @@ export default function PerformanceGraph({
   const visibleData = selectedTimeRange
     ? sliced.filter(p => typeof p?.time === 'number' && Number.isFinite(p.time) && p.time >= selectedTimeRange[0] && p.time <= selectedTimeRange[1])
     : sliced
-
-  // Simple debug logging without hooks
-  console.log(`DEBUG: chartData.length=${chartData?.length}, selectedTimeRange=${selectedTimeRange ? `[${selectedTimeRange[0]}, ${selectedTimeRange[1]}]` : 'null'}, visibleData.length=${visibleData?.length}`)
-  if (visibleData && visibleData.length > 0) {
-    console.log(`DEBUG: visibleData time range: ${visibleData[0]?.time} to ${visibleData[visibleData.length - 1]?.time} seconds`)
-    console.log(`DEBUG: First 3 data points:`, visibleData.slice(0, 3).map(d => ({ time: d.time, timeLabel: d.timeLabel })))
-    console.log(`DEBUG: Last 3 data points:`, visibleData.slice(-3).map(d => ({ time: d.time, timeLabel: d.timeLabel })))
-  }
 
   // Tooltip formatters
   const tooltipFormatter = (value: any, name: string) => {
