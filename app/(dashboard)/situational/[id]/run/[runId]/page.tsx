@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/ta
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/src/components/ui/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/src/components/ui/popover"
 import PerformanceGraph from "@/src/components/shared/performance-graph"
-import RunDetailSkeleton from "./loading"
+import { MetricCardsSkeleton } from "@/src/components/shared/skeletons/PageSkeletons"
 import ObservabilityBox from "@/src/components/shared/observability-box"
 import JsonViewer from "@/src/components/shared/json-viewer"
 import { ErrorDisplay } from "@/src/components/shared/LoadingStates"
@@ -234,14 +234,6 @@ export default function SituationalRunDetailPage({
       .catch((err: unknown) => console.error('Failed to export graph image', err))
   }
 
-  if (isLoading) {
-    return <RunDetailSkeleton />
-  }
-
-  if (!runData) {
-    return <>Run not found.</>
-  }
-
   return (
     <>
       <div className="container mx-auto py-6 px-6 max-w-7xl">
@@ -301,16 +293,25 @@ export default function SituationalRunDetailPage({
             <h1 className="text-3xl font-bold tracking-tight">Run Details</h1>
             <div className="flex items-center gap-2 mt-1 text-muted-foreground">
               <span className="font-mono">{runData.id}</span>
-              <VersionBadge value={`v${runData.version}`} />
-              <div className="flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" />
-                <span>{formatDate(runData.started)}</span>
-              </div>
+              {!isLoading && (
+                <>
+                  <VersionBadge value={`v${runData.version}`} />
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>{formatDate(runData.started)}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
 
         {/* Key metrics summary */}
+        {isLoading ? (
+          <div className="mb-6">
+            <MetricCardsSkeleton count={4} />
+          </div>
+        ) : (
         <div className={`grid grid-cols-1 gap-4 mb-6 ${runData.environment === 'Unknown' ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
           <Card>
             <CardHeader className="pb-2">
@@ -470,7 +471,10 @@ export default function SituationalRunDetailPage({
           </Card>
         </div>
 
-        {/* Performance Graph: let component fetch real buckets+metrics by runId; default to 3 metrics */}
+        )}
+
+        {/* Performance Graph: self-fetches buckets+metrics by runId, so it renders
+            immediately with its own loading state regardless of the run metadata fetch. */}
         <PerformanceGraph
           runId={runData.id}
           title="Performance Over Time"
@@ -481,7 +485,8 @@ export default function SituationalRunDetailPage({
           graphId="runGraph"
         />
 
-        {/* Tabs for additional information */}
+        {/* Tabs for additional information (depend on the awaited run metadata) */}
+        {!isLoading && (
         <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-6">
           <TabsList className="w-full grid grid-cols-3 h-12 p-0 bg-slate-50 rounded-md">
             <TabsTrigger
@@ -718,6 +723,7 @@ export default function SituationalRunDetailPage({
             </Card>
           </TabsContent>
         </Tabs>
+        )}
       </div>
     </>
   )
