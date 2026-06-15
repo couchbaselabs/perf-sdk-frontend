@@ -91,7 +91,21 @@ async function handleAllSituationalRuns(request: NextRequest) {
   const url = new URL(request.url)
   const params = url.searchParams
 
-  const rows = await database.getSituationalRuns()
+  // Server-side pagination + optional SDK filter. The list page requests the
+  // most-recent `limit` rows (ordered by started DESC in the query) and pages
+  // back via `offset`; `sdk` narrows by language so a selected SDK no longer
+  // downloads every run.
+  const limitParam = params.get('limit')
+  const offsetParam = params.get('offset')
+  const sdk = params.get('sdk') || undefined
+  const limit = limitParam ? parseInt(limitParam, 10) : undefined
+  const offset = offsetParam ? parseInt(offsetParam, 10) : undefined
+
+  const rows = await database.getSituationalRuns({
+    limit: Number.isFinite(limit as number) ? (limit as number) : undefined,
+    offset: Number.isFinite(offset as number) ? (offset as number) : undefined,
+    language: sdk,
+  })
 
   // Normalize to the front-end SituationalRun shape
   const runs = rows.map((row: any) => {
@@ -126,12 +140,7 @@ async function handleAllSituationalRuns(request: NextRequest) {
     }
   })
 
-  // Optional limit param
-  const limitParam = params.get('limit')
-  const limit = limitParam ? parseInt(limitParam, 10) : undefined
-  const data = Number.isFinite(limit as number) ? runs.slice(0, limit as number) : runs
-
-  const resp: ApiResponse<SituationalRunSummary[]> = { success: true, data }
+  const resp: ApiResponse<SituationalRunSummary[]> = { success: true, data: runs }
   return NextResponse.json(resp)
 }
 
