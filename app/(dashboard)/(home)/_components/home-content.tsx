@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from "next/navigation"
 import { getSdkVersionById } from "@/src/lib/sdk-version-service"
@@ -73,42 +73,6 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   })
 
 
-  // Runs query (refetch every time the page becomes active)
-  const runsQuery = useQuery({
-    queryKey: ['runs', currentSdk, excludeSnapshots],
-    queryFn: async ({ signal }) => {
-      const url = `/api/performance/runs?sdk=${currentSdk}&limit=200&excludeSnapshots=${excludeSnapshots}&excludeGerrit=true`
-      const response = await fetch(url, { cache: 'no-store', signal })
-      if (!response.ok) throw new Error(`API call failed: ${response.status} ${response.statusText}`)
-      const data = await response.json()
-      const transformedData: any[] = data.map((run: any) => ({
-        id: run.id,
-        datetime: run.datetime,
-        status: run.status || 'completed',
-        params: run.params || {},
-        language: run.language || run.sdk,
-        version: run.version,
-        sdk: run.sdk || run.language,
-        clusterVersion: run.clusterVersion,
-        workload: run.workload || 'default',
-        duration: run.duration || 0,
-        metrics: run.metrics || {
-          throughput: 0,
-          latency: { avg: 0, min: 0, max: 0, p50: 0, p95: 0, p99: 0 },
-          operations: { total: 0, success: 0, failed: 0 },
-          memHeapUsedMB: 0,
-          threadCount: 0,
-          processCpu: 0
-        }
-      }))
-      return transformedData
-    },
-    placeholderData: (previousData) => previousData as any[] | undefined,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    staleTime: 0,
-  })
-
   useEffect(() => {
     if (versionsQuery.data?.success) {
       setAllVersions(versionsQuery.data.data)
@@ -123,19 +87,15 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     logger.debug('SDK state changed:', { currentSdk })
   }, [currentSdk])
 
-  // Cancel any in-flight chart/runs requests when leaving the performance page,
+  // Cancel any in-flight chart requests when leaving the performance page,
   // so navigating away does not leave database calls running in the background.
   useEffect(() => {
     return () => {
       queryClient.cancelQueries({ queryKey: ['dashboardResults'] })
-      queryClient.cancelQueries({ queryKey: ['runs'] })
     }
   }, [queryClient])
 
-  const isLoading = runsQuery.isLoading
-  const runsData = (runsQuery.data as any[]) || []
-
-  // Listen for URL parameter changes  
+  // Listen for URL parameter changes
   useEffect(() => {
     const urlSdk = searchParams?.get('sdk')
     if (urlSdk && urlSdk !== currentSdk) {
@@ -159,50 +119,11 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     }
   }, [])
 
-  // Filtered runs
-  const filteredRuns = useMemo(() => {
-    if (isLoading || !runsData || (runsData as any[]).length === 0) {
-      return []
-    }
-
-    let relevantRuns = (runsData as any[]).filter((run: any) => {
-      const clusterVersion = run.params?.cluster?.version || ''
-      const statusMatch = run.status === 'completed'
-      const clusterMatch = clusterVersion === selectedClusterVersion
-      const version: string = run.params?.impl?.version || ''
-      const isGerrit = version.startsWith('refs/')
-      return clusterMatch && statusMatch && !isGerrit
-    })
-
-    if (excludeSnapshots) {
-      relevantRuns = relevantRuns.filter(run =>
-        !run.params.impl?.version?.includes('-')
-      )
-    }
-
-    return relevantRuns
-  }, [runsData, selectedClusterVersion, excludeSnapshots, isLoading])
-
-  // Chart data using shared utilities
-  const chartData = useMemo(() => {
-    return aggregateHomeChartData(
-      filteredRuns,
-      [selectedClusterVersion],
-      currentSdk,
-      selectedMetric,
-      allVersions,
-      [...ALL_OPERATIONS],
-      getSdkVersionById
-    )
-  }, [filteredRuns, selectedClusterVersion, currentSdk, selectedMetric, allVersions])
-
   // Event handlers
   const handleExcludeSnapshotsChange = (checked: boolean) => setExcludeSnapshots(checked)
   const { handleRefresh } = useRefreshHandler(async () => {
-    await Promise.all([
-      runsQuery.refetch(),
-      versionsQuery.refetch(),
-    ])
+    // Charts refetch via the reloadTrigger bump (it is part of their keyProp).
+    await versionsQuery.refetch()
     setReloadTrigger(prev => prev + 1)
   })
   const activeClusterVersion = selectedClusterVersion || DEFAULT_CLUSTERS[0]
@@ -254,7 +175,61 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     return `${sdkInfo?.name || "SDK"} Performance: Cluster ${versionLabel}`
   }, [currentSdk, selectedClusterVersion])
 
-  const exportAllData = useCallback(() => {
+  const exportAllData = useCallback(async () => {
+    // The 200-run dataset is only needed to build this CSV, so it is fetched on
+    // demand here rather than on every SDK switch.
+    const url = `/api/performance/runs?sdk=${currentSdk}&limit=200&excludeSnapshots=${excludeSnapshots}&excludeGerrit=true`
+    let runsData: any[] = []
+    try {
+      const response = await fetch(url, { cache: 'no-store' })
+      if (!response.ok) throw new Error(`API call failed: ${response.status} ${response.statusText}`)
+      const data = await response.json()
+      runsData = data.map((run: any) => ({
+        id: run.id,
+        datetime: run.datetime,
+        status: run.status || 'completed',
+        params: run.params || {},
+        language: run.language || run.sdk,
+        version: run.version,
+        sdk: run.sdk || run.language,
+        clusterVersion: run.clusterVersion,
+        workload: run.workload || 'default',
+        duration: run.duration || 0,
+        metrics: run.metrics || {
+          throughput: 0,
+          latency: { avg: 0, min: 0, max: 0, p50: 0, p95: 0, p99: 0 },
+          operations: { total: 0, success: 0, failed: 0 },
+          memHeapUsedMB: 0,
+          threadCount: 0,
+          processCpu: 0
+        }
+      }))
+    } catch (err) {
+      logger.error('Export failed to load runs', err)
+      return
+    }
+
+    let relevantRuns = runsData.filter((run: any) => {
+      const clusterVersion = run.params?.cluster?.version || ''
+      const statusMatch = run.status === 'completed'
+      const clusterMatch = clusterVersion === selectedClusterVersion
+      const version: string = run.params?.impl?.version || ''
+      const isGerrit = version.startsWith('refs/')
+      return clusterMatch && statusMatch && !isGerrit
+    })
+    if (excludeSnapshots) {
+      relevantRuns = relevantRuns.filter(run => !run.params.impl?.version?.includes('-'))
+    }
+
+    const chartData = aggregateHomeChartData(
+      relevantRuns,
+      [selectedClusterVersion],
+      currentSdk,
+      selectedMetric,
+      allVersions,
+      [...ALL_OPERATIONS],
+      getSdkVersionById
+    )
     if (!chartData) return
 
     let csvContent = "data:text/csv;charset=utf-8,"
@@ -284,7 +259,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-  }, [chartData, currentSdk, selectedMetric])
+  }, [currentSdk, excludeSnapshots, selectedClusterVersion, selectedMetric, allVersions])
 
   return (
     <>
