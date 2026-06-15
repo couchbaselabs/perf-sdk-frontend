@@ -145,10 +145,44 @@ interface MetricsData {
 export class DatabaseService {
   constructor(public pool: Pool) {}
 
+  // Short-lived cache for getRuns results. The performance dashboard fires ~14
+  // chart queries per SDK switch and several of them request the exact same run
+  // set (same SDK, cluster and grouping). Caching the in-flight promise both
+  // de-duplicates those concurrent calls (single-flight) and serves repeats for a
+  // few seconds. Run data is append-only history, so brief staleness is harmless.
+  // Keyed on the compare object as received, before null fields are stripped.
+  private getRunsCache = new Map<string, { expires: number; promise: Promise<Array<Run>> }>()
+  private static readonly GET_RUNS_CACHE_TTL_MS = 30_000
+
   /**
-   * Used for both the Simplified and Full graphs.
+   * Used for both the Simplified and Full graphs. Thin caching and
+   * de-duplicating wrapper around getRunsUncached.
    */
   async getRuns(compare: DatabaseCompare, groupBy: string): Promise<Array<Run>> {
+    const key = `${JSON.stringify(compare)}|${groupBy}`
+    const now = Date.now()
+
+    const cached = this.getRunsCache.get(key)
+    if (cached && cached.expires > now) {
+      logger.debug(`getRuns cache hit`, { key })
+      return cached.promise
+    }
+
+    const promise = this.getRunsUncached(compare, groupBy)
+    this.getRunsCache.set(key, { expires: now + DatabaseService.GET_RUNS_CACHE_TTL_MS, promise })
+
+    // Never cache a failure: drop the entry on rejection so the next call retries.
+    promise.catch(() => {
+      const current = this.getRunsCache.get(key)
+      if (current && current.promise === promise) {
+        this.getRunsCache.delete(key)
+      }
+    })
+
+    return promise
+  }
+
+  private async getRunsUncached(compare: DatabaseCompare, groupBy: string): Promise<Array<Run>> {
     logger.debug(`getRuns called with:`, {
       compare: JSON.stringify(compare, null, 2),
       groupBy: groupBy

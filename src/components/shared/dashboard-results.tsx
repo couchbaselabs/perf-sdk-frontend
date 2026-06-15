@@ -162,12 +162,12 @@ export default function DashboardResults({ input, title, description, keyProp, s
     // CRITICAL FIX: Include title in queryKey to prevent cache conflicts between different chart types
     // This ensures each chart maintains its own cache and doesn't interfere with others
     queryKey: ['dashboardResults', inputKey, selectedMetric, title],
-    queryFn: async (): Promise<DashboardResponse> => {
+    queryFn: async ({ signal }): Promise<DashboardResponse> => {
       if (isSingleRun) {
         const singleInput = input as SingleRunInput
-        return apiClient.getRunMetrics(singleInput.runId)
+        return apiClient.getRunMetrics(singleInput.runId, signal)
       }
-      return apiClient.getDashboardQuery(input)
+      return apiClient.getDashboardQuery(input, signal)
     },
     // Inherit cache settings from the global QueryClient (providers.tsx) so
     // results are reused across tab switches and revisits instead of refetched.

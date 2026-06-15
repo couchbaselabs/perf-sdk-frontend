@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, Suspense } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import Sidebar from "@/src/components/layout/sdk-navigation-sidebar"
 
 interface AppLayoutProps {
@@ -40,6 +41,7 @@ function AppLayoutContent({ children }: AppLayoutProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   const [mode, setMode] = useState<"performance" | "situational" | "faas">(() => {
     if (pathname?.includes("/faas")) return "faas"
@@ -102,6 +104,11 @@ function AppLayoutContent({ children }: AppLayoutProps) {
   }
 
   const handleSdkChange = (sdk: string) => {
+    // Abort the current SDK's in-flight chart and runs requests before switching,
+    // so rapid SDK switching does not pile up uncancelled database calls.
+    queryClient.cancelQueries({ queryKey: ['dashboardResults'] })
+    queryClient.cancelQueries({ queryKey: ['runs'] })
+
     setActiveSdk(sdk)
 
     // On the performance home route, update the ?sdk= param via the History API

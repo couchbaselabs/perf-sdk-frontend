@@ -36,8 +36,8 @@ export class UnifiedApiClient {
   /**
    * Generic fetch wrapper with error handling and timeout
    */
-  private async fetch<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
-    return fetchJson<T>(endpoint, options, { baseUrl: this.baseUrl, timeoutMs: this.timeout })
+  private async fetch<T>(endpoint: string, options: RequestInit = {}, signal?: AbortSignal): Promise<ApiResponse<T>> {
+    return fetchJson<T>(endpoint, options, { baseUrl: this.baseUrl, timeoutMs: this.timeout, signal })
   }
 
   // ==========================================
@@ -92,8 +92,8 @@ export class UnifiedApiClient {
     })
   }
 
-  async getRunMetrics(runId: string): Promise<ApiResponse<PerformanceMetrics>> {
-    return this.fetch(`/runs/${runId}/metrics`)
+  async getRunMetrics(runId: string, signal?: AbortSignal): Promise<ApiResponse<PerformanceMetrics>> {
+    return this.fetch(`/runs/${runId}/metrics`, {}, signal)
   }
 
   async getRunBuckets(runId: string): Promise<ApiResponse<any[]>> {
@@ -160,11 +160,11 @@ export class UnifiedApiClient {
   })
   }
 
-  async getDashboardQuery(query: any): Promise<ApiResponse<any>> {
+  async getDashboardQuery(query: any, signal?: AbortSignal): Promise<ApiResponse<any>> {
     return this.fetch('/dashboard/query', {
-      method: 'POST', 
+      method: 'POST',
       body: JSON.stringify(query)
-    })
+    }, signal)
   }
 
   async getFilteredOptions(): Promise<ApiResponse<any>> {
@@ -208,8 +208,8 @@ export class UnifiedApiClient {
   /**
    * Get available versions
    */
-  async getVersions(includeSnapshots = false): Promise<ApiResponse<string[]>> {
-    return this.fetch(`/performance/runs?action=versions&includeSnapshots=${includeSnapshots}`)
+  async getVersions(includeSnapshots = false, signal?: AbortSignal): Promise<ApiResponse<string[]>> {
+    return this.fetch(`/performance/runs?action=versions&includeSnapshots=${includeSnapshots}`, {}, signal)
   }
 
   /**
