@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useSituationalData, useLoadSituationalRuns } from "../situational-hooks"
+import { RefreshCw } from "lucide-react"
+import { Button } from "@/src/components/ui/button"
+import { useSituationalData, useLoadSituationalRuns, SITUATIONAL_PAGE_SIZE } from "../situational-hooks"
 import SituationalListSkeleton from "../loading"
 import { HeaderSection } from "./sections/HeaderSection"
 import { FiltersSection } from "./sections/FiltersSection"
 import { RunsTable } from "./sections/RunsTable"
-import { PaginationSection } from "./sections/PaginationSection"
 
 /**
  * Build SDK matching patterns based on the language selected in sidebar.
@@ -39,7 +40,6 @@ function buildSdkMatchPatterns(language: string): string[] {
 }
 
 export function SituationalContent() {
-  const { runs, loading, error, refetch } = useLoadSituationalRuns()
   const [isLoading, setIsLoading] = useState(false)
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -47,21 +47,20 @@ export function SituationalContent() {
   // Read SDK filter from URL params
   const selectedSdk = searchParams?.get('sdk') || ""
 
+  // Server paginates by `selectedSdk` and returns 50 at a time; pages accumulate
+  // here and `fetchMore` pulls the next 50. Filtering/search/sort below run over
+  // whatever has been loaded so far.
+  const { runs, loading, error, refetch, fetchMore, hasMore, isFetchingMore } =
+    useLoadSituationalRuns(selectedSdk)
+
   const {
     filteredRuns,
-    paginatedRuns,
     searchQuery,
     setSearchQuery,
     activeFilters: columnFilters,
     setActiveFilters: setColumnFilters,
     sortColumn,
-    setSortColumn,
     sortDirection,
-    setSortDirection,
-    currentPage,
-    setCurrentPage,
-    itemsPerPage,
-    totalPages,
     uniqueValues,
     columnRanges: ranges,
     handleFilterChange,
@@ -74,19 +73,9 @@ export function SituationalContent() {
     clearAllFiltersFromHook()
     setColumnFilters({})
     setSearchQuery("")
-    setCurrentPage(1)
     // Clear SDK from URL
     router.push('/situational')
   }
-
-  // SDK filtering is now handled via URL params - no sync effects needed
-
-  // Reset page if filtered list shrinks below current window
-  useEffect(() => {
-    if (currentPage > 1 && filteredRuns.length <= (currentPage - 1) * itemsPerPage) {
-      setCurrentPage(1)
-    }
-  }, [columnFilters, searchQuery, selectedSdk, filteredRuns, currentPage, itemsPerPage, setCurrentPage])
 
   // Handle refresh
   const handleRefresh = () => {
@@ -133,7 +122,7 @@ export function SituationalContent() {
       />
 
       <RunsTable
-        currentRuns={paginatedRuns}
+        currentRuns={filteredRuns}
         activeFilterCount={activeFilterCount}
         sortColumn={sortColumn}
         sortDirection={sortDirection}
@@ -144,11 +133,25 @@ export function SituationalContent() {
         handleFilterChange={handleFilterChange}
       />
 
-      <PaginationSection
-        currentPage={currentPage}
-        totalPages={totalPages}
-        setCurrentPage={setCurrentPage}
-      />
+      <div className="mt-6 flex flex-col items-center gap-2">
+        <p className="text-sm text-muted-foreground">
+          {activeFilterCount > 0
+            ? `Showing ${filteredRuns.length} of ${runs.length} loaded runs`
+            : `${runs.length} run${runs.length === 1 ? "" : "s"} loaded`}
+        </p>
+        {hasMore && (
+          <Button variant="outline" onClick={fetchMore} disabled={isFetchingMore}>
+            {isFetchingMore ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              `Load ${SITUATIONAL_PAGE_SIZE} more`
+            )}
+          </Button>
+        )}
+      </div>
     </div>
   )
 }

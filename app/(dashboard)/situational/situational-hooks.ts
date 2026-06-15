@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react"
+import { useInfiniteQuery } from "@tanstack/react-query"
 import { SituationalRun } from "@/src/types/entities"
-import { useSituationalRuns } from "@/src/shared/hooks/use-data"
+import { apiClient } from "@/src/lib/api-client-unified"
 import { applyFilters, sortRuns, extractUniqueValues, calculateColumnRanges } from "./filtering-and-sorting-utils"
 
 /**
@@ -177,23 +178,50 @@ export function useSituationalData({ runs, selectedSdk = "" }: UseSituationalDat
 }
 
 // Hook for loading situational runs data
+export const SITUATIONAL_PAGE_SIZE = 50
+
 interface UseLoadSituationalRunsReturn {
   runs: SituationalRun[]
   loading: boolean
   error: string | null
   refetch: () => void
+  fetchMore: () => void
+  hasMore: boolean
+  isFetchingMore: boolean
 }
 
-export function useLoadSituationalRuns(): UseLoadSituationalRunsReturn {
-  // Use the unified data hook without default limit to avoid infinite re-renders
-  const query = useMemo(() => ({}), []) // Empty query, no default limit
-  const { data, loading, error, refetch } = useSituationalRuns(query as any)
+/**
+ * Loads situational runs a page at a time (most recent first) via React Query's
+ * infinite query. The server applies the limit/offset and the SDK filter, so we
+ * only download the rows we show. Pages accumulate in the cache and stay cached
+ * until refresh; `fetchMore` pulls the next page. Changing `selectedSdk` starts
+ * a fresh paginated query for that SDK.
+ */
+export function useLoadSituationalRuns(selectedSdk = ""): UseLoadSituationalRunsReturn {
+  const query = useInfiniteQuery({
+    queryKey: ['situational', 'runs', selectedSdk],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const res = await apiClient.getSituationalRuns({
+        limit: SITUATIONAL_PAGE_SIZE,
+        offset: pageParam as number,
+        sdk: selectedSdk || undefined,
+      })
+      // fetchJson wraps the response body, so the runs array sits at res.data.data
+      return ((res.data as any)?.data ?? []) as SituationalRun[]
+    },
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length === SITUATIONAL_PAGE_SIZE ? allPages.flat().length : undefined,
+  })
 
   return {
-    runs: (data as any)?.data || [],
-    loading,
-    error,
-    refetch
+    runs: (query.data?.pages.flat() as SituationalRun[]) ?? [],
+    loading: query.isLoading,
+    error: query.error ? (query.error as Error).message : null,
+    refetch: () => { query.refetch() },
+    fetchMore: () => { query.fetchNextPage() },
+    hasMore: !!query.hasNextPage,
+    isFetchingMore: query.isFetchingNextPage,
   }
 }
 

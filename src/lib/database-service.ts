@@ -580,13 +580,46 @@ export class DatabaseService {
     return result.rows.map((x: any) => new MetricsResult(x.run_id, x.datetime, x.message, x.version, input.language));
   }
 
-  async getSituationalRuns(): Promise<SituationalRun[]> {
+  async getSituationalRuns(opts?: { limit?: number; offset?: number; language?: string }): Promise<SituationalRun[]> {
+    const values: any[] = []
+
+    // Optional server-side SDK filter, mirroring the client sdkMatchesLanguage()
+    // logic so the dropdown/sidebar SDK selection narrows the query itself
+    // instead of downloading every SDK's runs and filtering in the browser.
+    let where = ''
+    if (opts?.language) {
+      values.push(opts.language)
+      const p = `$${values.length}`
+      const lang = `details_of_any_run->'impl'->>'language'`
+      const conds = [
+        `lower(${lang}) = lower(${p})`,                              // go, Go, GO
+        `upper(${lang}) = 'COLUMNAR_SDK_' || upper(${p})`,           // COLUMNAR_SDK_GO
+        `lower(${lang}) = lower(${p}) || '-sdk'`,                    // java-sdk
+      ]
+      const low = opts.language.toLowerCase()
+      if (low === 'node') {
+        conds.push(`lower(${lang}) = 'nodejs'`)
+        conds.push(`upper(${lang}) in ('COLUMNAR_SDK_NODE','COLUMNAR_SDK_NODEJS')`)
+      }
+      if (low === 'dotnet') {
+        conds.push(`lower(${lang}) in ('.net','csharp','c#')`)
+        conds.push(`upper(${lang}) in ('COLUMNAR_SDK_.NET','COLUMNAR_SDK_DOTNET')`)
+      }
+      where = `WHERE (${conds.join(' OR ')})`
+    }
+
+    let limitOffset = ''
+    if (typeof opts?.limit === 'number') {
+      values.push(opts.limit)
+      limitOffset += ` LIMIT $${values.length}`
+    }
+    if (typeof opts?.offset === 'number' && opts.offset > 0) {
+      values.push(opts.offset)
+      limitOffset += ` OFFSET $${values.length}`
+    }
+
     const st = `
         WITH
-
-            /* Get all situational runs */
-            sr AS (SELECT id, datetime FROM situational_runs),
-
             /* Join the situational runs with its runs.  So this table will have multiple rows per situational run */
             joined AS (SELECT srj.situational_run_id,
                               srj.params as situational_run_params,
@@ -596,7 +629,6 @@ export class DatabaseService {
                        FROM runs AS r
                                 JOIN situational_run_join AS srj ON srj.run_id = r.id),
 
-
             /* Get the number of runs for each situational run, and details of any one of those runs.
                We only need one of the runs for most things as most info should be the same - SDK, version, etc. */
             out AS (SELECT j.situational_run_id,
@@ -605,16 +637,17 @@ export class DatabaseService {
                            min(cast(j.run_params as text))::jsonb as details_of_any_run,
                            SUM(cast(situational_run_params::jsonb->>'score' as integer)) as score
                     FROM joined AS j
-                    GROUP BY j.situational_run_id
-                    ORDER BY started DESC)
+                    GROUP BY j.situational_run_id)
 
         SELECT *
-        FROM out;
+        FROM out
+        ${where}
+        ORDER BY started DESC${limitOffset};
     `
 
-    const label = "getSituationalRuns: " + st
+    const label = "getSituationalRuns"
     logger.time(label);
-    const result = await this.pool.query(st);
+    const result = await this.pool.query(st, values);
     logger.timeEnd(label);
 
     return result.rows.map((x: any) => new SituationalRun(x.situational_run_id, x.started, x.score, x.num_runs, x.details_of_any_run))
