@@ -89,15 +89,23 @@ function AppLayoutContent({ children }: AppLayoutProps) {
     }
   }, [activeSdk]) // Depend on activeSdk to dispatch when it changes
 
-  // Situational SDK: Always read from URL params (single source of truth)
+  // Situational SDK: driven by the URL sdk param. The detail and run pages set
+  // that param asynchronously (router.replace after the run data loads), so the
+  // URL is briefly without it right after navigating into a run. Only treat an
+  // empty param as "All SDKs" on the list root (/situational), where it is a real
+  // selection. On detail/run pages we keep the current selection until the param
+  // arrives, otherwise the sidebar flashes to "All SDKs" and back.
   useEffect(() => {
     if (mode === 'situational') {
       const urlSdk = searchParams?.get('sdk') || ''
-      if (urlSdk !== selectedSituationalSdk) {
+      const onListRoot = pathname === '/situational'
+      if (urlSdk && urlSdk !== selectedSituationalSdk) {
         setSelectedSituationalSdk(urlSdk)
+      } else if (!urlSdk && onListRoot && selectedSituationalSdk !== '') {
+        setSelectedSituationalSdk('')
       }
     }
-  }, [searchParams, mode, selectedSituationalSdk])
+  }, [searchParams, mode, selectedSituationalSdk, pathname])
 
   const handleModeChange = (newMode: "performance" | "situational" | "faas") => {
     setMode(newMode)
