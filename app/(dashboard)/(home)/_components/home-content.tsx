@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from "next/navigation"
 import { getSdkVersionById } from "@/src/lib/sdk-version-service"
 import { DEFAULT_CLUSTERS } from '@/src/lib/config/defaults'
@@ -40,6 +40,7 @@ interface HomeContentProps {
 
 export default function HomeContent({ initialData }: HomeContentProps) {
   const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
 
   const [activeTab, setActiveTab] = useState("classic")
   const [excludeSnapshots, setExcludeSnapshots] = useState(true)
@@ -65,7 +66,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   const includeSnapshots = !excludeSnapshots
   const versionsQuery = useQuery({
     queryKey: ['versions', includeSnapshots],
-    queryFn: async () => apiClient.getVersions(includeSnapshots),
+    queryFn: async ({ signal }) => apiClient.getVersions(includeSnapshots, signal),
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     staleTime: 0,
@@ -75,9 +76,9 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   // Runs query (refetch every time the page becomes active)
   const runsQuery = useQuery({
     queryKey: ['runs', currentSdk, excludeSnapshots],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const url = `/api/performance/runs?sdk=${currentSdk}&limit=200&excludeSnapshots=${excludeSnapshots}&excludeGerrit=true`
-      const response = await fetch(url, { cache: 'no-store' })
+      const response = await fetch(url, { cache: 'no-store', signal })
       if (!response.ok) throw new Error(`API call failed: ${response.status} ${response.statusText}`)
       const data = await response.json()
       const transformedData: any[] = data.map((run: any) => ({
@@ -121,6 +122,15 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   useEffect(() => {
     logger.debug('SDK state changed:', { currentSdk })
   }, [currentSdk])
+
+  // Cancel any in-flight chart/runs requests when leaving the performance page,
+  // so navigating away does not leave database calls running in the background.
+  useEffect(() => {
+    return () => {
+      queryClient.cancelQueries({ queryKey: ['dashboardResults'] })
+      queryClient.cancelQueries({ queryKey: ['runs'] })
+    }
+  }, [queryClient])
 
   const isLoading = runsQuery.isLoading
   const runsData = (runsQuery.data as any[]) || []
