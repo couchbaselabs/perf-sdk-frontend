@@ -10,6 +10,7 @@ import { FaasJob } from '@/src/types'
 import { formatDateShort } from "@/src/lib/utils/formatting"
 import { getStatusColor } from "@/src/components/shared/BadgeSystem"
 import { getSDKFromTags } from "@/src/lib/utils/sdk"
+import TagDetailSkeleton from "./loading"
 import { apiClient } from '@/src/lib/api-client-unified'
 import { Button } from '@/src/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/components/ui/table'
@@ -108,18 +109,7 @@ export default function FaasTagPage({ params }: { params: Promise<{ tag: string 
   }
 
   if (isLoading) {
-    return (
-      <>
-        <div className="container mx-auto p-6">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-              <p className="mt-2 text-muted-foreground">Loading tag data...</p>
-            </div>
-          </div>
-        </div>
-      </>
-    )
+    return <TagDetailSkeleton />
   }
 
   return (

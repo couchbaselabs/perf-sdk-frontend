@@ -14,6 +14,7 @@ import { SituationalRun } from "@/src/types/entities"
 import { getStatusColor, getEnvironmentBadgeVariant, getScoreBadgeColor } from "@/src/lib/utils/status"
 import { getSdkColorByLanguage } from "@/src/lib/sdk-version-service"
 import { MixedProperty } from "../ui-helpers"
+import RunGroupSkeleton from "./loading"
 import {
   UnifiedBadge,
   SdkBadge,
@@ -109,15 +110,7 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
   // renderMixedProperty and isMixedProperty functions removed - using MixedProperty component from ui-helpers.tsx instead
 
   if (isLoading) {
-    return (
-      <>
-        <div className="container mx-auto py-10">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-          </div>
-        </div>
-      </>
-    )
+    return <RunGroupSkeleton />
   }
 
   if (!situationalRun) {

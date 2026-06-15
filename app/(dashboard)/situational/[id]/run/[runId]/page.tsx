@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/ta
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/src/components/ui/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/src/components/ui/popover"
 import PerformanceGraph from "@/src/components/shared/performance-graph"
+import RunDetailSkeleton from "./loading"
 import ObservabilityBox from "@/src/components/shared/observability-box"
 import JsonViewer from "@/src/components/shared/json-viewer"
 import { ErrorDisplay } from "@/src/components/shared/LoadingStates"
@@ -234,15 +235,7 @@ export default function SituationalRunDetailPage({
   }
 
   if (isLoading) {
-    return (
-      <>
-        <div className="container mx-auto py-10">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-          </div>
-        </div>
-      </>
-    )
+    return <RunDetailSkeleton />
   }
 
   if (!runData) {

@@ -13,6 +13,7 @@ import { Search, Calendar, Code, Layers, BarChart3, TestTube, Filter, RefreshCw,
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { formatDateShort } from "@/src/lib/utils/formatting"
+import JobsSkeleton from "./loading"
 
 // Real database interface
 interface DatabaseFaasJob {
@@ -142,18 +143,7 @@ function FaasJobsPageContent() {
   const activeFilterCount = (searchQuery ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0) + (tagFilter !== 'all' ? 1 : 0)
 
   if (isLoading) {
-    return (
-      <>
-        <div className="container mx-auto p-6">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-              <p className="mt-2 text-muted-foreground">Loading FaaS jobs from database...</p>
-            </div>
-          </div>
-        </div>
-      </>
-    )
+    return <JobsSkeleton />
   }
 
   return (
@@ -424,16 +414,7 @@ function FaasJobsPageContent() {
 
 export default function FaasJobsPage() {
   return (
-    <Suspense fallback={
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-            <p className="mt-2 text-muted-foreground">Loading FaaS jobs...</p>
-          </div>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<JobsSkeleton />}>
       <FaasJobsPageContent />
     </Suspense>
   )

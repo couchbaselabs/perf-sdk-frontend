@@ -12,6 +12,7 @@ import { FaasJob, Run as PerformanceRun, SituationalRun } from '@/src/types'
 import { apiClient } from '@/src/lib/api-client-unified'
 import { formatDateShort } from '@/src/lib/utils/formatting'
 import { getSDKFromTags } from '@/src/lib/utils/sdk'
+import JobDetailSkeleton from "./loading"
 
 // Helper function to determine SDK from tags
 
@@ -86,18 +87,7 @@ export default function FaasJobDetailPage({ params }: { params: Promise<{ jobId:
   }
 
   if (isLoading) {
-    return (
-      <>
-        <div className="container mx-auto p-6">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-              <p className="mt-2 text-muted-foreground">Loading FaaS job details...</p>
-            </div>
-          </div>
-        </div>
-      </>
-    )
+    return <JobDetailSkeleton />
   }
 
   if (error || !faasJob) {
