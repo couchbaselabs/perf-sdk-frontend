@@ -107,10 +107,12 @@ export class UnifiedApiClient {
   async getSituationalRuns(params?: {
     limit?: number
     offset?: number
+    sdk?: string
   }): Promise<ApiResponse<PaginatedResponse<SituationalRun>>> {
     const searchParams = new URLSearchParams()
     if (params?.limit) searchParams.set('limit', params.limit.toString())
     if (params?.offset) searchParams.set('offset', params.offset.toString())
+    if (params?.sdk) searchParams.set('sdk', params.sdk)
 
     return this.fetch(`/situational/runs?${searchParams}`)
   }
