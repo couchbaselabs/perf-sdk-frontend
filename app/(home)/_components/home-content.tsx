@@ -256,7 +256,6 @@ export default function HomeContent({ initialData }: HomeContentProps) {
       ...SCALING_OPERATIONS.map(op => ({ ...op, category: 'Horizontal Scaling' })),
       ...SYSTEM_METRICS.map(op => ({ ...op, category: 'System Metrics' })),
       ...TRANSACTION_OPERATIONS.map(op => ({ ...op, category: 'Transactions' })),
-      ...(Object.values(SDK_API_COMPARISONS) as readonly (typeof SDK_API_COMPARISONS[keyof typeof SDK_API_COMPARISONS])[]).flat().map(op => ({ ...op, category: 'API Comparisons' }))
     ]
 
     Object.entries(chartData).forEach(([operationId, data]) => {
