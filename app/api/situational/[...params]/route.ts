@@ -227,15 +227,11 @@ async function handleRunEvents(request: NextRequest, situationalRunId: string, r
   const pageSize = EVENTS_PAGE_SIZE
 
   const databaseService = await getDatabaseService()
-  const buckets = await databaseService.getBucketsByRunId(runId)
-  let firstBucketTime: number | undefined = undefined
-  if (buckets.length > 0 && buckets[0].datetime) {
-    firstBucketTime = new Date(buckets[0].datetime).getTime()
-  }
+  const firstBucketTime = await databaseService.getFirstBucketTime(runId)
 
   const [rawEvents, total] = await Promise.all([
     databaseService.getEvents(runId, firstBucketTime, false, pageSize, page * pageSize),
-    databaseService.getEventsCount(runId),
+    page === 0 ? databaseService.getEventsCount(runId) : Promise.resolve(null),
   ])
 
   const events = (rawEvents || []).map((e: any) => ({

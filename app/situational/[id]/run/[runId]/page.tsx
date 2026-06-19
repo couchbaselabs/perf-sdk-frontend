@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/src/components/ui/pop
 import PerformanceGraph from "@/src/components/shared/performance-graph"
 import ObservabilityBox from "@/src/components/shared/observability-box"
 import JsonViewer from "@/src/components/shared/json-viewer"
+import { ErrorDisplay } from "@/src/components/shared/LoadingStates"
 import { getStatusColor, getEnvironmentBadgeVariant, getScoreBadgeColor } from "@/src/lib/utils/status"
 import { getSdkColorByLanguage } from "@/src/lib/sdk-version-service"
 import { SdkBadge, VersionBadge, EnvironmentBadge, ScoreBadge, StatusBadge } from "@/src/components/shared/BadgeSystem"
@@ -55,9 +56,9 @@ export default function SituationalRunDetailPage({
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
   const [eventsPage, setEventsPage] = useState(0)
-  const [eventsData, setEventsData] = useState<{ events: any[]; total: number } | null>(null)
+  const [eventsData, setEventsData] = useState<{ events: any[]; total: number; pageSize: number } | null>(null)
   const [eventsLoading, setEventsLoading] = useState(false)
-  const EVENTS_PAGE_SIZE = 100
+  const [eventsError, setEventsError] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
 
   // No local mock data
@@ -135,6 +136,7 @@ export default function SituationalRunDetailPage({
 
   const fetchEvents = useCallback(async (page: number) => {
     setEventsLoading(true)
+    setEventsError(false)
     try {
       const res = await fetch(
         `/api/situational/${resolvedParams.id}/run/${resolvedParams.runId}/events?page=${page}`,
@@ -142,11 +144,18 @@ export default function SituationalRunDetailPage({
       )
       const payload = res.ok ? await res.json() : null
       if (payload?.success) {
-        setEventsData({ events: payload.data.events, total: payload.data.total })
+        setEventsData(prev => ({
+          events: payload.data.events,
+          total: payload.data.total ?? prev?.total ?? 0,
+          pageSize: payload.data.pageSize,
+        }))
         setEventsPage(page)
+      } else {
+        setEventsError(true)
       }
     } catch (err) {
       console.error('Error fetching events', err)
+      setEventsError(true)
     } finally {
       setEventsLoading(false)
     }
@@ -584,18 +593,19 @@ export default function SituationalRunDetailPage({
                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary" />
                   </div>
                 )}
-                {!eventsLoading && eventsData && eventsData.events.length > 0 && (
+                {!eventsLoading && eventsError && <ErrorDisplay message="Failed to load events." />}
+                {!eventsLoading && !eventsError && eventsData && eventsData.events.length > 0 && (
                   <EventsTable events={eventsData.events} />
                 )}
-                {!eventsLoading && eventsData && eventsData.events.length === 0 && (
+                {!eventsLoading && !eventsError && eventsData && eventsData.events.length === 0 && (
                   <div className="text-center p-8 text-muted-foreground">No events recorded for this run.</div>
                 )}
-                {!eventsLoading && eventsData && eventsData.total > EVENTS_PAGE_SIZE && (
+                {!eventsLoading && !eventsError && eventsData && eventsData.total > eventsData.pageSize && (
                   <div className="mt-4 pt-4 border-t">
                     <EventsPagination
                       page={eventsPage}
                       total={eventsData.total}
-                      pageSize={EVENTS_PAGE_SIZE}
+                      pageSize={eventsData.pageSize}
                       onPageChange={fetchEvents}
                     />
                   </div>

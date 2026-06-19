@@ -522,19 +522,21 @@ export class DatabaseService {
   }
 
   async getEvents(runId: string, firstBucketTime: any, displayOnGraphOnly: boolean, limit?: number, offset?: number): Promise<RunEvent[]> {
-    const pagination = (typeof limit === 'number')
-      ? ` ORDER BY r.datetime ASC LIMIT ${limit} OFFSET ${offset ?? 0}`
-      : ' ORDER BY r.datetime ASC'
+    const paginate = typeof limit === 'number'
+    const graphFilter = displayOnGraphOnly ? `AND cast(params::jsonb->>'displayOnGraph' as bool) = true` : ''
+    const pagination = paginate ? 'LIMIT $2 OFFSET $3' : ''
+    const params = paginate ? [runId, limit, offset ?? 0] : [runId]
+
     const st = `
         SELECT r.datetime,
                r.params
         FROM run_events AS r
-        WHERE r.run_id = '${runId}'
-            ${displayOnGraphOnly ? ` AND cast(params::jsonb->>'displayOnGraph' as bool) = true` : ''}${pagination};`
+        WHERE r.run_id = $1 ${graphFilter}
+        ORDER BY r.datetime ASC, r.ctid ASC ${pagination}`
 
     const label = "getEvents: " + st
     logger.time(label);
-    const result = await this.pool.query(st);
+    const result = await this.pool.query(st, params);
     logger.timeEnd(label);
 
     return result.rows.map((x: any) => {
@@ -764,6 +766,20 @@ export class DatabaseService {
     } catch (error) {
       logger.error('Error fetching buckets for run:', error);
       return [];
+    }
+  }
+
+  async getFirstBucketTime(runId: string): Promise<number | undefined> {
+    try {
+      const result = await this.pool.query(
+        `SELECT MIN(time) as first_time FROM buckets WHERE run_id = $1`,
+        [runId]
+      )
+      const val = result.rows[0]?.first_time
+      return val != null ? new Date(val).getTime() : undefined
+    } catch (error) {
+      logger.error('Error fetching first bucket time:', error)
+      return undefined
     }
   }
 
