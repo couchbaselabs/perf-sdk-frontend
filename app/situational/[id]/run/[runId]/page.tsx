@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/src/components/ui/button"
 import { useCallback } from "react"
 import { Badge } from "@/src/components/ui/badge"
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/src/components/ui/pagination"
 import { ChevronLeft, Clock, Download, Share2, HelpCircle, Info, RefreshCw, Code, Copy, Check, AlertTriangle, ExternalLink } from "lucide-react"
 import { toPng } from 'html-to-image'
 import Link from "next/link"
@@ -16,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/src/components/ui/pop
 import PerformanceGraph from "@/src/components/shared/performance-graph"
 import ObservabilityBox from "@/src/components/shared/observability-box"
 import JsonViewer from "@/src/components/shared/json-viewer"
+import { ErrorDisplay } from "@/src/components/shared/LoadingStates"
 import { getStatusColor, getEnvironmentBadgeVariant, getScoreBadgeColor } from "@/src/lib/utils/status"
 import { getSdkColorByLanguage } from "@/src/lib/sdk-version-service"
 import { SdkBadge, VersionBadge, EnvironmentBadge, ScoreBadge, StatusBadge } from "@/src/components/shared/BadgeSystem"
@@ -53,6 +55,10 @@ export default function SituationalRunDetailPage({
   const [runData, setRunData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
+  const [eventsPage, setEventsPage] = useState(0)
+  const [eventsData, setEventsData] = useState<{ events: any[]; total: number; pageSize: number } | null>(null)
+  const [eventsLoading, setEventsLoading] = useState(false)
+  const [eventsError, setEventsError] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
 
   // No local mock data
@@ -127,6 +133,40 @@ export default function SituationalRunDetailPage({
 
     fetchRunDetails()
   }, [resolvedParams.id, resolvedParams.runId])
+
+  const fetchEvents = useCallback(async (page: number) => {
+    setEventsLoading(true)
+    setEventsError(false)
+    try {
+      const res = await fetch(
+        `/api/situational/${resolvedParams.id}/run/${resolvedParams.runId}/events?page=${page}`,
+        { cache: 'no-store' }
+      )
+      const payload = res.ok ? await res.json() : null
+      if (payload?.success) {
+        setEventsData(prev => ({
+          events: payload.data.events,
+          total: payload.data.total ?? prev?.total ?? 0,
+          pageSize: payload.data.pageSize,
+        }))
+        setEventsPage(page)
+      } else {
+        setEventsError(true)
+      }
+    } catch (err) {
+      console.error('Error fetching events', err)
+      setEventsError(true)
+    } finally {
+      setEventsLoading(false)
+    }
+  }, [resolvedParams.id, resolvedParams.runId])
+
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab)
+    if (tab === 'events' && eventsData === null && !eventsLoading) {
+      fetchEvents(0)
+    }
+  }, [eventsData, eventsLoading, fetchEvents])
 
   // Format date for display
 
@@ -462,7 +502,7 @@ export default function SituationalRunDetailPage({
         />
 
         {/* Tabs for additional information */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-6">
           <TabsList className="w-full grid grid-cols-3 h-12 p-0 bg-slate-50 rounded-md">
             <TabsTrigger
               value="overview"
@@ -542,14 +582,33 @@ export default function SituationalRunDetailPage({
           <TabsContent value="events" className="mt-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">Run Events</CardTitle>
-                {/* Export Events button removed */}
+                <CardTitle className="text-lg">
+                  Run Events
+                  {eventsData && <span className="ml-2 text-sm font-normal text-muted-foreground">({eventsData.total.toLocaleString()} total)</span>}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                {runData.events && runData.events.length > 0 ? (
-                  <EventsTable events={runData.events} />
-                ) : (
+                {eventsLoading && (
+                  <div className="flex justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary" />
+                  </div>
+                )}
+                {!eventsLoading && eventsError && <ErrorDisplay message="Failed to load events." />}
+                {!eventsLoading && !eventsError && eventsData && eventsData.events.length > 0 && (
+                  <EventsTable events={eventsData.events} />
+                )}
+                {!eventsLoading && !eventsError && eventsData && eventsData.events.length === 0 && (
                   <div className="text-center p-8 text-muted-foreground">No events recorded for this run.</div>
+                )}
+                {!eventsLoading && !eventsError && eventsData && eventsData.total > eventsData.pageSize && (
+                  <div className="mt-4 pt-4 border-t">
+                    <EventsPagination
+                      page={eventsPage}
+                      total={eventsData.total}
+                      pageSize={eventsData.pageSize}
+                      onPageChange={fetchEvents}
+                    />
+                  </div>
                 )}
               </CardContent>
               <CardFooter className="bg-slate-50 border-t">
@@ -669,6 +728,66 @@ export default function SituationalRunDetailPage({
         </Tabs>
       </div>
     </AppLayout>
+  )
+}
+
+function getPageNumbers(current: number, total: number): (number | 'ellipsis')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i)
+  const pages: (number | 'ellipsis')[] = [0]
+  if (current > 3) pages.push('ellipsis')
+  for (let i = Math.max(1, current - 2); i <= Math.min(total - 2, current + 2); i++) pages.push(i)
+  if (current < total - 4) pages.push('ellipsis')
+  pages.push(total - 1)
+  return pages
+}
+
+function EventsPagination({ page, total, pageSize, onPageChange }: {
+  page: number
+  total: number
+  pageSize: number
+  onPageChange: (page: number) => void
+}) {
+  const totalPages = Math.ceil(total / pageSize)
+  const pageNumbers = getPageNumbers(page, totalPages)
+
+  return (
+    <Pagination>
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious
+            href="#"
+            onClick={(e) => { e.preventDefault(); if (page > 0) onPageChange(page - 1) }}
+            aria-disabled={page === 0}
+            className={page === 0 ? 'pointer-events-none opacity-50' : ''}
+          />
+        </PaginationItem>
+        {pageNumbers.map((p, i) =>
+          p === 'ellipsis' ? (
+            <PaginationItem key={`ellipsis-${i}`}>
+              <PaginationEllipsis />
+            </PaginationItem>
+          ) : (
+            <PaginationItem key={p}>
+              <PaginationLink
+                href="#"
+                isActive={p === page}
+                onClick={(e) => { e.preventDefault(); onPageChange(p) }}
+              >
+                {p + 1}
+              </PaginationLink>
+            </PaginationItem>
+          )
+        )}
+        <PaginationItem>
+          <PaginationNext
+            href="#"
+            onClick={(e) => { e.preventDefault(); if (page < totalPages - 1) onPageChange(page + 1) }}
+            aria-disabled={page >= totalPages - 1}
+            className={page >= totalPages - 1 ? 'pointer-events-none opacity-50' : ''}
+          />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
   )
 }
 

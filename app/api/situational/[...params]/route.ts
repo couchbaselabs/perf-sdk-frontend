@@ -57,8 +57,8 @@ export async function GET(
       /**
        * GET /api/situational/[id]/run/[runId]
        * Gets comprehensive details for a specific run within a situational run.
-       * Includes run details, events timeline, and error summary.
-       * 
+       * Includes run details, graph events (displayOnGraph only), and error summary.
+       *
        * @param id - The situational run ID
        * @param runId - The specific run ID within the situational run
        * @returns Combined object with runDetails, events, and errorsSummary
@@ -66,6 +66,13 @@ export async function GET(
       const situationalRunId = pathSegments[0]
       const runId = pathSegments[2]
       return handleSpecificRunDetails(request, situationalRunId, runId)
+    }
+
+    // Route: /api/situational/[id]/run/[runId]/events?page=0&pageSize=100
+    if (pathSegments.length === 4 && pathSegments[1] === 'run' && pathSegments[3] === 'events') {
+      const situationalRunId = pathSegments[0]
+      const runId = pathSegments[2]
+      return handleRunEvents(request, situationalRunId, runId)
     }
 
     return NextResponse.json({ error: 'Invalid route' }, { status: 404 })
@@ -191,9 +198,9 @@ async function handleSpecificRunDetails(request: NextRequest, situationalRunId: 
     logger.debug('First bucket time computed', { datetime: buckets[0].datetime, firstBucketTime })
   }
 
-  // Get events with correct timing and error summary
+  // Fetch only displayOnGraph events for graph markers
   const [rawEvents, errorsSummary] = await Promise.all([
-    databaseService.getEvents(runId, firstBucketTime, false),
+    databaseService.getEvents(runId, firstBucketTime, true),
     dashboardService.genSituationalRunRunErrorsSummary(query)
   ])
 
@@ -206,4 +213,32 @@ async function handleSpecificRunDetails(request: NextRequest, situationalRunId: 
 
   const resp: ApiResponse<SituationalRunDetailResponse> = { success: true, data: { runDetails, events, errorsSummary } }
   return NextResponse.json(resp)
+}
+
+const EVENTS_PAGE_SIZE = 100
+
+/**
+ * Handler for GET /api/situational/[id]/run/[runId]/events?page=0&pageSize=100
+ * Returns a paginated slice of run_events ordered by datetime.
+ */
+async function handleRunEvents(request: NextRequest, situationalRunId: string, runId: string) {
+  const url = new URL(request.url)
+  const page = Math.max(0, parseInt(url.searchParams.get('page') ?? '0', 10) || 0)
+  const pageSize = EVENTS_PAGE_SIZE
+
+  const databaseService = await getDatabaseService()
+  const firstBucketTime = await databaseService.getFirstBucketTime(runId)
+
+  const [rawEvents, total] = await Promise.all([
+    databaseService.getEvents(runId, firstBucketTime, false, pageSize, page * pageSize),
+    page === 0 ? databaseService.getEventsCount(runId) : Promise.resolve(null),
+  ])
+
+  const events = (rawEvents || []).map((e: any) => ({
+    timeOffsetSecs: (typeof e?.timeOffsetSecs === 'number' && Number.isFinite(e.timeOffsetSecs)) ? e.timeOffsetSecs : null,
+    datetime: e?.datetime,
+    params: e?.params ?? {}
+  }))
+
+  return NextResponse.json({ success: true, data: { events, total, page, pageSize } })
 }
