@@ -222,13 +222,10 @@ export default function OperationsSection({
         </div>
 
         {TRANSACTION_OPERATIONS.filter((op) => visibleTransactions.includes(op.id)).map((operation) => {
-          // CRITICAL FIX: Use proper transaction query functions to match Vue exactly
-          const threads = operation.id.includes('1') ? 1 : 20
-          
           const dashboardInput = operation.type === 'readonly'
             ? createTransactionReadOnlyInput(
                 sdkInfo?.name || 'Java',
-                threads,
+                operation.threads,
                 excludeSnapshots,
                 true, // excludeGerrit
                 clusterVersion,
@@ -236,7 +233,7 @@ export default function OperationsSection({
               )
             : createTransactionInput(
                 sdkInfo?.name || 'Java',
-                threads,
+                operation.threads,
                 excludeSnapshots,
                 true, // excludeGerrit
                 clusterVersion,
@@ -247,7 +244,7 @@ export default function OperationsSection({
             <div key={operation.id} className="mb-6">
               <DashboardResults
                 input={dashboardInput}
-                title={`${operation.title} - ${sdkInfo?.name}`}
+                title={`${operation.title} (${operation.threads} thread${operation.threads > 1 ? 's' : ''}) - ${sdkInfo?.name}`}
                 description={operation.description}
                 keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
