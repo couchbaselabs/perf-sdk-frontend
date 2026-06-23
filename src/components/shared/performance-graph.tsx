@@ -65,6 +65,30 @@ const getAllMetrics = () => {
   return Object.values(metricCategories).flat()
 }
 
+// Returns a Recharts dot renderer that draws a small upward triangle on any
+// data point whose raw value was clamped to the axis boundary, so clipped
+// outliers are visually distinct from genuine scale-maximum values.
+function ClipDot({ cx, cy, payload, metricId, color }: {
+  cx?: number; cy?: number; payload?: Record<string, unknown>; metricId: string; color: string
+}) {
+  if (!payload || cx === undefined || cy === undefined) return null
+  const raw = payload[`${metricId}_raw`]
+  const displayed = payload[metricId]
+  if (raw === undefined || raw === displayed) return null
+  return (
+    <polygon
+      points={`${cx},${cy - 7} ${cx - 4},${cy + 2} ${cx + 4},${cy + 2}`}
+      fill={color}
+      stroke="white"
+      strokeWidth={1}
+    />
+  )
+}
+
+const makeClipDot = (metricId: string, color: string) =>
+  (props: { cx?: number; cy?: number; payload?: Record<string, unknown> }) =>
+    <ClipDot {...props} metricId={metricId} color={color} />
+
 interface PerformanceGraphProps {
   runId: string
   title: string
@@ -136,6 +160,7 @@ export default function PerformanceGraph({
   const [dragStartX, setDragStartX] = useState<number | null>(null)
   const [dragCurrentX, setDragCurrentX] = useState<number | null>(null)
   const [showLegend, setShowLegend] = useState(true)
+  const [clipExtremes, setClipExtremes] = useState(false)
   const [brushKey, setBrushKey] = useState(0)
   const [chartKey, setChartKey] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -416,11 +441,61 @@ export default function PerformanceGraph({
     console.log(`DEBUG: Last 3 data points:`, visibleData.slice(-3).map(d => ({ time: d.time, timeLabel: d.timeLabel })))
   }
 
+  // Winsorize Y-axis: clamp displayed values to a domain derived from p99 (or
+  // 8× median when p99 is dominated by an extreme spike) so outliers plateau at
+  // the boundary rather than compressing the readable range. Raw values are kept
+  // under `${id}_raw` so tooltips still show the true figure.
+  const computeWinsorizedDomain = (metricIds: string[]): [number | string, number | string] => {
+    const values: number[] = []
+    for (const point of visibleData) {
+      for (const id of metricIds) {
+        const v = point[id]
+        if (typeof v === 'number' && Number.isFinite(v)) values.push(v)
+      }
+    }
+    if (values.length === 0) return ["auto", "auto"]
+    values.sort((a, b) => a - b)
+    const n = values.length
+    const p1     = values[Math.floor(n * 0.01)]
+    const median = values[Math.floor(n * 0.5)]
+    const p99    = values[Math.min(Math.floor(n * 0.99), n - 1)]
+    // If p99 is more than 8× the median the scale is dominated by an extreme
+    // outlier (e.g. a warmup spike); cap at 8× median so the rest of the data
+    // stays readable while still preserving a wide natural spread.
+    const upperRaw = median > 0 && p99 > median * 8 ? median * 8 : p99
+    return [Math.min(0, p1), upperRaw * 1.05]
+  }
+
+  const leftMetricIds = activeMetrics.filter((id) => getAxis(id) === "left")
+  const rightMetricIds = activeMetrics.filter((id) => getAxis(id) === "right")
+  const leftDomain  = clipExtremes ? computeWinsorizedDomain(leftMetricIds)  : ["auto", "auto"] as [string, string]
+  const rightDomain = clipExtremes ? computeWinsorizedDomain(rightMetricIds) : ["auto", "auto"] as [string, string]
+
+  // When clipping is on, clamp display values to the domain so outliers plateau
+  // at the boundary instead of compressing the readable range. Raw originals are
+  // kept under `${id}_raw` so tooltips can still show the true figure.
+  const displayData = clipExtremes
+    ? visibleData.map(point => {
+        const p: Record<string, unknown> = { ...point }
+        const clamp = (id: string, lo: number | string, hi: number | string) => {
+          const v = point[id]
+          if (typeof v === 'number' && Number.isFinite(v) && typeof lo === 'number' && typeof hi === 'number') {
+            p[`${id}_raw`] = v
+            p[id] = Math.max(lo, Math.min(hi, v))
+          }
+        }
+        leftMetricIds.forEach(id => clamp(id, leftDomain[0], leftDomain[1]))
+        rightMetricIds.forEach(id => clamp(id, rightDomain[0], rightDomain[1]))
+        return p
+      })
+    : visibleData
+
   // Tooltip formatters
-  const tooltipFormatter = (value: any, name: string) => {
-    const metric = allMetrics.find((m) => m.id === name)
+  const tooltipFormatter = (value: unknown, name: string, entry: { payload?: Record<string, unknown> }) => {
+    const metric = allMetrics.find((m) => m.name === name || m.id === name)
     const unit = metric?.unit || ""
-    const numValue = typeof value === 'number' ? value : parseFloat(value) || 0
+    const raw = metric?.id ? (entry?.payload?.[`${metric.id}_raw`] ?? value) : value
+    const numValue = typeof raw === 'number' ? raw : parseFloat(String(raw)) || 0
     return [`${numValue.toFixed(2)}${unit}`, metric?.name || name]
   }
 
@@ -542,6 +617,23 @@ export default function PerformanceGraph({
               </Tooltip>
             </TooltipProvider>
 
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={clipExtremes ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setClipExtremes(v => !v)}
+                  >
+                    Clip Extremities
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Winsorize the y-axis scale: clips at p99 or 8x median (whichever is lower) so warmup spikes do not compress the readable range. Clipped points show a triangle marker; hover to see their true value.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
             <Tabs value={chartType} onValueChange={(value) => setChartType(value as "line" | "area")}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="line" className="flex items-center gap-1">
@@ -627,7 +719,7 @@ export default function PerformanceGraph({
             {selectedTimeRange ? (
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === "line" ? (
-                  <LineChart key={chartKey} data={visibleData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <LineChart key={chartKey} data={displayData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis
                       dataKey="time"
@@ -642,7 +734,7 @@ export default function PerformanceGraph({
                     <YAxis
                       yAxisId="left"
                       label={{ value: leftAxisLabel, angle: -90, position: "insideLeft" }}
-                      domain={["auto", "auto"]}
+                      domain={leftDomain}
                       tick={{ fontSize: 11 }}
                       stroke="#94a3b8"
                       hide={leftAxisMetrics === 0}
@@ -651,7 +743,7 @@ export default function PerformanceGraph({
                       yAxisId="right"
                       orientation="right"
                       label={{ value: rightAxisLabel, angle: -90, position: "insideRight" }}
-                      domain={["auto", "auto"]}
+                      domain={rightDomain}
                       tick={{ fontSize: 11 }}
                       stroke="#94a3b8"
                       hide={rightAxisMetrics === 0}
@@ -691,7 +783,7 @@ export default function PerformanceGraph({
                           dataKey={metric.id}
                           stroke={metric.color}
                           strokeWidth={2}
-                          dot={false}
+                          dot={clipExtremes ? makeClipDot(metric.id, metric.color) : false}
                           name={metric.name}
                           connectNulls={true}
                         />
@@ -712,7 +804,7 @@ export default function PerformanceGraph({
                     ))}
                   </LineChart>
                 ) : (
-                  <RechartsAreaChart key={chartKey} data={visibleData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <RechartsAreaChart key={chartKey} data={displayData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis
                       dataKey="time"
@@ -727,7 +819,7 @@ export default function PerformanceGraph({
                     <YAxis
                       yAxisId="left"
                       label={{ value: leftAxisLabel, angle: -90, position: "insideLeft" }}
-                      domain={["auto", "auto"]}
+                      domain={leftDomain}
                       tick={{ fontSize: 11 }}
                       stroke="#94a3b8"
                       hide={leftAxisMetrics === 0}
@@ -736,7 +828,7 @@ export default function PerformanceGraph({
                       yAxisId="right"
                       orientation="right"
                       label={{ value: rightAxisLabel, angle: -90, position: "insideRight" }}
-                      domain={["auto", "auto"]}
+                      domain={rightDomain}
                       tick={{ fontSize: 11 }}
                       stroke="#94a3b8"
                       hide={rightAxisMetrics === 0}
@@ -777,6 +869,7 @@ export default function PerformanceGraph({
                           stroke={metric.color}
                           fill={`${metric.color}20`}
                           strokeWidth={2}
+                          dot={clipExtremes ? makeClipDot(metric.id, metric.color) : false}
                           name={metric.name}
                           connectNulls={true}
                         />
