@@ -231,14 +231,16 @@ export default function OperationsSection({
                 threads,
                 excludeSnapshots,
                 true, // excludeGerrit
-                clusterVersion
+                clusterVersion,
+                selectedMetric
               )
             : createTransactionInput(
                 sdkInfo?.name || 'Java',
                 threads,
                 excludeSnapshots,
                 true, // excludeGerrit
-                clusterVersion
+                clusterVersion,
+                selectedMetric
               )
 
           return (
