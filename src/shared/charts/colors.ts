@@ -21,6 +21,15 @@ const CHART_COLORS = [
   '#A855F7', // Violet
 ] as const
 
+// Distinct colors for non-release version bars. branch-snapshot (e.g. 3.11.x) and
+// main are "moving" tags shown at the end of the chart; gerrit/PR bars are shown
+// inline (ordered by build date) and get their own color so they stand out.
+export const SNAPSHOT_BAR_COLORS = {
+  branch: '#F59E0B', // Amber
+  main: '#8B5CF6',   // Purple
+  gerrit: '#EC4899', // Pink
+} as const
+
 // Semantic colors for common metric types
 const SEMANTIC_COLORS = {
   errors: '#EF4444',        // Red

@@ -14,13 +14,17 @@ interface FiltersSectionProps {
   onClusterVersionChange: (version: string) => void
   excludeSnapshots: boolean
   onExcludeSnapshotsChange: (checked: boolean) => void
+  excludeGerrit: boolean
+  onExcludeGerritChange: (checked: boolean) => void
 }
 
 export function FiltersSection({
   selectedClusterVersion,
   onClusterVersionChange,
   excludeSnapshots,
-  onExcludeSnapshotsChange
+  onExcludeSnapshotsChange,
+  excludeGerrit,
+  onExcludeGerritChange
 }: FiltersSectionProps) {
   const [availableVersions, setAvailableVersions] = useState<ClusterVersion[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -105,6 +109,30 @@ export function FiltersSection({
                   <TooltipContent>
                     <p>Snapshot versions contain "-" in the name (e.g., 3.0.7-20230518.191528-26)</p>
                     <p>Regular versions are stable releases (e.g., 3.0.7)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="exclude-gerrit"
+                checked={excludeGerrit}
+                onCheckedChange={onExcludeGerritChange}
+              />
+              <Label htmlFor="exclude-gerrit" className="text-sm">
+                Exclude PR / Gerrit builds
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="ml-1 w-4 h-4 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground cursor-help">
+                      ?
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>PR / Gerrit builds come from pre-release performer images (tags like "refs-changes-...").</p>
+                    <p>Uncheck to show them, ordered by build date, with a link to the PR.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

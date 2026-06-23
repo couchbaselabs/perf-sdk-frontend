@@ -204,7 +204,7 @@ export const DataTransformers = {
             clusterName: '7.1.1',
             clusterColor: 'rgb(16, 185, 129)',
             sdkName: sdkLanguage,
-            sdkColor: 'rgb(16, 185, 129)'
+            sdkColor: 'rgb(16, 185, 129)',
           }
         })
         .filter((item: any) => !isNaN(item.value) && item.name)

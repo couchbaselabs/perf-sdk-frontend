@@ -44,6 +44,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
 
   const [activeTab, setActiveTab] = useState("classic")
   const [excludeSnapshots, setExcludeSnapshots] = useState(true)
+  const [excludeGerrit, setExcludeGerrit] = useState(false)
   const [selectedClusterVersion, setSelectedClusterVersion] = useState<string>(DEFAULT_CLUSTERS[0])
   const [visibleOperations, setVisibleOperations] = useState<string[]>(CORE_OPERATIONS.slice(0, 3).map((op) => op.id))
   const [visibleScaling, setVisibleScaling] = useState<string[]>(SCALING_OPERATIONS.map((op) => op.id))
@@ -121,6 +122,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
 
   // Event handlers
   const handleExcludeSnapshotsChange = (checked: boolean) => setExcludeSnapshots(checked)
+  const handleExcludeGerritChange = (checked: boolean) => setExcludeGerrit(checked)
   const { handleRefresh } = useRefreshHandler(async () => {
     // Charts refetch via the reloadTrigger bump (it is part of their keyProp).
     await versionsQuery.refetch()
@@ -277,6 +279,8 @@ export default function HomeContent({ initialData }: HomeContentProps) {
           onClusterVersionChange={setSelectedClusterVersion}
           excludeSnapshots={excludeSnapshots}
           onExcludeSnapshotsChange={handleExcludeSnapshotsChange}
+          excludeGerrit={excludeGerrit}
+          onExcludeGerritChange={handleExcludeGerritChange}
         />
 
         {/* Use the new TabsSection */}
@@ -288,6 +292,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
           currentSdk={currentSdk}
           clusterVersion={activeClusterVersion}
           excludeSnapshots={excludeSnapshots}
+          excludeGerrit={excludeGerrit}
           reloadTrigger={reloadTrigger}
           visibleOperations={visibleOperations}
           toggleOperation={toggleOperation}
