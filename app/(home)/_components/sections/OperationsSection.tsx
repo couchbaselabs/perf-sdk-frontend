@@ -10,7 +10,7 @@ import {
   SCALING_OPERATIONS,
   SYSTEM_METRICS,
   TRANSACTION_OPERATIONS,
-  API_COMPARISON_OPERATIONS
+  SDK_API_COMPARISONS
 } from "@/src/lib/config/constants"
 import { 
   createKVOperationInput, 
@@ -58,6 +58,7 @@ export default function OperationsSection({
   toggleApiComparison,
 }: OperationsSectionProps) {
   const sdkInfo = getSdkVersionById(currentSdk)
+  const sdkApiComparisons = (SDK_API_COMPARISONS as Record<string, readonly { id: string; title: string; description: string }[]>)[currentSdk] ?? []
 
   return (
     <>
@@ -256,13 +257,13 @@ export default function OperationsSection({
       </div>
 
       {/* API Comparisons Section */}
-      <div className="mb-8">
+      {sdkApiComparisons.length > 0 && <div className="mb-8">
         <div className="flex flex-wrap gap-2 mb-4">
           <div className="flex items-center mr-2">
             <BarChart4 className="h-4 w-4 mr-1 text-muted-foreground" />
             <span className="text-sm font-medium">API Comparisons:</span>
           </div>
-          {API_COMPARISON_OPERATIONS.map((operation) => (
+          {sdkApiComparisons.map((operation) => (
             <Badge
               key={operation.id}
               variant={visibleApiComparisons.includes(operation.id) ? "default" : "outline"}
@@ -274,7 +275,7 @@ export default function OperationsSection({
           ))}
         </div>
 
-        {API_COMPARISON_OPERATIONS.filter((op) => visibleApiComparisons.includes(op.id)).map((operation) => {
+        {sdkApiComparisons.filter((op) => visibleApiComparisons.includes(op.id)).map((operation) => {
           // CRITICAL FIX: Use proper reactive API query functions to match Vue exactly
           let dashboardInput
           switch (operation.id) {
@@ -332,10 +333,10 @@ export default function OperationsSection({
             </div>
           )
         })}
-      </div>
+      </div>}
 
       {visibleOperations.length === 0 && visibleScaling.length === 0 && visibleMetrics.length === 0 &&
-        visibleTransactions.length === 0 && visibleApiComparisons.length === 0 && (
+        visibleTransactions.length === 0 && (sdkApiComparisons.length === 0 || visibleApiComparisons.length === 0) && (
           <div className="bg-white rounded-lg border shadow-sm p-6 mb-8 text-center">
             <p className="text-muted-foreground">Select at least one chart type to display</p>
           </div>

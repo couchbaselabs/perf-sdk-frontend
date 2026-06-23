@@ -77,23 +77,27 @@ export const TRANSACTION_OPERATIONS = [
   }
 ] as const
 
-export const API_COMPARISON_OPERATIONS = [
-  {
-    id: "horizontalScalingReactive",
-    title: "Horizontal Scaling (Reactive)",
-    description: "Tests how the SDK scales with parallelism, using KV gets and the reactive API."
-  },
-  {
-    id: "kvGetsBlocking",
-    title: "KV Gets (Blocking API)",
-    description: "Standard blocking API performance for KV operations."
-  },
-  {
-    id: "kvGetsReactive",
-    title: "KV Gets (Reactive API)",
-    description: "Reactive/Async API performance for KV operations."
-  }
-] as const
+// API comparison operations keyed by SDK id.
+// Only SDKs whose performers support an alternate API appear here.
+export const SDK_API_COMPARISONS = {
+  java: [
+    {
+      id: "horizontalScalingReactive",
+      title: "Horizontal Scaling (Reactive)",
+      description: "Tests how the SDK scales with parallelism, using KV gets and the reactive API."
+    },
+    {
+      id: "kvGetsBlocking",
+      title: "KV Gets (Blocking API)",
+      description: "Standard blocking API performance for KV operations."
+    },
+    {
+      id: "kvGetsReactive",
+      title: "KV Gets (Reactive API)",
+      description: "Reactive/Async API performance for KV operations."
+    }
+  ]
+} as const satisfies Record<string, readonly { id: string; title: string; description: string }[]>
 
 // Combined operations list
 export const ALL_OPERATIONS = [
@@ -101,7 +105,6 @@ export const ALL_OPERATIONS = [
   ...SCALING_OPERATIONS,
   ...SYSTEM_METRICS,
   ...TRANSACTION_OPERATIONS,
-  ...API_COMPARISON_OPERATIONS
 ] as const
 
 // Available metrics for dynamic switching
@@ -139,6 +142,6 @@ export type CoreOperation = typeof CORE_OPERATIONS[number]
 export type ScalingOperation = typeof SCALING_OPERATIONS[number]
 export type SystemMetric = typeof SYSTEM_METRICS[number]
 export type TransactionOperation = typeof TRANSACTION_OPERATIONS[number]
-export type ApiComparisonOperation = typeof API_COMPARISON_OPERATIONS[number]
+export type ApiComparisonOperation = typeof SDK_API_COMPARISONS[keyof typeof SDK_API_COMPARISONS][number]
 export type Operation = typeof ALL_OPERATIONS[number]
 export type AvailableMetric = typeof AVAILABLE_METRICS[number]
