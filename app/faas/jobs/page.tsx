@@ -117,7 +117,8 @@ function FaasJobsPageContent() {
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZoneName: 'short'
     })
   }
 

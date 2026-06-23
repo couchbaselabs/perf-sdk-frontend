@@ -169,7 +169,7 @@ export default function FaasJobDetailPage({ params }: { params: Promise<{ jobId:
             <CardContent>
               <div className="space-y-1">
                 <p className="text-lg font-semibold">{formatDateShort(faasJob.datetime as any)}</p>
-                <p className="text-sm text-muted-foreground">{new Date(faasJob.datetime as any).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                <p className="text-sm text-muted-foreground">{new Date(faasJob.datetime as any).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}</p>
               </div>
             </CardContent>
           </Card>

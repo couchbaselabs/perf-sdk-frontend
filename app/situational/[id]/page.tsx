@@ -262,7 +262,7 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
 
                 <div className="mb-4">
                   <p className="text-gray-500 mb-2">
-                    Started: {startedDate.toLocaleDateString()} {startedDate.toLocaleTimeString()}
+                    Started: {startedDate.toLocaleDateString()} {startedDate.toLocaleTimeString('en-US', { timeZoneName: 'short' })}
                   </p>
                   <p className="text-gray-500 text-sm">
                     <Clock className="inline-block h-3 w-3 mr-1" />
@@ -299,7 +299,7 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
                     <TableRow key={run.id} className="hover:bg-slate-50">
                       <TableCell>{run.description}</TableCell>
                       <TableCell>
-                        {runStartedDate.toLocaleDateString()} {runStartedDate.toLocaleTimeString()}
+                        {runStartedDate.toLocaleDateString()} {runStartedDate.toLocaleTimeString('en-US', { timeZoneName: 'short' })}
                       </TableCell>
                       {/* 
                       <TableCell>
@@ -454,7 +454,7 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
                         <div className="flex flex-col">
                           <dt className="text-sm text-muted-foreground">Started</dt>
                           <dd>
-                            {startedDate.toLocaleDateString()} {startedDate.toLocaleTimeString()}
+                            {startedDate.toLocaleDateString()} {startedDate.toLocaleTimeString('en-US', { timeZoneName: 'short' })}
                             <p className="text-gray-500 text-sm">
                               <Clock className="inline-block h-3 w-3 mr-1" />
                               {hours}h {minutes}m ago
