@@ -26,6 +26,7 @@ interface OperationsSectionProps {
   currentSdk: string;
   clusterVersion: string;
   excludeSnapshots: boolean;
+  excludeGerrit: boolean;
   selectedMetric: string;
   reloadTrigger: number;
   visibleOperations: string[];
@@ -44,6 +45,7 @@ export default function OperationsSection({
   currentSdk,
   clusterVersion,
   excludeSnapshots,
+  excludeGerrit,
   selectedMetric,
   reloadTrigger,
   visibleOperations,
@@ -92,7 +94,7 @@ export default function OperationsSection({
             sdkInfo?.name || 'Java',
             operationMap[operation.id as keyof typeof operationMap] || 'get',
             excludeSnapshots,
-            true, // excludeGerrit
+            excludeGerrit,
             selectedMetric,
             clusterVersion
           )
@@ -103,7 +105,7 @@ export default function OperationsSection({
                 input={dashboardInput}
                 title={`${operation.title} - ${sdkInfo?.name}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}-${reloadTrigger}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={operation.threads}
               />
@@ -135,7 +137,7 @@ export default function OperationsSection({
           const dashboardInput = createHorizontalScalingInput(
             sdkInfo?.name || 'Java',
             excludeSnapshots,
-            true, // excludeGerrit
+            excludeGerrit,
             selectedMetric,
             clusterVersion
           )
@@ -146,7 +148,7 @@ export default function OperationsSection({
                 input={dashboardInput}
                 title={`${operation.title} - ${sdkInfo?.name}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}-${reloadTrigger}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={20}
               />
@@ -184,7 +186,7 @@ export default function OperationsSection({
             sdkInfo?.name || 'Java',
             metric.metric,
             excludeSnapshots,
-            true, // excludeGerrit
+            excludeGerrit,
             clusterVersion
           )
 
@@ -194,7 +196,7 @@ export default function OperationsSection({
                 input={dashboardInput}
                 title={`${metric.title} - ${sdkInfo?.name}`}
                 description={metric.description}
-                keyProp={`${metric.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}-${reloadTrigger}`}
+                keyProp={`${metric.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={20}
               />
@@ -228,7 +230,7 @@ export default function OperationsSection({
                 sdkInfo?.name || 'Java',
                 operation.threads,
                 excludeSnapshots,
-                true, // excludeGerrit
+                excludeGerrit,
                 clusterVersion,
                 selectedMetric
               )
@@ -236,7 +238,7 @@ export default function OperationsSection({
                 sdkInfo?.name || 'Java',
                 operation.threads,
                 excludeSnapshots,
-                true, // excludeGerrit
+                excludeGerrit,
                 clusterVersion,
                 selectedMetric
               )
@@ -247,7 +249,7 @@ export default function OperationsSection({
                 input={dashboardInput}
                 title={`${operation.title} (${operation.threads} thread${operation.threads > 1 ? 's' : ''}) - ${sdkInfo?.name}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}-${reloadTrigger}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={operation.threads}
               />
@@ -284,7 +286,7 @@ export default function OperationsSection({
               dashboardInput = createHorizontalScalingReactiveInput(
                 sdkInfo?.name || 'Java',
                 excludeSnapshots,
-                true, // excludeGerrit
+                excludeGerrit,
                 clusterVersion
               )
               break
@@ -294,7 +296,7 @@ export default function OperationsSection({
                 sdkInfo?.name || 'Java',
                 'DEFAULT',
                 excludeSnapshots,
-                true, // excludeGerrit
+                excludeGerrit,
                 clusterVersion
               )
               break
@@ -304,7 +306,7 @@ export default function OperationsSection({
                 sdkInfo?.name || 'Java',
                 'ASYNC',
                 excludeSnapshots,
-                true, // excludeGerrit
+                excludeGerrit,
                 clusterVersion
               )
               break
@@ -314,7 +316,7 @@ export default function OperationsSection({
                 sdkInfo?.name || 'Java',
                 'get',
                 excludeSnapshots,
-                true,
+                excludeGerrit,
                 selectedMetric,
                 clusterVersion
               )
@@ -326,7 +328,7 @@ export default function OperationsSection({
                 input={dashboardInput}
                 title={`${operation.title} - ${sdkInfo?.name}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${clusterVersion}-${reloadTrigger}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={20}
               />

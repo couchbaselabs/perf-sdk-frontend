@@ -35,7 +35,7 @@ import {
   AnnotationsRunEvents,
   YAxis
 } from './dashboard/dashboard-query-types';
-import { versionCompare, ShadeProvider } from './core-ui-utilities';
+import { versionCompare, ShadeProvider, classifyVersion, isMovingVersion } from './core-ui-utilities';
 import { v4 as uuidv4 } from 'uuid';
 
 // Import consolidated utilities
@@ -80,8 +80,10 @@ export class DashboardService {
       runs.forEach(run => {
         const sdk = run.impl["language"] as string
         const version = run.impl["version"] as string
-        const isGerrit = version.startsWith("refs/")
-        const isSnapshot = version.includes("-")
+        const kind = classifyVersion(version)
+        const isGerrit = kind === 'gerrit'
+        // New branch/main snapshot tags (3.11.x, main) plus legacy "x.y.z-..." snapshots.
+        const isSnapshot = isMovingVersion(version) || version.includes("-")
         const currentLatest = latestForEachLanguage.get(sdk)
         let skip = isGerrit
 
@@ -104,15 +106,21 @@ export class DashboardService {
       latestForEachLanguage.forEach((version, sdk) => logger.info(`Latest for ${sdk} = ${version}`))
     }
 
-    return runs.filter(run => {
+    const filtered = runs.filter(run => {
       const sdk = run.impl["language"] as string
       const version = run.impl["version"] as string
-      const isGerrit = version.startsWith("refs/")
-      const isSnapshot = version.includes("-")
+      const kind = classifyVersion(version)
+      const isGerrit = kind === 'gerrit'
+      // "Exclude snapshots" hides the noisy legacy per-commit builds ("3.8.0-<sha>"),
+      // which classify as `release` but carry a "-<timestamp+sha>" suffix. Gerrit/PR
+      // and on-demand builds also contain "-" but have their own toggle, and moving
+      // tags (main, 3.11.x) are headline bars shown regardless of this toggle — so
+      // restrict this to release-kind versions only.
+      const isLegacySnapshot = kind === 'release' && version.includes("-")
       if (input.excludeGerrit && isGerrit) {
         return false
       }
-      if (input.excludeSnapshots && isSnapshot) {
+      if (input.excludeSnapshots && isLegacySnapshot) {
         return false
       }
 
@@ -121,6 +129,26 @@ export class DashboardService {
       }
 
       return true
+    })
+
+    // Moving tags (main, 3.11.x) overwrite their docker image on every build, so
+    // runs accumulate under the same version. We only want the single latest run
+    // per language+version, otherwise the bar would average the whole history.
+    const latestMoving = new Map<string, Run>()
+    for (const run of filtered) {
+      if (!isMovingVersion(run.impl["version"] as string)) continue
+      const key = `${run.impl["language"]}|${run.impl["version"]}`
+      const existing = latestMoving.get(key)
+      if (!existing || Date.parse(run.datetime) > Date.parse(existing.datetime)) {
+        latestMoving.set(key, run)
+      }
+    }
+    if (latestMoving.size === 0) return filtered
+
+    return filtered.filter(run => {
+      if (!isMovingVersion(run.impl["version"] as string)) return true
+      const key = `${run.impl["language"]}|${run.impl["version"]}`
+      return latestMoving.get(key) === run
     })
   }
 
@@ -182,6 +210,17 @@ export class DashboardService {
     }
     else {
       throw Error(`Unknown hAxis type ${input.hAxis}`)
+    }
+
+    // Enforce the canonical X-axis order for version groupings:
+    // releases (semver) -> gerrit -> on-demand -> branch snapshot -> main.
+    // Other groupings (e.g. horizontalScaling) are left untouched.
+    const isVersionGrouping =
+      input.hAxis.type == 'dynamic' &&
+      (input.hAxis as HorizontalAxisDynamic).resultType == ResultType.VERSION_SEMVER;
+
+    if (isVersionGrouping) {
+      results.sort((a, b) => versionCompare(a.grouping, b.grouping));
     }
 
     results.forEach((b) => {

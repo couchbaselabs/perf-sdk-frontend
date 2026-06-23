@@ -23,11 +23,24 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/src/
 import { Alert, AlertDescription, AlertTitle } from "@/src/components/ui/alert"
 // cluster version mapping handled inside hook
 import { CustomTooltip, CustomLegend } from "@/src/shared/charts"
+import { SNAPSHOT_BAR_COLORS } from "@/src/shared/charts/colors"
+import { classifyVersion } from "@/src/lib/core-ui-utilities"
 import { exportChartToCSV } from "@/src/lib/utils/exports"
 import { usePerformanceBarChart } from '@/src/shared/charts/use-performance-bar-chart'
 
 
 // Using shared CustomLegend component
+
+// Non-release bars are drawn in a distinct color: moving snapshot tags (main,
+// 3.11.x) at the end of the chart, and gerrit/PR builds inline. Returns
+// undefined for normal release versions.
+function snapshotBarColor(name: unknown): string | undefined {
+  const kind = classifyVersion(typeof name === "string" ? name : "")
+  if (kind === "main") return SNAPSHOT_BAR_COLORS.main
+  if (kind === "branch-snapshot") return SNAPSHOT_BAR_COLORS.branch
+  if (kind === "gerrit") return SNAPSHOT_BAR_COLORS.gerrit
+  return undefined
+}
 
 interface PerformanceBarChartProps {
   title: string
@@ -288,17 +301,22 @@ export default function PerformanceBarChart({
                   // Improved hover effect that only applies to the bar
                   activeBar={{ stroke: "rgb(16, 185, 129)", strokeWidth: 2 }}
                 >
-                  {Array.isArray(processedData) && processedData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry?.clusterColor || color}
-                      stroke={
-                        entry?.clusterColor && typeof entry.clusterColor === "string"
-                          ? entry.clusterColor.replace("0.7", "1")
-                          : borderColor
-                      }
-                    />
-                  ))}
+                  {Array.isArray(processedData) && processedData.map((entry, index) => {
+                    const snapshotColor = snapshotBarColor(entry?.name)
+                    return (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={snapshotColor || entry?.clusterColor || color}
+                        stroke={
+                          snapshotColor
+                            ? snapshotColor
+                            : entry?.clusterColor && typeof entry.clusterColor === "string"
+                              ? entry.clusterColor.replace("0.7", "1")
+                              : borderColor
+                        }
+                      />
+                    )
+                  })}
                   {multiClusterMode && (
                     <LabelList
                       dataKey="clusterName"
@@ -333,6 +351,28 @@ export default function PerformanceBarChart({
             )}
           </ResponsiveContainer>
         </div>
+        {/* Legend for the special non-release bar colors actually present in the chart. */}
+        {Array.isArray(processedData) && (() => {
+          const kinds = new Set<string>(
+            processedData.map((d) => classifyVersion(typeof d?.name === "string" ? d.name : ""))
+          )
+          const items = [
+            { kind: "branch-snapshot", color: SNAPSHOT_BAR_COLORS.branch, label: "Branch snapshot" },
+            { kind: "main", color: SNAPSHOT_BAR_COLORS.main, label: "main" },
+            { kind: "gerrit", color: SNAPSHOT_BAR_COLORS.gerrit, label: "PR / Gerrit" },
+          ].filter((i) => kinds.has(i.kind))
+          if (items.length === 0) return null
+          return (
+            <div className="flex flex-wrap gap-4 justify-center px-4 pb-2 -mt-6">
+              {items.map((i) => (
+                <div key={i.kind} className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: i.color }} />
+                  <span className="text-xs text-muted-foreground">{i.label}</span>
+                </div>
+              ))}
+            </div>
+          )
+        })()}
         <CardFooter className="flex items-center justify-between px-6 py-3 border-t bg-slate-50">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <TooltipProvider>
