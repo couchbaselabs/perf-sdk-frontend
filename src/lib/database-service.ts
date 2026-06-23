@@ -154,6 +154,16 @@ export class DatabaseService {
   private getRunsCache = new Map<string, { expires: number; promise: Promise<Array<Run>> }>()
   private static readonly GET_RUNS_CACHE_TTL_MS = 30_000
 
+  // SQL predicate matching legacy per-commit "snapshot" versions ("3.8.0-<sha>").
+  // Moving tags (main, 3.11.x) contain no "-" and are deliberately NOT matched here:
+  // they are headline bars and stay visible regardless of the "exclude snapshots" toggle.
+  private static readonly SNAPSHOT_VERSION_SQL =
+    `(params->'impl'->>'version' LIKE '%-%')`
+
+  // SQL predicate matching on-demand Gerrit/GitHub PR versions ("refs/..." / "refs-...").
+  private static readonly GERRIT_VERSION_SQL =
+    `(params->'impl'->>'version' LIKE 'refs/%' OR params->'impl'->>'version' LIKE 'refs-%')`
+
   /**
    * Used for both the Simplified and Full graphs. Thin caching and
    * de-duplicating wrapper around getRunsUncached.
@@ -290,10 +300,10 @@ export class DatabaseService {
       conditions.push(`params->'impl'->>'language' = $${params.length}`)
     }
     if (options.excludeSnapshots) {
-      conditions.push(`NOT (params->'impl'->>'version' LIKE '%-%')`)
+      conditions.push(`NOT ${DatabaseService.SNAPSHOT_VERSION_SQL}`)
     }
     if (options.excludeGerrit) {
-      conditions.push(`NOT (params->'impl'->>'version' LIKE 'refs/%')`)
+      conditions.push(`NOT ${DatabaseService.GERRIT_VERSION_SQL}`)
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -316,10 +326,10 @@ export class DatabaseService {
     const conditions: string[] = ["params->'impl'->>'version' IS NOT NULL"];
     
     if (excludeSnapshots) {
-      conditions.push("NOT (params->'impl'->>'version' LIKE '%-%')");
+      conditions.push(`NOT ${DatabaseService.SNAPSHOT_VERSION_SQL}`);
     }
     if (excludeGerrit) {
-      conditions.push("NOT (params->'impl'->>'version' LIKE 'refs/%')");
+      conditions.push(`NOT ${DatabaseService.GERRIT_VERSION_SQL}`);
     }
 
     const st = `
@@ -466,7 +476,7 @@ export class DatabaseService {
     results.sort((x, y) => {
       const a = x.grouping
       const b = y.grouping
-      let out
+      let out = 0
       if (resultType == ResultType.INTEGER) {
         out = Number.parseInt(a) - Number.parseInt(b)
       }
