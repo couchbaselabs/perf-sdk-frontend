@@ -15,8 +15,8 @@ export type BadgeType =
   | "score" 
   | "status" 
   | "csp" 
-  | "cluster" 
-  | "private-link"
+  | "cluster"
+  | "private-endpoint"
   | "default"
 
 interface UnifiedBadgeProps {
@@ -32,7 +32,7 @@ interface UnifiedBadgeProps {
  */
 export function UnifiedBadge({ type, value, className, size = "md" }: UnifiedBadgeProps) {
   const displayValue = String(value ?? '')
-  
+
   // Size classes
   const sizeClasses = {
     sm: "px-2 py-0.5 text-xs",
@@ -86,7 +86,13 @@ export function UnifiedBadge({ type, value, className, size = "md" }: UnifiedBad
     if (score < 0) return 'bg-red-600 text-white border-red-500'
     return 'bg-slate-500 text-white border-slate-400'
   }
-  
+
+  const getPrivateEndpointStyles = (displayValue: string): string => {
+    if (displayValue.toLowerCase() === 'enabled') return 'bg-emerald-100 text-emerald-700 border-emerald-300'
+    if (displayValue.toLowerCase() === 'disabled') return 'bg-red-100 text-red-700 border-red-300'
+    return 'bg-amber-100 text-amber-700 border-amber-300'
+  }
+
   // Type-specific styling with consolidated logic
   const getTypeStyles = (): string => {
     switch (type) {
@@ -111,12 +117,8 @@ export function UnifiedBadge({ type, value, className, size = "md" }: UnifiedBad
       case "cluster":
         return "bg-indigo-100 text-indigo-800 border-indigo-300"
       
-      case "private-link":
-        if (value === true || displayValue.toLowerCase() === 'yes') {
-          return "bg-emerald-100 text-emerald-700 border-emerald-300"
-        } else {
-          return "bg-slate-100 text-slate-600 border-slate-300"
-        }
+      case "private-endpoint":
+        return getPrivateEndpointStyles(displayValue)
       
       default:
         return "bg-slate-100 text-slate-700 border-slate-300"
@@ -140,7 +142,7 @@ export function UnifiedBadge({ type, value, className, size = "md" }: UnifiedBad
       </Badge>
     )
   }
-  
+
   return (
     <Badge className={cn(baseClasses, sizeClasses[size], typeStyles, className)}>
       {displayValue}
@@ -174,8 +176,8 @@ export const BadgeSystem = {
   cluster: (value: string | undefined, props?: Omit<UnifiedBadgeProps, "type" | "value">) => 
     <UnifiedBadge type="cluster" value={value} {...props} />,
     
-  privateLink: (value: boolean | string | undefined, props?: Omit<UnifiedBadgeProps, "type" | "value">) => 
-    <UnifiedBadge type="private-link" value={value} {...props} />,
+  privateEndpoint: (value: "enabled" | "disabled" | "unknown", props?: Omit<UnifiedBadgeProps, "type" | "value">) =>
+    <UnifiedBadge type="private-endpoint" value={value} {...props} />,
 }
 
 // Convenience components for common badge types (backward compatibility)
@@ -200,8 +202,8 @@ export const CspBadge = ({ value, ...props }: Omit<UnifiedBadgeProps, "type">) =
 export const ClusterBadge = ({ value, ...props }: Omit<UnifiedBadgeProps, "type">) => 
   <UnifiedBadge type="cluster" value={value} {...props} />
 
-export const PrivateLinkBadge = ({ value, ...props }: Omit<UnifiedBadgeProps, "type">) => 
-  <UnifiedBadge type="private-link" value={value} {...props} />
+export const PrivateEndpointBadge = ({ value, ...props }: Omit<UnifiedBadgeProps, "type">) =>
+  <UnifiedBadge type="private-endpoint" value={value} {...props} />
 
 // Status color utilities (for non-badge usage)
 export const statusColors = {

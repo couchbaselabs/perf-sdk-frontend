@@ -20,8 +20,8 @@ import JsonViewer from "@/src/components/shared/json-viewer"
 import { ErrorDisplay } from "@/src/components/shared/LoadingStates"
 import { getStatusColor, getEnvironmentBadgeVariant, getScoreBadgeColor } from "@/src/lib/utils/status"
 import { getSdkColorByLanguage } from "@/src/lib/sdk-version-service"
-import { SdkBadge, VersionBadge, EnvironmentBadge, ScoreBadge, StatusBadge } from "@/src/components/shared/BadgeSystem"
-import { formatDate } from "@/src/lib/utils/formatting"
+import { SdkBadge, VersionBadge, EnvironmentBadge, ScoreBadge, StatusBadge, PrivateEndpointBadge } from "@/src/components/shared/BadgeSystem"
+import { formatDate, privateEndpointLabel } from "@/src/lib/utils/formatting"
 // Remove all mock generators and use real DB-backed API
 
 import { generateUuid } from "@/src/lib/core-ui-utilities"
@@ -95,6 +95,7 @@ export default function SituationalRunDetailPage({
           transformedMetrics: transformed,
           metrics: {},
           cluster: runParams?.cluster || {},
+          privateEndpointsEnabled: runParams?.privateEndpointsEnabled ?? null,
           workload: runParams?.workload || {},
           events: data.events || [],
           errorsSummary: data.errorsSummary || [],
@@ -125,6 +126,7 @@ export default function SituationalRunDetailPage({
           metrics: {},
           cluster: {},
           workload: {},
+          privateEndpointsEnabled: null,
         })
       } finally {
         setIsLoading(false)
@@ -566,6 +568,12 @@ export default function SituationalRunDetailPage({
                         <VersionBadge value={runData.version} />
                       </dd>
                     </div>
+                    <div className="flex flex-col">
+                      <dt className="text-sm text-muted-foreground">Private Endpoints</dt>
+                      <dd>
+                        <PrivateEndpointBadge value={privateEndpointLabel(runData.privateEndpointsEnabled)} />
+                      </dd>
+                    </div>
                   </dl>
                 </CardContent>
               </Card>
@@ -665,6 +673,12 @@ export default function SituationalRunDetailPage({
                           <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Replicas:</span>
                             <span className="font-medium">{runData.cluster?.replicas || 0}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Private Endpoints:</span>
+                            <span className="font-medium">
+                              {privateEndpointLabel(runData.privateEndpointsEnabled)}
+                            </span>
                           </div>
                         </div>
                       </div>

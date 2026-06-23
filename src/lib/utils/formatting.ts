@@ -228,6 +228,15 @@ export const textFormatters = {
   }
 }
 
+/**
+ * Converts the private endpoints boolean to a label
+ */
+export const privateEndpointLabel = (value?: boolean | null): "enabled" | "disabled" | "unknown" => {
+  if (value === true) return "enabled"
+  if (value === false) return "disabled"
+  return "unknown"
+}
+
 // Re-export all formatters as a unified object
 export const formatters = {
   ...dateFormatters,

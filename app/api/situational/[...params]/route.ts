@@ -105,7 +105,6 @@ async function handleAllSituationalRuns(request: NextRequest) {
     const version = details?.impl?.version ?? undefined
     // Some older rows may not have these fields; default to '-'
     const csp = details?.vars?.csp ?? details?.debug?.csp ?? '-'
-    const pl = Boolean(details?.vars?.pl || details?.privateLink || details?.pl)
     const environment = details?.vars?.environment ?? details?.debug?.environment ?? '-'
     const description = details?.workload?.situational ?? details?.workload?.name ?? null
     const clusterVersion = details?.cluster?.version ?? details?.clusterVersion ?? details?.vars?.clusterVersion ?? '-'
@@ -120,7 +119,6 @@ async function handleAllSituationalRuns(request: NextRequest) {
       sdk,
       version,
       csp,
-      pl,
       environment,
       clusterVersion,
       description,
@@ -160,7 +158,7 @@ async function handleSituationalRunsList(request: NextRequest, situationalRunId:
       sdk: params?.impl?.language ?? '-',
       version: params?.impl?.version ?? '-',
       csp: params?.vars?.csp ?? '-',
-      pl: Boolean(params?.vars?.pl || params?.privateLink),
+      privateEndpointsEnabled: params?.privateEndpointsEnabled ?? null,
       clusterVersion: params?.cluster?.version ?? '-',
       environment: params?.vars?.environment ?? '-',
       status: 'completed' as const,
