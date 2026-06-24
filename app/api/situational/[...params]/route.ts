@@ -103,10 +103,14 @@ async function handleAllSituationalRuns(request: NextRequest) {
   const search = params.get('search')?.trim() || undefined
   const limit = limitParam ? parseInt(limitParam, 10) : undefined
   const offset = offsetParam ? parseInt(offsetParam, 10) : undefined
+  // Clamp to sane bounds: a positive limit and non-negative offset. Negative
+  // values would otherwise reach Postgres and error on LIMIT/OFFSET.
+  const safeLimit = Number.isFinite(limit as number) && (limit as number) > 0 ? (limit as number) : undefined
+  const safeOffset = Number.isFinite(offset as number) && (offset as number) >= 0 ? (offset as number) : undefined
 
   const rows = await database.getSituationalRuns({
-    limit: Number.isFinite(limit as number) ? (limit as number) : undefined,
-    offset: Number.isFinite(offset as number) ? (offset as number) : undefined,
+    limit: safeLimit,
+    offset: safeOffset,
     language: sdk,
     search,
   })
