@@ -90,6 +90,8 @@ export class Result {
   value: number;
   // ['a6921d60-7f9a-44b5-8513-67697ce706d8']
   runIds: string[] | undefined;
+  // Performer-image metadata (params.impl.image) for this grouping, if any.
+  image?: Record<string, unknown> | null;
 
   constructor(grouping: string, value: number, runIds?: string[]) {
     this.grouping = grouping;

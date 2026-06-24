@@ -223,6 +223,24 @@ export class DashboardService {
       results.sort((a, b) => versionCompare(a.grouping, b.grouping));
     }
 
+    // Attach performer-image metadata (params.impl.image) per grouping, using
+    // the first matching run's image. Left undefined when no run carries it.
+    if (runs!.length > 0) {
+      const imageByVersion = new Map<string, Record<string, unknown>>();
+      for (const run of runs!) {
+        const version = run.impl?.["version"];
+        const image = run.impl?.["image"];
+        if (typeof version === "string" && image && typeof image === "object" && !imageByVersion.has(version)) {
+          imageByVersion.set(version, image as Record<string, unknown>);
+        }
+      }
+      if (imageByVersion.size > 0) {
+        results.forEach((b) => {
+          b.image = imageByVersion.get(b.grouping) ?? null;
+        });
+      }
+    }
+
     results.forEach((b) => {
       labels.push(b.grouping);
       values.push(b.value);
