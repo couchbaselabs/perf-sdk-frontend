@@ -125,8 +125,8 @@ export function useSituationalRun(id: string) {
 export function useSituationalRunsList(situationalId: string) {
   return useQuery({
     queryKey: ['situational', situationalId, 'runs'],
-    queryFn: async (): Promise<any[]> => {
-      const res = await fetch(`/api/situational/${situationalId}/runs`)
+    queryFn: async ({ signal }): Promise<any[]> => {
+      const res = await fetch(`/api/situational/${situationalId}/runs`, { signal })
       const payload = res.ok ? await res.json() : { data: [] as any[] }
       return Array.isArray(payload) ? payload : (payload?.data ?? [])
     },
@@ -142,8 +142,8 @@ export function useSituationalRunsList(situationalId: string) {
 export function useSituationalRunDetail(situationalId: string, runId: string) {
   return useQuery({
     queryKey: ['situational', situationalId, 'run', runId],
-    queryFn: async (): Promise<any> => {
-      const res = await fetch(`/api/situational/${situationalId}/run/${runId}`)
+    queryFn: async ({ signal }): Promise<any> => {
+      const res = await fetch(`/api/situational/${situationalId}/run/${runId}`, { signal })
       const fallback = { runDetails: { runs: [] }, events: [], errorsSummary: [] }
       const payload = res.ok ? await res.json() : { success: false, data: fallback }
       return payload?.data || fallback
