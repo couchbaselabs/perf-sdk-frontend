@@ -18,6 +18,7 @@ import JsonViewer from "@/src/components/shared/json-viewer"
 import { formatDate } from "@/src/lib/utils/formatting"
 import { RunSummary } from "@/src/types"
 import { SdkBadge, ClusterBadge, VersionBadge } from "@/src/components/shared/BadgeSystem"
+import PerformerImageInfo from "@/src/components/shared/performer-image-info"
 
 interface RunDetailClientProps {
   runData: any
@@ -200,6 +201,8 @@ export default function RunDetailClient({ runData, runMetrics, runBuckets }: Run
                 </Badge>
               </div>
             </div>
+            {/* Performer image metadata; renders nothing when absent. */}
+            <PerformerImageInfo image={runData.params?.impl?.image} />
           </CardContent>
         </Card>
 
