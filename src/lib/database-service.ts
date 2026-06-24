@@ -162,6 +162,11 @@ export class DatabaseService {
     const key = `${JSON.stringify(compare)}|${groupBy}`
     const now = Date.now()
 
+    // Sweep expired entries so the cache can't grow unbounded over time.
+    for (const [k, v] of this.getRunsCache) {
+      if (v.expires <= now) this.getRunsCache.delete(k)
+    }
+
     const cached = this.getRunsCache.get(key)
     if (cached && cached.expires > now) {
       logger.debug(`getRuns cache hit`, { key })
