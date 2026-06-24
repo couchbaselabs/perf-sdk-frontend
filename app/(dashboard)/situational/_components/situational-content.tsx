@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/src/components/ui/button"
-import { useSituationalData, useLoadSituationalRuns, SITUATIONAL_PAGE_SIZE } from "../situational-hooks"
+import { useSituationalData, useLoadSituationalRuns, useSituationalRunSearch, SITUATIONAL_PAGE_SIZE } from "../situational-hooks"
 import { TableSkeleton } from "@/src/components/shared/skeletons/PageSkeletons"
 import { HeaderSection } from "./sections/HeaderSection"
 import { FiltersSection } from "./sections/FiltersSection"
@@ -41,8 +41,25 @@ function buildSdkMatchPatterns(language: string): string[] {
 
 export function SituationalContent() {
   const [isLoading, setIsLoading] = useState(false)
+  // `searchQuery` is the live textbox value (instant local filtering); `searchTerm`
+  // is its debounced echo that drives the server-side ID search. Debouncing happens
+  // in the change handler via a timer ref, so no effect is needed to derive it.
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchParams = useSearchParams()
   const router = useRouter()
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    // Clear immediately on empty so server matches drop without a 300ms lag.
+    if (!value) {
+      setSearchTerm("")
+      return
+    }
+    debounceRef.current = setTimeout(() => setSearchTerm(value), 300)
+  }
 
   // Read SDK filter from URL params
   const selectedSdk = searchParams?.get('sdk') || ""
@@ -53,10 +70,19 @@ export function SituationalContent() {
   const { runs, loading, error, refetch, fetchMore, hasMore, isFetchingMore } =
     useLoadSituationalRuns(selectedSdk)
 
+  // A search also hits the server so a run id that hasn't been paged in yet can
+  // still be found across the whole dataset. Matches are merged into the loaded
+  // runs (deduped by id) before client-side filtering/sorting runs over them.
+  const { matches: searchMatches } = useSituationalRunSearch(searchTerm, selectedSdk)
+
+  const combinedRuns = useMemo(() => {
+    if (searchMatches.length === 0) return runs
+    const loadedIds = new Set(runs.map((r) => r.id))
+    return [...runs, ...searchMatches.filter((r) => !loadedIds.has(r.id))]
+  }, [runs, searchMatches])
+
   const {
     filteredRuns,
-    searchQuery,
-    setSearchQuery,
     activeFilters: columnFilters,
     setActiveFilters: setColumnFilters,
     sortColumn,
@@ -66,13 +92,13 @@ export function SituationalContent() {
     handleFilterChange,
     handleSort,
     clearAllFilters: clearAllFiltersFromHook,
-  } = useSituationalData({ runs, selectedSdk })
+  } = useSituationalData({ runs: combinedRuns, selectedSdk, searchQuery })
 
   // Clear all filters and reset URL
   const clearAllFilters = () => {
     clearAllFiltersFromHook()
     setColumnFilters({})
-    setSearchQuery("")
+    handleSearchChange("")
     // Clear SDK from URL
     router.push('/situational')
   }
@@ -98,7 +124,7 @@ export function SituationalContent() {
 
       <FiltersSection
         searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
+        setSearchQuery={handleSearchChange}
         activeFilterCount={activeFilterCount}
         clearAllFilters={clearAllFilters}
         handleRefresh={handleRefresh}
