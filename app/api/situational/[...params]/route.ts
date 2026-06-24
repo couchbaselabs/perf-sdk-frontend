@@ -98,6 +98,9 @@ async function handleAllSituationalRuns(request: NextRequest) {
   const limitParam = params.get('limit')
   const offsetParam = params.get('offset')
   const sdk = params.get('sdk') || undefined
+  // `search` does a server-side substring match on the situational run id so a
+  // search can surface a run that hasn't been paged into the client yet.
+  const search = params.get('search')?.trim() || undefined
   const limit = limitParam ? parseInt(limitParam, 10) : undefined
   const offset = offsetParam ? parseInt(offsetParam, 10) : undefined
 
@@ -105,6 +108,7 @@ async function handleAllSituationalRuns(request: NextRequest) {
     limit: Number.isFinite(limit as number) ? (limit as number) : undefined,
     offset: Number.isFinite(offset as number) ? (offset as number) : undefined,
     language: sdk,
+    search,
   })
 
   // Normalize to the front-end SituationalRun shape

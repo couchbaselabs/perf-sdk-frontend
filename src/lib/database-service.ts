@@ -614,13 +614,13 @@ export class DatabaseService {
     return result.rows.map((x: any) => new MetricsResult(x.run_id, x.datetime, x.message, x.version, input.language));
   }
 
-  async getSituationalRuns(opts?: { limit?: number; offset?: number; language?: string }): Promise<SituationalRun[]> {
+  async getSituationalRuns(opts?: { limit?: number; offset?: number; language?: string; search?: string }): Promise<SituationalRun[]> {
     const values: any[] = []
+    const whereConds: string[] = []
 
     // Optional server-side SDK filter, mirroring the client sdkMatchesLanguage()
     // logic so the dropdown/sidebar SDK selection narrows the query itself
     // instead of downloading every SDK's runs and filtering in the browser.
-    let where = ''
     if (opts?.language) {
       values.push(opts.language)
       const p = `$${values.length}`
@@ -639,8 +639,18 @@ export class DatabaseService {
         conds.push(`lower(${lang}) in ('.net','csharp','c#')`)
         conds.push(`upper(${lang}) in ('COLUMNAR_SDK_.NET','COLUMNAR_SDK_DOTNET')`)
       }
-      where = `WHERE (${conds.join(' OR ')})`
+      whereConds.push(`(${conds.join(' OR ')})`)
     }
+
+    // Optional server-side ID search. The list view only loads a page at a time,
+    // so a substring match on situational_run_id lets a search find a run that
+    // hasn't been paged in yet without downloading every run to the browser.
+    if (opts?.search) {
+      values.push(`%${opts.search}%`)
+      whereConds.push(`situational_run_id ILIKE $${values.length}`)
+    }
+
+    const where = whereConds.length ? `WHERE ${whereConds.join(' AND ')}` : ''
 
     let limitOffset = ''
     if (typeof opts?.limit === 'number') {

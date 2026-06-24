@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { useInfiniteQuery } from "@tanstack/react-query"
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { SituationalRun } from "@/src/types/entities"
 import { apiClient } from "@/src/lib/api-client-unified"
 import { applyFilters, sortRuns, extractUniqueValues, calculateColumnRanges } from "./filtering-and-sorting-utils"
@@ -38,13 +38,12 @@ function sdkMatchesLanguage(sdkValue: string, languageLower: string, languageUpp
 interface UseSituationalDataProps {
   runs: SituationalRun[]
   selectedSdk?: string
+  searchQuery?: string
 }
 
 interface UseSituationalDataReturn {
   filteredRuns: SituationalRun[]
   paginatedRuns: SituationalRun[]
-  searchQuery: string
-  setSearchQuery: (query: string) => void
   activeFilters: Record<string, any>
   setActiveFilters: (filters: Record<string, any>) => void
   sortColumn: string
@@ -63,9 +62,9 @@ interface UseSituationalDataReturn {
   clearAllFilters: () => void
 }
 
-export function useSituationalData({ runs, selectedSdk = "" }: UseSituationalDataProps): UseSituationalDataReturn {
-  // State for filtering, sorting, and pagination
-  const [searchQuery, setSearchQuery] = useState("")
+export function useSituationalData({ runs, selectedSdk = "", searchQuery = "" }: UseSituationalDataProps): UseSituationalDataReturn {
+  // State for filtering, sorting, and pagination. `searchQuery` is owned by the
+  // caller so it can also drive the server-side ID search (useSituationalRunSearch).
   const [activeFilters, setActiveFilters] = useState<Record<string, any>>({})
   const [sortColumn, setSortColumn] = useState("started")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
@@ -150,14 +149,11 @@ export function useSituationalData({ runs, selectedSdk = "" }: UseSituationalDat
 
   const clearAllFilters = () => {
     setActiveFilters({})
-    setSearchQuery("")
   }
 
   return {
     filteredRuns,
     paginatedRuns,
-    searchQuery,
-    setSearchQuery,
     activeFilters,
     setActiveFilters,
     sortColumn,
@@ -222,6 +218,45 @@ export function useLoadSituationalRuns(selectedSdk = ""): UseLoadSituationalRuns
     fetchMore: () => { query.fetchNextPage() },
     hasMore: !!query.hasNextPage,
     isFetchingMore: query.isFetchingNextPage,
+  }
+}
+
+interface UseSituationalRunSearchReturn {
+  matches: SituationalRun[]
+  isSearching: boolean
+}
+
+/**
+ * Server-side ID search across ALL situational runs, not just the pages loaded
+ * so far. The list view pages 50 runs at a time, so searching for a specific
+ * run id that hasn't been paged in would otherwise return nothing. This issues
+ * a substring-matched query whose results the page merges into the loaded runs,
+ * so a known id surfaces immediately regardless of page depth.
+ *
+ * `searchTerm` is expected to be already debounced by the caller, and the query
+ * is disabled for empty/very short terms — the client-side filter over loaded
+ * runs already covers those, and we avoid a round-trip per keystroke.
+ */
+export function useSituationalRunSearch(searchTerm: string, selectedSdk = ""): UseSituationalRunSearchReturn {
+  const trimmed = searchTerm.trim()
+  const enabled = trimmed.length >= 2
+
+  const query = useQuery({
+    queryKey: ['situational', 'search', trimmed, selectedSdk],
+    enabled,
+    queryFn: async () => {
+      const res = await apiClient.getSituationalRuns({
+        limit: SITUATIONAL_PAGE_SIZE,
+        sdk: selectedSdk || undefined,
+        search: trimmed,
+      })
+      return ((res.data as any)?.data ?? []) as SituationalRun[]
+    },
+  })
+
+  return {
+    matches: enabled ? (query.data ?? []) : [],
+    isSearching: enabled && query.isFetching,
   }
 }
 
