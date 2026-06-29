@@ -224,6 +224,7 @@ export function useLoadSituationalRuns(selectedSdk = ""): UseLoadSituationalRuns
 interface UseSituationalRunSearchReturn {
   matches: SituationalRun[]
   isSearching: boolean
+  error: string | null
 }
 
 /**
@@ -257,6 +258,8 @@ export function useSituationalRunSearch(searchTerm: string, selectedSdk = ""): U
   return {
     matches: enabled ? (query.data ?? []) : [],
     isSearching: enabled && query.isFetching,
+    // Let the page tell a failed search apart from a genuine no-match.
+    error: enabled && query.error ? (query.error as Error).message : null,
   }
 }
 
