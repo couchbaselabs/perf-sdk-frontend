@@ -4,6 +4,14 @@ import { logger } from '@/src/lib/utils/logger'
 import { SituationalRunQuery, SituationalRunAndRunQuery } from '@/src/lib/dashboard/dashboard-query-types'
 import type { ApiResponse } from '@/src/types'
 import type { SituationalRunSummary, SituationalRunDetailResponse } from '@/src/types'
+import { SITUATIONAL_PAGE_SIZE, SITUATIONAL_MAX_PAGE_SIZE } from '@/src/lib/config/constants'
+
+// Parse an untrusted query param and clamp to [min, max]; missing/non-numeric uses fallback.
+function clampInt(raw: string | null, { min, max, fallback }: { min: number; max: number; fallback: number }): number {
+  const n = raw !== null ? parseInt(raw, 10) : NaN
+  if (!Number.isFinite(n)) return fallback
+  return Math.min(Math.max(n, min), max)
+}
 
 /**
  * CONSOLIDATED SITUATIONAL API ROUTES
@@ -95,22 +103,17 @@ async function handleAllSituationalRuns(request: NextRequest) {
   // most-recent `limit` rows (ordered by started DESC in the query) and pages
   // back via `offset`; `sdk` narrows by language so a selected SDK no longer
   // downloads every run.
-  const limitParam = params.get('limit')
-  const offsetParam = params.get('offset')
   const sdk = params.get('sdk') || undefined
   // `search` does a server-side substring match on the situational run id so a
   // search can surface a run that hasn't been paged into the client yet.
   const search = params.get('search')?.trim() || undefined
-  const limit = limitParam ? parseInt(limitParam, 10) : undefined
-  const offset = offsetParam ? parseInt(offsetParam, 10) : undefined
-  // Clamp to sane bounds: a positive limit and non-negative offset. Negative
-  // values would otherwise reach Postgres and error on LIMIT/OFFSET.
-  const safeLimit = Number.isFinite(limit as number) && (limit as number) > 0 ? (limit as number) : undefined
-  const safeOffset = Number.isFinite(offset as number) && (offset as number) >= 0 ? (offset as number) : undefined
+  // Clamp so malformed input gives a normal page instead of an unbounded scan.
+  const limit = clampInt(params.get('limit'), { min: 1, max: SITUATIONAL_MAX_PAGE_SIZE, fallback: SITUATIONAL_PAGE_SIZE })
+  const offset = clampInt(params.get('offset'), { min: 0, max: Number.MAX_SAFE_INTEGER, fallback: 0 })
 
   const rows = await database.getSituationalRuns({
-    limit: safeLimit,
-    offset: safeOffset,
+    limit,
+    offset,
     language: sdk,
     search,
   })
