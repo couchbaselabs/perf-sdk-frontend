@@ -26,3 +26,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated reports (knip output embeds machine-specific absolute paths)
+/reports/knip.json
