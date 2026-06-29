@@ -652,7 +652,8 @@ export class DatabaseService {
     // hasn't been paged in yet without downloading every run to the browser.
     if (opts?.search) {
       values.push(`%${opts.search}%`)
-      whereConds.push(`situational_run_id ILIKE $${values.length}`)
+      // uuid has no ILIKE operator, so cast to text. Skips the uuid index, fine at ~2.6k runs.
+      whereConds.push(`situational_run_id::text ILIKE $${values.length}`)
     }
 
     const where = whereConds.length ? `WHERE ${whereConds.join(' AND ')}` : ''

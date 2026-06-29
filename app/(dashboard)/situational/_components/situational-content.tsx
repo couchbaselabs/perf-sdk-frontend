@@ -4,6 +4,7 @@ import { useState, useMemo, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/src/components/ui/button"
+import { Alert, AlertTitle, AlertDescription } from "@/src/components/ui/alert"
 import { useSituationalData, useLoadSituationalRuns, useSituationalRunSearch, SITUATIONAL_PAGE_SIZE } from "../situational-hooks"
 import { TableSkeleton } from "@/src/components/shared/skeletons/PageSkeletons"
 import { HeaderSection } from "./sections/HeaderSection"
@@ -73,7 +74,7 @@ export function SituationalContent() {
   // A search also hits the server so a run id that hasn't been paged in yet can
   // still be found across the whole dataset. Matches are merged into the loaded
   // runs (deduped by id) before client-side filtering/sorting runs over them.
-  const { matches: searchMatches } = useSituationalRunSearch(searchTerm, selectedSdk)
+  const { matches: searchMatches, isSearching, error: searchError } = useSituationalRunSearch(searchTerm, selectedSdk)
 
   const combinedRuns = useMemo(() => {
     if (searchMatches.length === 0) return runs
@@ -144,6 +145,14 @@ export function SituationalContent() {
         <TableSkeleton rows={10} columns={6} />
       ) : (
         <>
+          {searchError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle>Search failed</AlertTitle>
+              <AlertDescription>
+                Could not search across all runs ({searchError}). Showing only the runs loaded so far.
+              </AlertDescription>
+            </Alert>
+          )}
           <RunsTable
             currentRuns={filteredRuns}
             activeFilterCount={activeFilterCount}
@@ -158,7 +167,9 @@ export function SituationalContent() {
 
           <div className="mt-6 flex flex-col items-center gap-2">
             <p className="text-sm text-muted-foreground">
-              {activeFilterCount > 0
+              {isSearching
+                ? "Searching all runs..."
+                : activeFilterCount > 0
                 ? `Showing ${filteredRuns.length} of ${runs.length} loaded runs`
                 : `${runs.length} run${runs.length === 1 ? "" : "s"} loaded`}
             </p>
