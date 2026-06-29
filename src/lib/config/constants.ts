@@ -1,5 +1,9 @@
 // Centralized constants for the performance dashboard application
 
+// Situational runs pagination, shared by the client and the API route clamp.
+export const SITUATIONAL_PAGE_SIZE = 50
+export const SITUATIONAL_MAX_PAGE_SIZE = 500
+
 // Chart operations and types
 export const CORE_OPERATIONS = [
   { id: "kvGet", title: "KV Get", threads: 20, description: "" },

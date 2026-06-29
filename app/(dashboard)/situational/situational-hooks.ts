@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { SituationalRun } from "@/src/types/entities"
 import { apiClient } from "@/src/lib/api-client-unified"
+import { SITUATIONAL_PAGE_SIZE } from "@/src/lib/config/constants"
 import { applyFilters, sortRuns, extractUniqueValues, calculateColumnRanges } from "./filtering-and-sorting-utils"
 
 /**
@@ -173,8 +174,8 @@ export function useSituationalData({ runs, selectedSdk = "", searchQuery = "" }:
   }
 }
 
-// Hook for loading situational runs data
-export const SITUATIONAL_PAGE_SIZE = 50
+// Re-exported so existing import sites keep working; defined in shared constants.
+export { SITUATIONAL_PAGE_SIZE }
 
 interface UseLoadSituationalRunsReturn {
   runs: SituationalRun[]
