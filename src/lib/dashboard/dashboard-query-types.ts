@@ -199,6 +199,11 @@ export interface Input {
   // Whether to filter matched runs.  The default is ALL (no filtering).
   readonly filterRuns: FilterRuns;
 
+  // When filterRuns is LATEST, pins the displayed version to this exact value
+  // instead of auto-selecting the latest release. Ignored if no matched run
+  // carries it, in which case the latest release is shown.
+  readonly selectedVersion?: string;
+
   // Annotations are lines, labels etc. that are overlaid on the chart.  They are only supported if graphType==FULL.
   readonly annotations: Array<AnnotationsRunEvents>;
 }

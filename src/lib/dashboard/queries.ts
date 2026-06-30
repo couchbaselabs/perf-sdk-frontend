@@ -89,6 +89,7 @@ export interface DashboardInput {
   excludeSnapshots: boolean
   excludeGerrit: boolean
   filterRuns: string
+  selectedVersion?: string
 }
 
 // Error summary class

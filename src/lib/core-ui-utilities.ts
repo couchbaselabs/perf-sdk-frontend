@@ -124,6 +124,40 @@ function safeSemverCompare(version1: string, version2: string): number {
   }
 }
 
+// Ranking used to pick the single "latest" version to display. Released
+// versions always win over moving and on-demand tags, so the default is the
+// newest release rather than a main or branch snapshot. This is deliberately
+// distinct from versionCompare, which orders the X-axis.
+const VERSION_RECENCY_RANK: Record<VersionKind, number> = {
+  release: 5,
+  'branch-snapshot': 4,
+  main: 3,
+  ondemand: 2,
+  gerrit: 1,
+  other: 0,
+}
+
+/**
+ * True when `candidate` is a better choice than `current` for the "latest"
+ * version of an SDK. Releases beat everything else, then ties break by semver
+ * (releases) or stable lexical order (moving/on-demand tags).
+ */
+export function isMoreRecentVersion(candidate: string, current: string): boolean {
+  const candidateKind = classifyVersion(candidate)
+  const currentKind = classifyVersion(current)
+
+  if (candidateKind !== currentKind) {
+    return VERSION_RECENCY_RANK[candidateKind] > VERSION_RECENCY_RANK[currentKind]
+  }
+  if (candidateKind === 'release') {
+    return safeSemverCompare(candidate, current) > 0
+  }
+  if (candidateKind === 'branch-snapshot') {
+    return safeSemverCompare(candidate.replace(/\.x$/, '.0'), current.replace(/\.x$/, '.0')) > 0
+  }
+  return candidate.localeCompare(current) > 0
+}
+
 /**
  * Compares two version strings for X-axis ordering. Releases sort by semver;
  * moving/on-demand tags are grouped by kind and pushed to the end (gerrit, then
