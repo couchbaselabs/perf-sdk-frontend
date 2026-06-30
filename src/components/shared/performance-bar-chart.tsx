@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Skeleton } from "@/src/components/ui/skeleton"
 import { Button } from "@/src/components/ui/button"
 import { Badge } from "@/src/components/ui/badge"
@@ -23,11 +23,25 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/src/
 import { Alert, AlertDescription, AlertTitle } from "@/src/components/ui/alert"
 // cluster version mapping handled inside hook
 import { CustomTooltip, CustomLegend } from "@/src/shared/charts"
+import { parsePerformerImage, describeChangeLink } from "@/src/lib/performer-image"
+import { SNAPSHOT_BAR_COLORS } from "@/src/shared/charts/colors"
+import { classifyVersion } from "@/src/lib/core-ui-utilities"
 import { exportChartToCSV } from "@/src/lib/utils/exports"
 import { usePerformanceBarChart } from '@/src/shared/charts/use-performance-bar-chart'
 
 
 // Using shared CustomLegend component
+
+// Non-release bars are drawn in a distinct color: moving snapshot tags (main,
+// 3.11.x) at the end of the chart, and gerrit/PR builds inline. Returns
+// undefined for normal release versions.
+function snapshotBarColor(name: unknown): string | undefined {
+  const kind = classifyVersion(typeof name === "string" ? name : "")
+  if (kind === "main") return SNAPSHOT_BAR_COLORS.main
+  if (kind === "branch-snapshot") return SNAPSHOT_BAR_COLORS.branch
+  if (kind === "gerrit") return SNAPSHOT_BAR_COLORS.gerrit
+  return undefined
+}
 
 interface PerformanceBarChartProps {
   title: string
@@ -70,6 +84,13 @@ export default function PerformanceBarChart({
 
 
   const [showDetails, setShowDetails] = useState(false)
+
+  // Custom overlay tooltip so the card stays put and clickable. A hidden
+  // recharts <Tooltip> stays mounted because the chart only tracks hover
+  // (onMouseMove/activePayload) when a Tooltip child is present.
+  const chartAreaRef = useRef<HTMLDivElement | null>(null)
+  const [hovered, setHovered] = useState<{ x: number; payload: any[]; label?: string } | null>(null)
+
   const {
     chartType,
     toggleChartType,
@@ -179,6 +200,11 @@ export default function PerformanceBarChart({
           </div>
         )}
         <div className="p-6" style={{ height: "300px" }}>
+          <div
+            ref={chartAreaRef}
+            className="relative h-full w-full"
+            onMouseLeave={() => setHovered(null)}
+          >
           <ResponsiveContainer width="100%" height="100%">
             {chartType === "grouped" && hasMultipleClusterVersions ? (
               // Grouped chart for multiple cluster versions
@@ -266,15 +292,39 @@ export default function PerformanceBarChart({
                   left: 20,
                   bottom: 20,
                 }}
+                onMouseMove={(state: any) => {
+                  // Freeze the active bar as the overlay content; keep the last
+                  // one when the pointer leaves the plot heading to the card.
+                  if (
+                    state?.isTooltipActive &&
+                    state.activeCoordinate &&
+                    Array.isArray(state.activePayload) &&
+                    state.activePayload.length
+                  ) {
+                    const height = chartAreaRef.current?.clientHeight ?? 0
+                    const y = state.activeCoordinate.y
+                    setHovered((prev) => {
+                      // Don't retarget in the upper half: that's the path up to
+                      // the card, where horizontal drift shouldn't switch bars.
+                      if (prev && height > 0 && y < height * 0.5) return prev
+                      return {
+                        x: state.activeCoordinate.x,
+                        payload: state.activePayload,
+                        label: state.activeLabel,
+                      }
+                    })
+                  }
+                }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                <YAxis 
-                  tick={{ fontSize: 12 }} 
-                  stroke="#94a3b8" 
+                <YAxis
+                  tick={{ fontSize: 12 }}
+                  stroke="#94a3b8"
                   label={{ value: metricUnit, angle: -90, position: 'insideLeft' }}
                 />
-                <RechartsTooltip content={<CustomTooltip metricUnit={metricUnit} />} />
+                {/* Mounted only so recharts tracks hover; renders nothing. */}
+                <RechartsTooltip content={() => null} />
                 {hasMultipleClusterVersions && <Legend content={<CustomLegend type="cluster" />} />}
                 <Bar
                   dataKey="value"
@@ -288,17 +338,22 @@ export default function PerformanceBarChart({
                   // Improved hover effect that only applies to the bar
                   activeBar={{ stroke: "rgb(16, 185, 129)", strokeWidth: 2 }}
                 >
-                  {Array.isArray(processedData) && processedData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry?.clusterColor || color}
-                      stroke={
-                        entry?.clusterColor && typeof entry.clusterColor === "string"
-                          ? entry.clusterColor.replace("0.7", "1")
-                          : borderColor
-                      }
-                    />
-                  ))}
+                  {Array.isArray(processedData) && processedData.map((entry, index) => {
+                    const snapshotColor = snapshotBarColor(entry?.name)
+                    return (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={snapshotColor || entry?.clusterColor || color}
+                        stroke={
+                          snapshotColor
+                            ? snapshotColor
+                            : entry?.clusterColor && typeof entry.clusterColor === "string"
+                              ? entry.clusterColor.replace("0.7", "1")
+                              : borderColor
+                        }
+                      />
+                    )
+                  })}
                   {multiClusterMode && (
                     <LabelList
                       dataKey="clusterName"
@@ -332,7 +387,69 @@ export default function PerformanceBarChart({
               </BarChart>
             )}
           </ResponsiveContainer>
+          {/* Overlay tooltip positioned over the hovered bar. */}
+          {chartType !== "grouped" && hovered && (() => {
+            // Keep the card over the bar's column at the chart edges: hang it
+            // left of right-edge bars (and vice versa) so it stays reachable.
+            const width = chartAreaRef.current?.clientWidth ?? 0
+            const x = hovered.x
+            let left = x
+            let xShift = "translateX(-50%)"
+            if (width > 0 && x > width * 0.6) {
+              left = x + 24
+              xShift = "translateX(-100%)"
+            } else if (width > 0 && x < width * 0.4) {
+              left = Math.max(x - 24, 4)
+              xShift = "translateX(0)"
+            }
+            // Detail cards are taller than the plot; grow them upward from ~45%
+            // down so they cover only the upper bars, not the whole chart.
+            const height = chartAreaRef.current?.clientHeight ?? 300
+            const dp = hovered.payload[0]?.payload
+            const img = parsePerformerImage(dp?.image)
+            const hasDetails = !!(img && (describeChangeLink(img.pr) || img.created))
+            const transform = hasDetails
+              ? `${xShift} translateY(calc(-100% + ${Math.round(height * 0.45)}px))`
+              : xShift
+            return (
+              <div
+                className="absolute z-10 pointer-events-auto"
+                style={{ left, top: 0, transform }}
+              >
+                <CustomTooltip
+                  active
+                  payload={hovered.payload}
+                  label={hovered.label}
+                  metricUnit={metricUnit}
+                  onRunDetails={() => handleBarClick(hovered.payload[0])}
+                />
+              </div>
+            )
+          })()}
+          </div>
         </div>
+        {/* Legend for the special non-release bar colors actually present in the chart. */}
+        {Array.isArray(processedData) && (() => {
+          const kinds = new Set<string>(
+            processedData.map((d) => classifyVersion(typeof d?.name === "string" ? d.name : ""))
+          )
+          const items = [
+            { kind: "branch-snapshot", color: SNAPSHOT_BAR_COLORS.branch, label: "Branch snapshot" },
+            { kind: "main", color: SNAPSHOT_BAR_COLORS.main, label: "main" },
+            { kind: "gerrit", color: SNAPSHOT_BAR_COLORS.gerrit, label: "PR / Gerrit" },
+          ].filter((i) => kinds.has(i.kind))
+          if (items.length === 0) return null
+          return (
+            <div className="flex flex-wrap gap-4 justify-center px-4 pb-2 -mt-6">
+              {items.map((i) => (
+                <div key={i.kind} className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: i.color }} />
+                  <span className="text-xs text-muted-foreground">{i.label}</span>
+                </div>
+              ))}
+            </div>
+          )
+        })()}
         <CardFooter className="flex items-center justify-between px-6 py-3 border-t bg-slate-50">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <TooltipProvider>

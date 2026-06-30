@@ -35,7 +35,7 @@ import {
   AnnotationsRunEvents,
   YAxis
 } from './dashboard/dashboard-query-types';
-import { versionCompare, ShadeProvider } from './core-ui-utilities';
+import { versionCompare, ShadeProvider, classifyVersion, isMovingVersion, isMoreRecentVersion } from './core-ui-utilities';
 import { v4 as uuidv4 } from 'uuid';
 
 // Import consolidated utilities
@@ -70,58 +70,124 @@ export type { DashboardInput } from './dashboard/queries'
 export class DashboardService {
   constructor(private readonly database: DatabaseService) {}
 
+  // "Exclude snapshots" hides the noisy legacy per-commit builds ("3.8.0-<sha>"),
+  // which classify as `release` but carry a "-<timestamp+sha>" suffix. Gerrit/PR
+  // and on-demand builds also contain "-" but have their own toggle, and moving
+  // tags (main, 3.11.x) are headline bars shown regardless of this toggle, so
+  // restrict the snapshot toggle to release-kind versions only.
+  private passesExclusions(run: Run, input: Input): boolean {
+    const version = run.impl["version"] as string
+    const kind = classifyVersion(version)
+    if (input.excludeGerrit && kind === 'gerrit') return false
+    const isLegacySnapshot = kind === 'release' && version.includes("-")
+    if (input.excludeSnapshots && isLegacySnapshot) return false
+    return true
+  }
+
+  // For a LATEST query, the single version to keep per SDK. Defaults to the
+  // newest release (see isMoreRecentVersion), but an explicit selectedVersion
+  // pins the choice when that version actually has matching runs.
+  private resolveLatestVersions(runs: Run[], input: Input): Map<string, string> {
+    const latest = new Map<string, string>()
+    if (input.filterRuns != FilterRuns.LATEST && input.filterRuns != FilterRuns.LATEST_NON_SNAPSHOT) {
+      return latest
+    }
+
+    for (const run of runs) {
+      const sdk = run.impl["language"] as string
+      const version = run.impl["version"] as string
+      if (classifyVersion(version) === 'gerrit') continue
+      const isSnapshot = isMovingVersion(version) || version.includes("-")
+      if (isSnapshot && input.filterRuns == FilterRuns.LATEST_NON_SNAPSHOT) continue
+
+      const current = latest.get(sdk)
+      if (current === undefined || isMoreRecentVersion(version, current)) {
+        latest.set(sdk, version)
+      }
+    }
+
+    const pinned = input.selectedVersion
+    if (pinned) {
+      runs.forEach(run => {
+        if ((run.impl["version"] as string) === pinned && this.passesExclusions(run, input)) {
+          latest.set(run.impl["language"] as string, pinned)
+        }
+      })
+    }
+
+    latest.forEach((version, sdk) => logger.info(`Latest for ${sdk} = ${version}`))
+    return latest
+  }
+
+  // Moving tags (main, 3.11.x) overwrite their docker image on every build, so
+  // runs accumulate under the same version. Keep only the newest run per logical
+  // data point. The data point is language+version on version-grouped charts, but
+  // also includes the grouping value (e.g. horizontalScaling) elsewhere so a
+  // scaling chart keeps one run per scaling factor rather than collapsing to one.
+  private collapseMovingRuns(runs: Run[], groupingField: string): Run[] {
+    const latestMoving = new Map<string, Run>()
+    for (const run of runs) {
+      if (!isMovingVersion(run.impl["version"] as string)) continue
+      const key = this.movingRunKey(run, groupingField)
+      const existing = latestMoving.get(key)
+      if (!existing || Date.parse(run.datetime) > Date.parse(existing.datetime)) {
+        latestMoving.set(key, run)
+      }
+    }
+    if (latestMoving.size === 0) return runs
+
+    return runs.filter(run => {
+      if (!isMovingVersion(run.impl["version"] as string)) return true
+      return latestMoving.get(this.movingRunKey(run, groupingField)) === run
+    })
+  }
+
+  private movingRunKey(run: Run, groupingField: string): string {
+    const grouping = DashboardMappers.parseFrom(run.params, groupingField.split('.'))
+    return `${run.impl["language"]}|${run.impl["version"]}|${grouping}`
+  }
+
+  private groupingField(input: Input): string {
+    return input.hAxis?.type == 'dynamic'
+      ? (input.hAxis as HorizontalAxisDynamic).databaseField
+      : 'impl.version'
+  }
+
   /**
    * Takes runs from the database and filters them against the requested Input.
    */
   private filterRuns(runs: Run[], input: Input): Run[] {
-    const latestForEachLanguage = new Map<string, string>()
+    const isLatest = input.filterRuns == FilterRuns.LATEST || input.filterRuns == FilterRuns.LATEST_NON_SNAPSHOT
+    const latest = this.resolveLatestVersions(runs, input)
 
-    if (input.filterRuns == FilterRuns.LATEST || input.filterRuns == FilterRuns.LATEST_NON_SNAPSHOT) {
-      runs.forEach(run => {
-        const sdk = run.impl["language"] as string
-        const version = run.impl["version"] as string
-        const isGerrit = version.startsWith("refs/")
-        const isSnapshot = version.includes("-")
-        const currentLatest = latestForEachLanguage.get(sdk)
-        let skip = isGerrit
-
-        if (isSnapshot && input.filterRuns == FilterRuns.LATEST_NON_SNAPSHOT) {
-          skip = true
-        }
-
-        if (!skip) {
-          if (currentLatest === undefined) {
-            latestForEachLanguage.set(sdk, version)
-          }
-          else {
-            if (versionCompare(version, currentLatest) > 0) {
-              latestForEachLanguage.set(sdk, version)
-            }
-          }
-        }
-      })
-
-      latestForEachLanguage.forEach((version, sdk) => logger.info(`Latest for ${sdk} = ${version}`))
-    }
-
-    return runs.filter(run => {
-      const sdk = run.impl["language"] as string
-      const version = run.impl["version"] as string
-      const isGerrit = version.startsWith("refs/")
-      const isSnapshot = version.includes("-")
-      if (input.excludeGerrit && isGerrit) {
-        return false
+    const filtered = runs.filter(run => {
+      if (!this.passesExclusions(run, input)) return false
+      if (isLatest) {
+        return latest.get(run.impl["language"] as string) == (run.impl["version"] as string)
       }
-      if (input.excludeSnapshots && isSnapshot) {
-        return false
-      }
-
-      if (input.filterRuns == FilterRuns.LATEST || input.filterRuns == FilterRuns.LATEST_NON_SNAPSHOT) {
-        return latestForEachLanguage.get(sdk) == version
-      }
-
       return true
     })
+
+    return this.collapseMovingRuns(filtered, this.groupingField(input))
+  }
+
+  // The versions a LATEST chart could display, newest first, alongside the one
+  // currently selected. Used to populate the per-chart version dropdown. This is
+  // the reverse of the X-axis order, so main and the newest releases sort first.
+  private versionOptions(runs: Run[], input: Input): { availableVersions: string[], selectedVersion?: string } {
+    if (input.filterRuns != FilterRuns.LATEST && input.filterRuns != FilterRuns.LATEST_NON_SNAPSHOT) {
+      return { availableVersions: [] }
+    }
+    const distinct = new Set<string>()
+    runs.forEach(run => {
+      const version = run.impl["version"] as string
+      if (classifyVersion(version) === 'gerrit') return
+      if (this.passesExclusions(run, input)) distinct.add(version)
+    })
+    const availableVersions = Array.from(distinct).sort((a, b) => versionCompare(b, a))
+    const selected = this.resolveLatestVersions(runs, input)
+    const selectedVersion = selected.size > 0 ? Array.from(selected.values())[0] : undefined
+    return { availableVersions, selectedVersion }
   }
 
   /**
@@ -132,6 +198,7 @@ export class DashboardService {
     const values: number[] = [];
     const runIds: string[][] = [];
     let runs: Run[];
+    let matched: Run[] = [];
     let results: Result[] = [];
 
     if (input.hAxis.type == 'dynamic') {
@@ -155,6 +222,7 @@ export class DashboardService {
         // seq-scan the whole buckets hypertable (orders of magnitude slower on
         // high-volume workloads like KV get).
         const initial = await this.database.getRuns(input.databaseCompare, dbRep2)
+        matched = initial
         runs = this.filterRuns(initial, input)
         logger.info(`Matched ${initial.length} runs, filtered to ${runs.length}`)
 
@@ -165,7 +233,8 @@ export class DashboardService {
       } else if (yAxis.type == 'metric') {
         const va = yAxis as VerticalAxisMetric;
 
-        runs = this.filterRuns(await this.database.getRuns(input.databaseCompare, "{}",), input)
+        matched = await this.database.getRuns(input.databaseCompare, "{}",)
+        runs = this.filterRuns(matched, input)
 
         logger.info(`Matched ${runs.length} runs`)
 
@@ -184,6 +253,35 @@ export class DashboardService {
       throw Error(`Unknown hAxis type ${input.hAxis}`)
     }
 
+    // Enforce the canonical X-axis order for version groupings:
+    // releases (semver) -> gerrit -> on-demand -> branch snapshot -> main.
+    // Other groupings (e.g. horizontalScaling) are left untouched.
+    const isVersionGrouping =
+      input.hAxis.type == 'dynamic' &&
+      (input.hAxis as HorizontalAxisDynamic).resultType == ResultType.VERSION_SEMVER;
+
+    if (isVersionGrouping) {
+      results.sort((a, b) => versionCompare(a.grouping, b.grouping));
+    }
+
+    // Attach performer-image metadata (params.impl.image) per grouping, using
+    // the first matching run's image. Left undefined when no run carries it.
+    if (runs!.length > 0) {
+      const imageByVersion = new Map<string, Record<string, unknown>>();
+      for (const run of runs!) {
+        const version = run.impl?.["version"];
+        const image = run.impl?.["image"];
+        if (typeof version === "string" && image && typeof image === "object" && !imageByVersion.has(version)) {
+          imageByVersion.set(version, image as Record<string, unknown>);
+        }
+      }
+      if (imageByVersion.size > 0) {
+        results.forEach((b) => {
+          b.image = imageByVersion.get(b.grouping) ?? null;
+        });
+      }
+    }
+
     results.forEach((b) => {
       labels.push(b.grouping);
       values.push(b.value);
@@ -195,11 +293,15 @@ export class DashboardService {
       }
     });
 
+    const { availableVersions, selectedVersion } = this.versionOptions(matched, input)
+
     return {
       type: 'bar',
       runs: runs,
       chosen: JSON.stringify(input.databaseCompare),
       results: results,
+      availableVersions,
+      selectedVersion,
       data: {
         runIds: runIds,
         labels: labels,

@@ -11,6 +11,7 @@ import { Badge } from "@/src/components/ui/badge"
 import { SdkBadge, VersionBadge } from "@/src/components/shared/BadgeSystem"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/src/components/ui/table"
 import { Popover, PopoverContent, PopoverTrigger } from "@/src/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select"
 import PerformanceBarChart from "@/src/components/shared/performance-bar-chart"
 import { DataTransformers } from '@/src/shared/data/transformers'
 import PerformanceGraph from "@/src/components/shared/performance-graph"
@@ -128,6 +129,7 @@ export default function DashboardResults({ input, title, description, keyProp, s
   const [errors, setErrors] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showRuns, setShowRuns] = useState(false)
+  const [versionPick, setVersionPick] = useState<string | null>(null)
 
   // Tracks which input the data in `results` belongs to. When the SDK (or any
   // other input) changes, the current `results` are for the old selection, so we
@@ -152,11 +154,28 @@ export default function DashboardResults({ input, title, description, keyProp, s
     ? String((input as DashboardInput).databaseCompare?.impl?.language || 'Java')
     : 'Java'
 
+  // Version dropdown (LATEST charts only). The server reports the versions that
+  // have data and the one it chose by default (latest release). A user pick is
+  // validated against the current options, so a pick that no longer applies
+  // (e.g. after an SDK switch) falls back to the server default with no effect.
+  const responseData = results?.data
+  const availableVersions: string[] = responseData?.availableVersions ?? []
+  const serverSelectedVersion: string | undefined = responseData?.selectedVersion
+  const activeVersion = versionPick && availableVersions.includes(versionPick) ? versionPick : null
+  const shownVersion = activeVersion ?? serverSelectedVersion ?? ''
+
+  const effectiveInput = useMemo(
+    () => (!isSingleRun && activeVersion
+      ? { ...(input as DashboardInput), selectedVersion: activeVersion }
+      : input),
+    [input, isSingleRun, activeVersion]
+  )
+
   // Memoize input serialization to prevent unnecessary re-renders
   // This is the key fix - we serialize the input object to detect actual changes
   const inputKey = useMemo(() => {
-    return JSON.stringify(input)
-  }, [input])
+    return JSON.stringify(effectiveInput)
+  }, [effectiveInput])
 
   const query = useQuery({
     // CRITICAL FIX: Include title in queryKey to prevent cache conflicts between different chart types
@@ -167,7 +186,7 @@ export default function DashboardResults({ input, title, description, keyProp, s
         const singleInput = input as SingleRunInput
         return apiClient.getRunMetrics(singleInput.runId, signal)
       }
-      return apiClient.getDashboardQuery(input, signal)
+      return apiClient.getDashboardQuery(effectiveInput, signal)
     },
     // Inherit cache settings from the global QueryClient (providers.tsx) so
     // results are reused across tab switches and revisits instead of refetched.
@@ -268,6 +287,24 @@ export default function DashboardResults({ input, title, description, keyProp, s
   // is always in flight in that window, so this resolves as soon as it returns.
   const showingStaleData = !!results && resultsInputKeyRef.current !== inputKey
 
+  // Rendered above the chart on version-collapsed charts (horizontal scaling).
+  // Kept visible across the reload so switching versions does not make it vanish.
+  const versionSelector = availableVersions.length > 1 ? (
+    <div className="flex items-center justify-end gap-2 mb-2">
+      <span className="text-sm text-muted-foreground">Version</span>
+      <Select value={shownVersion} onValueChange={setVersionPick}>
+        <SelectTrigger className="w-[200px] h-8">
+          <SelectValue placeholder="Select version" />
+        </SelectTrigger>
+        <SelectContent>
+          {availableVersions.map((v) => (
+            <SelectItem key={v} value={v}>{v}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  ) : null
+
   if ((isLoading && !results) || showingStaleData) {
     return (
       <Card className="w-full">
@@ -279,6 +316,7 @@ export default function DashboardResults({ input, title, description, keyProp, s
           {description && <CardDescription>{description}</CardDescription>}
         </CardHeader>
         <CardContent>
+          {versionSelector}
           <div className="space-y-4">
             <Skeleton className="h-64 w-full" />
             <div className="flex gap-2">
@@ -357,6 +395,7 @@ export default function DashboardResults({ input, title, description, keyProp, s
 
   return (
     <div className="w-full space-y-4">
+      {versionSelector}
       {/* Chart rendering - matches Vue Results.vue */}
       <div className="graph relative">
         {isLoading && (

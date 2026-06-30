@@ -201,10 +201,11 @@ export const DataTransformers = {
             value: Number(result.value) || 0,
             runIds: runIdsArray,
             runCount: runIdsArray.length,
+            image: result.image ?? null,
             clusterName: '7.1.1',
             clusterColor: 'rgb(16, 185, 129)',
             sdkName: sdkLanguage,
-            sdkColor: 'rgb(16, 185, 129)'
+            sdkColor: 'rgb(16, 185, 129)',
           }
         })
         .filter((item: any) => !isNaN(item.value) && item.name)

@@ -6,6 +6,7 @@ export type ChartDataPoint = {
   value: number
   runCount: number
   runIds: string[]
+  image?: Record<string, unknown> | null
   sdkVersion: string
   sdkName: string
   sdkColor: string
