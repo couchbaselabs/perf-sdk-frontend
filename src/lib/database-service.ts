@@ -156,15 +156,16 @@ export class DatabaseService {
   private getRunsCache = new Map<string, { expires: number; promise: Promise<Array<Run>> }>()
   private static readonly GET_RUNS_CACHE_TTL_MS = 30_000
 
-  // SQL predicate matching legacy per-commit "snapshot" versions ("3.8.0-<sha>").
-  // Moving tags (main, 3.11.x) contain no "-" and are deliberately NOT matched here:
-  // they are headline bars and stay visible regardless of the "exclude snapshots" toggle.
-  private static readonly SNAPSHOT_VERSION_SQL =
-    `(params->'impl'->>'version' LIKE '%-%')`
-
   // SQL predicate matching on-demand Gerrit/GitHub PR versions ("refs/..." / "refs-...").
   private static readonly GERRIT_VERSION_SQL =
     `(params->'impl'->>'version' LIKE 'refs/%' OR params->'impl'->>'version' LIKE 'refs-%')`
+
+  // Matches legacy per-commit "snapshot" builds like "3.8.0-<sha>", the ones the
+  // "exclude snapshots" toggle hides. Gerrit ("refs-...") and on-demand ("sha-...")
+  // builds also contain a "-" but are not snapshots, so exclude them here to stay
+  // in sync with the equivalent JS check in dashboard-service.ts.
+  private static readonly SNAPSHOT_VERSION_SQL =
+    `(params->'impl'->>'version' LIKE '%-%' AND NOT ${DatabaseService.GERRIT_VERSION_SQL} AND params->'impl'->>'version' NOT LIKE 'sha-%')`
 
   /**
    * Used for both the Simplified and Full graphs. Thin caching and
