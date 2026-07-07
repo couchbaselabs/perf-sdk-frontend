@@ -139,7 +139,7 @@ export default function RunDetailClient({ runData, runMetrics, runBuckets }: Run
                   Run Details
                 </CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Run ID: {runData.run_id}
+                  Run ID: {runData.id}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -366,7 +366,7 @@ export default function RunDetailClient({ runData, runMetrics, runBuckets }: Run
                 <CardTitle>System Metrics</CardTitle>
               </CardHeader>
               <CardContent>
-                <ObservabilityBox runId={runData.run_id} />
+                <ObservabilityBox runId={runData.id} />
               </CardContent>
             </Card>
           </TabsContent>
