@@ -44,7 +44,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
 
   const [activeTab, setActiveTab] = useState("classic")
   const [excludeSnapshots, setExcludeSnapshots] = useState(true)
-  const [excludeGerrit, setExcludeGerrit] = useState(false)
+  const [excludeGerrit, setExcludeGerrit] = useState(true)
   const [selectedClusterVersion, setSelectedClusterVersion] = useState<string>(DEFAULT_CLUSTERS[0])
   const [visibleOperations, setVisibleOperations] = useState<string[]>(CORE_OPERATIONS.slice(0, 3).map((op) => op.id))
   const [visibleScaling, setVisibleScaling] = useState<string[]>(SCALING_OPERATIONS.map((op) => op.id))
