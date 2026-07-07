@@ -137,6 +137,7 @@ export default function PerformanceGraph({
   const [dragStartX, setDragStartX] = useState<number | null>(null)
   const [dragCurrentX, setDragCurrentX] = useState<number | null>(null)
   const [showLegend, setShowLegend] = useState(true)
+  const [clipExtremes, setClipExtremes] = useState(false)
   const [brushKey, setBrushKey] = useState(0)
   const [chartKey, setChartKey] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -406,6 +407,29 @@ export default function PerformanceGraph({
     ? sliced.filter(p => typeof p?.time === 'number' && Number.isFinite(p.time) && p.time >= selectedTimeRange[0] && p.time <= selectedTimeRange[1])
     : sliced
 
+  // Compute a winsorized Y-axis domain (p1..p99).
+  // Recharts clips lines that exceed the domain at the SVG boundary via allowDataOverflow.
+  const computeWinsorizedDomain = (metricIds: string[]): [number | string, number | string] => {
+    const values: number[] = []
+    for (const point of visibleData) {
+      for (const id of metricIds) {
+        const v = point[id]
+        if (typeof v === 'number' && Number.isFinite(v)) values.push(v)
+      }
+    }
+    if (values.length === 0) return ["auto", "auto"]
+    values.sort((a, b) => a - b)
+    const n = values.length
+    const p1  = values[Math.floor(n * 0.01)]
+    const p99 = values[Math.min(Math.floor(n * 0.99), n - 1)]
+    return [Math.min(0, p1), p99 * 1.05]
+  }
+
+  const leftMetricIds = activeMetrics.filter((id) => getAxis(id) === "left")
+  const rightMetricIds = activeMetrics.filter((id) => getAxis(id) === "right")
+  const leftDomain  = clipExtremes ? computeWinsorizedDomain(leftMetricIds)  : ["auto", "auto"] as [string, string]
+  const rightDomain = clipExtremes ? computeWinsorizedDomain(rightMetricIds) : ["auto", "auto"] as [string, string]
+
   // Tooltip formatters
   const tooltipFormatter = (value: any, name: string) => {
     const metric = allMetrics.find((m) => m.id === name)
@@ -532,6 +556,23 @@ export default function PerformanceGraph({
               </Tooltip>
             </TooltipProvider>
 
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={clipExtremes ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setClipExtremes(v => !v)}
+                  >
+                    Clip Extremities
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Winsorize the y-axis: sets the scale to p1–p99 so outliers run off the chart boundary instead of compressing the readable range. Data values are untouched.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
             <Tabs value={chartType} onValueChange={(value) => setChartType(value as "line" | "area")}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="line" className="flex items-center gap-1">
@@ -632,7 +673,8 @@ export default function PerformanceGraph({
                     <YAxis
                       yAxisId="left"
                       label={{ value: leftAxisLabel, angle: -90, position: "insideLeft" }}
-                      domain={["auto", "auto"]}
+                      domain={leftDomain}
+                      allowDataOverflow={clipExtremes}
                       tick={{ fontSize: 11 }}
                       stroke="#94a3b8"
                       hide={leftAxisMetrics === 0}
@@ -641,7 +683,8 @@ export default function PerformanceGraph({
                       yAxisId="right"
                       orientation="right"
                       label={{ value: rightAxisLabel, angle: -90, position: "insideRight" }}
-                      domain={["auto", "auto"]}
+                      domain={rightDomain}
+                      allowDataOverflow={clipExtremes}
                       tick={{ fontSize: 11 }}
                       stroke="#94a3b8"
                       hide={rightAxisMetrics === 0}
@@ -717,7 +760,8 @@ export default function PerformanceGraph({
                     <YAxis
                       yAxisId="left"
                       label={{ value: leftAxisLabel, angle: -90, position: "insideLeft" }}
-                      domain={["auto", "auto"]}
+                      domain={leftDomain}
+                      allowDataOverflow={clipExtremes}
                       tick={{ fontSize: 11 }}
                       stroke="#94a3b8"
                       hide={leftAxisMetrics === 0}
@@ -726,7 +770,8 @@ export default function PerformanceGraph({
                       yAxisId="right"
                       orientation="right"
                       label={{ value: rightAxisLabel, angle: -90, position: "insideRight" }}
-                      domain={["auto", "auto"]}
+                      domain={rightDomain}
+                      allowDataOverflow={clipExtremes}
                       tick={{ fontSize: 11 }}
                       stroke="#94a3b8"
                       hide={rightAxisMetrics === 0}
@@ -767,6 +812,7 @@ export default function PerformanceGraph({
                           stroke={metric.color}
                           fill={`${metric.color}20`}
                           strokeWidth={2}
+                          dot={false}
                           name={metric.name}
                           connectNulls={true}
                         />
