@@ -183,6 +183,7 @@ async function handleSituationalRunsList(request: NextRequest, situationalRunId:
       environment: params?.vars?.environment ?? '-',
       status: 'completed' as const,
       ciUrl: params?.debug?.ciUrl ?? undefined,
+      faasJobId: params?.faas?.jobId ?? undefined,
     }
   })
 

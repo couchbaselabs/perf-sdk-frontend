@@ -366,7 +366,11 @@ export default function RunDetailClient({ runData, runMetrics, runBuckets }: Run
                 <CardTitle>System Metrics</CardTitle>
               </CardHeader>
               <CardContent>
-                <ObservabilityBox runId={runData.id} />
+                <ObservabilityBox
+                  faasJobId={runData.params?.faas?.jobId}
+                  ciUrl={runData.params?.debug?.ciUrl}
+                  date={runData.datetime}
+                />
               </CardContent>
             </Card>
           </TabsContent>

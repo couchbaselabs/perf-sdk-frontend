@@ -14,8 +14,13 @@ function getIso8601Date(): string {
  * @param jobId - The job/situational run ID
  * @returns Formatted job ID: YYYY-MM-DD-{jobId}
  */
-function formatJobIdWithDate(jobId: string): string {
-  const isoDate = getIso8601Date()
+function formatJobIdWithDate(jobId: string, date?: string): string {
+  // Prefix with the run's date to match the S3 folder.
+  // TODO: file an SDKQE ticket. The date is the run's UTC day but the folder uses the
+  // backend's local start-date, so it can be off by a day near midnight; the backend
+  // should store the exact date so the UI doesn't have to guess.
+  const parsed = date ? new Date(date) : null
+  const isoDate = parsed && !isNaN(parsed.getTime()) ? parsed.toISOString().split('T')[0] : getIso8601Date()
   return `${isoDate}-${jobId}`
 }
 
@@ -37,40 +42,17 @@ function buildS3ConsoleUrl(bucketName: string, prefix: string, region: string = 
  * @param jobId - The job/situational run ID  
  * @param bucketName - S3 bucket name (default: fit-as-a-service-artifacts)
  * @param region - AWS region (default: us-west-2)
+ * @param date - The run's date; defaults to today
  * @returns S3 console URL for the job's artifacts
  */
 export function generateS3ConsoleUrl(
-  jobId: string, 
-  bucketName: string = 'fit-as-a-service-artifacts', 
-  region: string = 'us-west-2'
-): string {
-  const datePrefixedJobId = formatJobIdWithDate(jobId)
-  const prefix = `jobs/${datePrefixedJobId}/`
-  return buildS3ConsoleUrl(bucketName, prefix, region)
-}
-
-/**
- * Generate S3 console URL for specific artifact type (logs, metrics, cluster)
- * @param jobId - The job/situational run ID
- * @param runId - The specific run ID (optional, for more specific paths)
- * @param artifactType - Type of artifact (logs, metrics, cluster, etc.)
- * @param bucketName - S3 bucket name (default: fit-as-a-service-artifacts)  
- * @param region - AWS region (default: us-west-2)
- * @returns S3 console URL for the specific artifact type
- */
-export function generateS3ArtifactUrl(
   jobId: string,
-  runId: string | null = null,
-  artifactType: string = 'artifacts',
   bucketName: string = 'fit-as-a-service-artifacts',
-  region: string = 'us-west-2'
+  region: string = 'us-west-2',
+  date?: string
 ): string {
-  const datePrefixedJobId = formatJobIdWithDate(jobId)
-  
-  // Use the job-level prefix that matches the working URL pattern
-  // This points to the entire job directory, letting users navigate to subdirectories
+  const datePrefixedJobId = formatJobIdWithDate(jobId, date)
   const prefix = `jobs/${datePrefixedJobId}/`
-  
   return buildS3ConsoleUrl(bucketName, prefix, region)
 }
 

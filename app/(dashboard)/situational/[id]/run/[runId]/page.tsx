@@ -106,6 +106,7 @@ export default function SituationalRunDetailPage({
       events: data.events || [],
       errorsSummary: data.errorsSummary || [],
       ciUrl: runParams?.debug?.ciUrl,
+      faasJobId: runParams?.faas?.jobId,
       openShiftProject: runParams?.debug?.openShiftProject,
       situationalRunId: resolvedParams.id,
     }
@@ -562,8 +563,9 @@ export default function SituationalRunDetailPage({
               </Card>
 
               <ObservabilityBox
-                runId={runData.id}
-                situationalRunId={runData.situationalRunId}
+                faasJobId={runData.faasJobId}
+                ciUrl={runData.ciUrl}
+                date={runData.started}
               />
             </div>
           </TabsContent>
