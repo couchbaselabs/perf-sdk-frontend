@@ -6,26 +6,30 @@ import Link from "next/link"
 import { Button } from "@/src/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/src/components/ui/tooltip"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
-import { generateS3ArtifactUrl, S3_CONFIG } from "@/src/lib/utils/s3-utils"
+import { generateS3ConsoleUrl, S3_CONFIG } from "@/src/lib/utils/s3-utils"
 
 interface ObservabilityBoxProps {
-  runId: string
-  situationalRunId?: string
+  faasJobId?: string
+  ciUrl?: string
+  date?: string
   s3Bucket?: string
   s3Region?: string
 }
 
 export default function ObservabilityBox({
-  runId,
-  situationalRunId,
+  faasJobId,
+  ciUrl,
+  date,
   s3Bucket = S3_CONFIG.DEFAULT_BUCKET,
   s3Region = S3_CONFIG.DEFAULT_REGION,
 }: ObservabilityBoxProps) {
-  // Generate S3 console URLs for different artifact types
-  // Use situationalRunId as the job ID if provided, otherwise fall back to runId
-  const jobId = situationalRunId || runId
-  
-  const logsUrl = generateS3ArtifactUrl(jobId, runId, 'logs', s3Bucket, s3Region)
+  // FaaS runs store their logs in S3 under the faas job id, so we link there when a
+  // job id is present. Runs without one keep their logs at the CI run, so we fall back
+  // to ciUrl, and use it only when it is a real http(s) URL because it is sometimes a
+  // placeholder like "not-available".
+  const s3Url = faasJobId ? generateS3ConsoleUrl(faasJobId, s3Bucket, s3Region, date) : null
+  const ciHref = ciUrl && /^https?:\/\//i.test(ciUrl) ? ciUrl : null
+  const logsUrl = s3Url ?? ciHref
   return (
     <Card className="mb-6 border shadow-sm">
       <CardHeader className="pb-2">
@@ -52,7 +56,9 @@ export default function ObservabilityBox({
                 <div className="flex-1">
                   <h3 className="text-sm font-medium mb-1">Access Detailed Logs</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    View complete execution logs for this run, including debug information and error traces.
+                    {logsUrl
+                      ? 'View complete execution logs for this run, including debug information and error traces.'
+                      : 'No execution logs were collected for this run.'}
                   </p>
                 </div>
               </div>
@@ -60,15 +66,21 @@ export default function ObservabilityBox({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" className="w-full gap-2 justify-center" asChild>
-                      <Link href={logsUrl} target="_blank" rel="noopener noreferrer">
-                        <span>View Logs</span>
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Link>
-                    </Button>
+                    {logsUrl ? (
+                      <Button variant="outline" className="w-full gap-2 justify-center" asChild>
+                        <Link href={logsUrl} target="_blank" rel="noopener noreferrer">
+                          <span>View Logs</span>
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button variant="outline" className="w-full gap-2 justify-center" disabled>
+                        <span>No logs available</span>
+                      </Button>
+                    )}
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Open logs in AWS S3</p>
+                    <p>{s3Url ? 'Open logs in AWS S3' : ciHref ? 'Open the CI run' : 'No logs for this run'}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

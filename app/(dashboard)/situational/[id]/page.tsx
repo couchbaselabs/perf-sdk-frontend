@@ -91,6 +91,12 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
     }
   }, [runs, resolvedParams.id])
 
+  // Only FaaS runs have S3 artifacts.
+  const faasJobId = (runs as any[]).find((r) => r.faasJobId)?.faasJobId as string | undefined
+  const situationalS3Url = faasJobId
+    ? generateS3ConsoleUrl(faasJobId, S3_CONFIG.DEFAULT_BUCKET, S3_CONFIG.DEFAULT_REGION, situationalRun.started)
+    : null
+
   // Keep the sidebar SDK highlight in sync with the detected SDK (URL side-effect).
   useEffect(() => {
     if (!situationalRun) return
@@ -138,15 +144,17 @@ export default function SituationalRunDetailPage({ params }: { params: Promise<{
           <CardContent>
             <div className="flex items-center justify-between">
               <p className="text-slate-600">Access detailed observability data for this situational run.</p>
-              <Button variant="outline" className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300" asChild>
-                <a
-                  href={generateS3ConsoleUrl(resolvedParams.id, S3_CONFIG.DEFAULT_BUCKET, S3_CONFIG.DEFAULT_REGION)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View in AWS S3 <ExternalLink className="h-4 w-4" />
-                </a>
-              </Button>
+              {situationalS3Url ? (
+                <Button variant="outline" className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300" asChild>
+                  <a href={situationalS3Url} target="_blank" rel="noopener noreferrer">
+                    View in AWS S3 <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              ) : (
+                <Button variant="outline" className="gap-2" disabled>
+                  No S3 artifacts <ExternalLink className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
