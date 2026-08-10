@@ -633,31 +633,31 @@ export default function SituationalRunDetailPage({
                         <div className="space-y-4">
                           <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Type:</span>
-                            <span className="font-medium">{runData.cluster?.type || "unmanaged"}</span>
+                            <span className="font-medium">{runData.cluster?.type || "Unknown"}</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Version:</span>
-                            <span className="font-medium">{runData.cluster?.version || "7.1.1-3175-enterprise"}</span>
+                            <span className="font-medium">{runData.cluster?.version || "Unknown"}</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Nodes:</span>
-                            <span className="font-medium">{runData.cluster?.nodeCount || 4}</span>
+                            <span className="font-medium">{runData.cluster?.nodeCount ?? "Unknown"}</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Memory:</span>
-                            <span className="font-medium">{runData.cluster?.memory || 28000} MB</span>
+                            <span className="font-medium">{runData.cluster?.memory ? `${runData.cluster.memory} MB` : "Unknown"}</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">CPU Count:</span>
-                            <span className="font-medium">{runData.cluster?.cpuCount || 16}</span>
+                            <span className="font-medium">{runData.cluster?.cpuCount ?? "Unknown"}</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Storage:</span>
-                            <span className="font-medium">{runData.cluster?.storage || "couchstore"}</span>
+                            <span className="font-medium">{runData.cluster?.storage || "Unknown"}</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Replicas:</span>
-                            <span className="font-medium">{runData.cluster?.replicas || 0}</span>
+                            <span className="font-medium">{runData.cluster?.replicas ?? "Unknown"}</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Private Endpoints:</span>
