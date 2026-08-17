@@ -14,6 +14,7 @@ import {
   SituationalRunAndRunQuery
 } from "./dashboard/dashboard-query-types";
 import { versionCompare } from "./core-ui-utilities";
+import type { DatabaseIngesterRun } from "@/src/types/database";
 import { buildSimplifiedGraphQuery, buildSimplifiedMetricQuery, buildRunsWithBucketsQuery, buildRunsWithMetricsQuery } from '@/src/lib/dashboard/graph-builders'
 import { logger } from '@/src/lib/utils/logger'
 
@@ -753,6 +754,28 @@ export class DatabaseService {
 
     const mapped = result.rows.map((x: any) => new RunAndSituationalScore(x.id, x.datetime, x.run_params, x.srj_params))
     return new SituationalRunResults(query.situationalRunId, mapped);
+  }
+
+  async getIngesterRuns(opts?: { limit?: number; offset?: number }): Promise<DatabaseIngesterRun[]> {
+    const limit = opts?.limit ?? 100
+    const offset = opts?.offset ?? 0
+
+    const label = "getIngesterRuns"
+    logger.time(label)
+    const result = await this.pool.query(
+      `SELECT id, started, finished, status, runs_ingested, runs_failed, runs_deferred, failed_backlog, details
+       FROM ingester_runs
+       ORDER BY started DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset],
+    )
+    logger.timeEnd(label)
+    return result.rows
+  }
+
+  async getIngesterRunsCount(): Promise<number> {
+    const result = await this.pool.query("SELECT count(*) AS count FROM ingester_runs")
+    return Number(result.rows[0].count)
   }
 
   async getAllMetricNames(): Promise<string[]> {
