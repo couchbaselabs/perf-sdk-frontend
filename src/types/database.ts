@@ -107,3 +107,17 @@ export interface DatabaseSituationalRunJoin {
   run_id: string;
   params: Record<string, any>;
 }
+
+// One row per ingester invocation. details holds
+// {version, bucket, runs: [{sit, run, kind, outcome, ...}]}.
+export interface DatabaseIngesterRun {
+  id: string;
+  started: string;
+  finished: string | null;
+  status: "running" | "success" | "partial" | "failed" | "nothing_to_do";
+  runs_ingested: number;
+  runs_failed: number;
+  runs_deferred: number;
+  failed_backlog: number | null;
+  details: Record<string, any> | null;
+}

@@ -1,9 +1,11 @@
 "use client"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/src/lib/core-ui-utilities"
 import {
   BarChart3,
   CheckCircle2,
+  Database,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Tabs, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
@@ -101,6 +103,7 @@ export default function Sidebar({
   onModeChange,
 }: SidebarProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [localSelectedSdk, setLocalSelectedSdk] = useState(selectedSituationalSdk)
 
   // Update local state when prop changes
@@ -243,6 +246,25 @@ export default function Sidebar({
             </div>
           </>
         )}
+      </div>
+
+      {/* Outside the mode-specific blocks above, so it shows in both modes */}
+      <div className="p-3 border-t">
+        <h3 className="text-xs font-medium text-muted-foreground mb-2 px-3">System</h3>
+        <Link
+          href="/ingester"
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
+            pathname === "/ingester"
+              ? "bg-primary/10 text-primary font-medium"
+              : "hover:bg-slate-100 dark:hover:bg-slate-800",
+          )}
+        >
+          <Database
+            className={cn("h-4 w-4", pathname === "/ingester" ? "text-primary" : "text-muted-foreground")}
+          />
+          <span>Ingester</span>
+        </Link>
       </div>
     </div>
   )
