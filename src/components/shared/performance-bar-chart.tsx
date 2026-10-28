@@ -58,6 +58,8 @@ interface PerformanceBarChartProps {
   multiClusterMode?: boolean
   sdkVersion?: string
   sdkName?: string
+  // Display label for a version on the x-axis, tooltip and details. Data keeps the raw version.
+  formatVersion?: (version: string) => string
   baselineClusterVersion?: string
   queryInput?: any // CRITICAL FIX: Add original query input to determine chart type
   threads?: number // Thread count for dynamic badge display
@@ -78,6 +80,7 @@ export default function PerformanceBarChart({
   multiClusterMode = false,
   sdkVersion,
   sdkName,
+  formatVersion,
   queryInput,
   threads = 20,
 }: PerformanceBarChartProps) {
@@ -218,7 +221,7 @@ export default function PerformanceBarChart({
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#94a3b8" tickFormatter={formatVersion} />
                 <YAxis 
                   tick={{ fontSize: 12 }} 
                   stroke="#94a3b8" 
@@ -229,7 +232,7 @@ export default function PerformanceBarChart({
                     if (active && payload && payload.length) {
                       return (
                         <div className="bg-white p-3 border rounded-md shadow-md">
-                          <p className="font-medium">Version {label}</p>
+                          <p className="font-medium">Version {formatVersion ? formatVersion(label) : label}</p>
                           {payload
                             .filter((entry) => {
                               // CRITICAL FIX: Filter out zero, null, undefined values to prevent "0" showing in tooltips
@@ -317,7 +320,7 @@ export default function PerformanceBarChart({
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#94a3b8" tickFormatter={formatVersion} />
                 <YAxis
                   tick={{ fontSize: 12 }}
                   stroke="#94a3b8"
@@ -421,6 +424,7 @@ export default function PerformanceBarChart({
                   payload={hovered.payload}
                   label={hovered.label}
                   metricUnit={metricUnit}
+                  labelFormatter={formatVersion ? (label) => `Version ${formatVersion(label)}` : undefined}
                   onRunDetails={() => handleBarClick(hovered.payload[0])}
                 />
               </div>
@@ -487,7 +491,7 @@ export default function PerformanceBarChart({
                 ? // Grouped view details
                   processedData.map((item: any, i) => (
                     <div key={i} className="flex flex-col p-3 rounded-md border hover:bg-slate-50 transition-colors">
-                      <span className="text-sm font-medium">{item.name}</span>
+                      <span className="text-sm font-medium">{formatVersion ? formatVersion(item.name) : item.name}</span>
                       <div className="mt-2 space-y-1">
                         {uniqueClusterVersions.map((version) => (
                           <div key={version.id} className="flex items-center justify-between">
@@ -511,7 +515,7 @@ export default function PerformanceBarChart({
                       className="flex flex-col items-center p-3 rounded-md border hover:bg-slate-50 transition-colors"
                       style={{ borderColor: multiClusterMode ? item.clusterColor.replace("0.7", "0.3") : undefined }}
                     >
-                      <span className="text-sm font-medium">{item.name}</span>
+                      <span className="text-sm font-medium">{formatVersion ? formatVersion(item.name) : item.name}</span>
                       <span className="text-xs text-muted-foreground mt-1">
                         {item.value.toFixed(2)} {metricUnit}
                       </span>

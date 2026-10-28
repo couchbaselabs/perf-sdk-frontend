@@ -33,6 +33,11 @@ function sdkMatchesLanguage(sdkValue: string, languageLower: string, languageUpp
       vUpper === 'COLUMNAR_SDK_.NET' || vUpper === 'COLUMNAR_SDK_DOTNET') return true
   }
 
+  // Quarkus runtimes are quarkus-jvm and quarkus-native. Legacy "quarkus" matches above.
+  if (languageLower === 'quarkus') {
+    if (v === 'quarkus-jvm' || v === 'quarkus-native') return true
+  }
+
   return false
 }
 

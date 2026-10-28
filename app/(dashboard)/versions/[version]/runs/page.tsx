@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from "@/src/components/ui/skeleton"
 import { RunSummary } from "@/src/types"
 import { AVAILABLE_METRICS } from "@/src/lib/config/constants"
+import { formatPerfVersionLabel } from "@/src/lib/sdk-version-service"
 
 // Extended RunSummary to include metric value for table display
 interface ExtendedRunSummary extends RunSummary {
@@ -193,7 +194,7 @@ export default function VersionRunsPage({ params }: { params: { version: string 
         </div>
 
         <VersionRunsHeader
-          version={decodedVersion}
+          version={formatPerfVersionLabel(sdk, decodedVersion, versionRuns[0]?.params?.impl?.image?.sdkVersion)}
           runIdsParam={runIdsParam || undefined}
           clusterVersion={clusterVersion || undefined}
           sdk={sdk || undefined}

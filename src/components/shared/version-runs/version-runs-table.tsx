@@ -6,6 +6,7 @@ import { Badge } from "@/src/components/ui/badge"
 import Link from "next/link"
 import { ArrowUpDown, ExternalLink } from "lucide-react"
 import { formatDate } from "@/src/lib/utils/formatting"
+import { formatPerfVersionLabel } from "@/src/lib/sdk-version-service"
 
 interface RunRow {
   id: string
@@ -75,7 +76,7 @@ export default function VersionRunsTable({ runs, metricLabel, metricUnit, sortCo
               </TableCell>
               <TableCell>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                  {run.version}
+                  {formatPerfVersionLabel(run.params?.impl?.language, run.version, run.params?.impl?.image?.sdkVersion)}
                 </Badge>
               </TableCell>
               <TableCell>

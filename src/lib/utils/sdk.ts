@@ -21,6 +21,7 @@ export const getSDKFromTags = (tags: string[]): string => {
     if (tag.startsWith('SCBC')) return 'Scala'
     if (tag.startsWith('CCBC')) return 'C++'
     if (tag.startsWith('RSCBC')) return 'Rust'
+    if (tag.startsWith('QUARK')) return 'Quarkus'
   }
   return 'Unknown'
 }

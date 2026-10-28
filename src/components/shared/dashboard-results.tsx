@@ -19,6 +19,7 @@ import { DashboardInput } from '@/src/lib/dashboard-service'
 import { apiClient } from '@/src/lib/api-client-unified'
 import { AVAILABLE_METRICS } from '@/src/lib/config/constants'
 import { formatDate } from '@/src/lib/utils/formatting'
+import { formatPerfVersionLabel } from '@/src/lib/sdk-version-service'
 
 // Types that were in dashboard-client.ts
 interface SingleRunInput {
@@ -163,6 +164,8 @@ export default function DashboardResults({ input, title, description, keyProp, s
   const serverSelectedVersion: string | undefined = responseData?.selectedVersion
   const activeVersion = versionPick && availableVersions.includes(versionPick) ? versionPick : null
   const shownVersion = activeVersion ?? serverSelectedVersion ?? ''
+  const sdkVersions: Record<string, string> = responseData?.sdkVersions ?? {}
+  const formatVersion = (version: string) => formatPerfVersionLabel(sdkLanguage, version, sdkVersions[version])
 
   const effectiveInput = useMemo(
     () => (!isSingleRun && activeVersion
@@ -298,7 +301,7 @@ export default function DashboardResults({ input, title, description, keyProp, s
         </SelectTrigger>
         <SelectContent>
           {availableVersions.map((v) => (
-            <SelectItem key={v} value={v}>{v}</SelectItem>
+            <SelectItem key={v} value={v}>{formatVersion(v)}</SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -429,6 +432,7 @@ export default function DashboardResults({ input, title, description, keyProp, s
             onRefresh={() => query.refetch()}
             sdkVersion={sdkLanguage}
             sdkName={`${sdkLanguage} SDK`}
+            formatVersion={formatVersion}
             queryInput={input}
             threads={threads}
           />
@@ -542,9 +546,13 @@ export default function DashboardResults({ input, title, description, keyProp, s
                                   <div className="space-y-1">
                                     <SdkBadge value={run.params.impl.language} />
                                     <VersionBadge
-                                      value={run.params.impl.version?.length > 12
-                                        ? `${run.params.impl.version.slice(0, 12)}...`
-                                        : run.params.impl.version}
+                                      value={formatPerfVersionLabel(
+                                        run.params.impl.language,
+                                        run.params.impl.version?.length > 12
+                                          ? `${run.params.impl.version.slice(0, 12)}...`
+                                          : run.params.impl.version,
+                                        run.params.impl.image?.sdkVersion
+                                      )}
                                     />
                                   </div>
                                 )}

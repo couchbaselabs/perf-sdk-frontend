@@ -17,6 +17,13 @@ const JavaIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
+const QuarkusIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className}>
+    <path d="M12 1 23 12 12 23 1 12 12 1Zm0 4.5L5.5 12l6.5 6.5 6.5-6.5L12 5.5Z" fillRule="evenodd" fill="currentColor" />
+    <path d="m14.5 16.5 2.5-2.5 6 6V23h-2.5l-6-6.5Z" fill="currentColor" />
+  </svg>
+)
+
 const KotlinIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className}>
     <path d="M20 21H0V1h20L9.793 10.855 20 21Z" fill="currentColor" />
@@ -74,6 +81,7 @@ const RustIcon = ({ className }: { className?: string }) => (
 // Define SDK options
 const sdkOptions = [
   { name: "Java", icon: JavaIcon, sdk: "java" },
+  { name: "Quarkus", icon: QuarkusIcon, sdk: "quarkus" },
   { name: "Kotlin", icon: KotlinIcon, sdk: "kotlin" },
   { name: "Scala", icon: ScalaIcon, sdk: "scala" },
   { name: "C++", icon: CppIcon, sdk: "cpp" },

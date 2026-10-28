@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react"
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from "next/navigation"
-import { getSdkVersionById } from "@/src/lib/sdk-version-service"
+import { getSdkVersionById, QUARKUS_PERF_LANGUAGES, type QuarkusRuntime } from "@/src/lib/sdk-version-service"
+import { Tabs, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
 import { DEFAULT_CLUSTERS } from '@/src/lib/config/defaults'
 import { useRefreshHandler } from '@/src/shared/hooks/use-common-handlers'
 import { logger } from '@/src/lib/utils/logger'
@@ -58,6 +59,9 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     const urlSdk = searchParams?.get('sdk')
     return urlSdk || "java"
   })
+
+  const [quarkusRuntime, setQuarkusRuntime] = useState<QuarkusRuntime>("jvm")
+  const perfLanguage = currentSdk === "quarkus" ? QUARKUS_PERF_LANGUAGES[quarkusRuntime] : undefined
 
   // Derived from queries
   const [allVersions, setAllVersions] = useState<string[]>([])
@@ -174,8 +178,8 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     const sdkInfo = getSdkVersionById(currentSdk)
     const versionMatch = selectedClusterVersion.match(/^(\d+\.\d+\.\d+)/)
     const versionLabel = versionMatch ? versionMatch[1] : selectedClusterVersion
-    return `${sdkInfo?.name || "SDK"} Performance: Cluster ${versionLabel}`
-  }, [currentSdk, selectedClusterVersion])
+    return `${perfLanguage || sdkInfo?.name || "SDK"} Performance: Cluster ${versionLabel}`
+  }, [currentSdk, perfLanguage, selectedClusterVersion])
 
   const exportAllData = useCallback(async () => {
     // The 200-run dataset is only needed to build this CSV, so it is fetched on
@@ -273,6 +277,18 @@ export default function HomeContent({ initialData }: HomeContentProps) {
           onExport={exportAllData}
         />
 
+        {currentSdk === "quarkus" && (
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-sm font-medium">Runtime</span>
+            <Tabs value={quarkusRuntime} onValueChange={(value) => setQuarkusRuntime(value as QuarkusRuntime)}>
+              <TabsList className="bg-white dark:bg-slate-800">
+                <TabsTrigger value="jvm">JVM</TabsTrigger>
+                <TabsTrigger value="native">Native</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        )}
+
         {/* Use the new FiltersSection */}
         <FiltersSection
           selectedClusterVersion={selectedClusterVersion}
@@ -290,6 +306,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
           selectedMetric={selectedMetric}
           onMetricChange={setSelectedMetric}
           currentSdk={currentSdk}
+          perfLanguage={perfLanguage}
           clusterVersion={activeClusterVersion}
           excludeSnapshots={excludeSnapshots}
           excludeGerrit={excludeGerrit}

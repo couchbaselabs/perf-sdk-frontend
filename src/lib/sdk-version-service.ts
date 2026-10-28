@@ -22,6 +22,7 @@ const SDK_COLORS = {
   scala: "#EC4899",     // Pink
   cpp: "#6B7280",       // Gray
   rust: "#DEA584",     // Orange Brown
+  quarkus: "#1E3A8A",  // Navy
 } as const
 
 // Available SDK versions data
@@ -46,6 +47,16 @@ const AVAILABLE_SDK_VERSIONS: SdkVersion[] = [
     latestVersion: "3.4.0",
     isActive: true,
     description: "Java SDK for enterprise applications",
+  },
+  {
+    id: "quarkus",
+    name: "Quarkus",
+    language: "Quarkus",
+    color: SDK_COLORS.quarkus,
+    icon: "quarkus",
+    latestVersion: "1.4.1",
+    isActive: true,
+    description: "Couchbase Java SDK in Quarkus, JVM and native",
   },
   {
     id: "kotlin",
@@ -158,6 +169,7 @@ export function getUnifiedSdkColor(sdkId: string): string {
 // Get SDK color by language name (case-insensitive)
 export function getSdkColorByLanguage(language: string): string {
   const lang = language.toLowerCase()
+  if (lang.includes('quarkus')) return SDK_COLORS.quarkus
   if (lang.includes('java') && !lang.includes('script')) return SDK_COLORS.java
   if (lang.includes('javascript') || lang.includes('node')) return SDK_COLORS.node
   if (lang.includes('python')) return SDK_COLORS.python
@@ -169,6 +181,22 @@ export function getSdkColorByLanguage(language: string): string {
   if (lang.includes('c++') || lang.includes('cpp')) return SDK_COLORS.cpp
   if (lang.includes('rust')) return SDK_COLORS.rust
   return SDK_COLORS.cpp
+}
+
+// Quarkus perf runs record the runtime mode in impl.language.
+export const QUARKUS_PERF_LANGUAGES = {
+  jvm: "Quarkus",
+  native: "Quarkus Native",
+} as const
+
+export type QuarkusRuntime = keyof typeof QUARKUS_PERF_LANGUAGES
+
+// Quarkus perf versions are extension versions, so the Java SDK version from
+// impl.image.sdkVersion is shown next to them. Other SDKs keep the raw version.
+export function formatPerfVersionLabel(language: string | undefined, version: string, sdkVersion?: unknown): string {
+  if (!language?.toLowerCase().startsWith("quarkus")) return version
+  if (typeof sdkVersion !== "string" || !sdkVersion) return version
+  return `${version} (${sdkVersion})`
 }
 
 // Function to generate a performance factor based on SDK version

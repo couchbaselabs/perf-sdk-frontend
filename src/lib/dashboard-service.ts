@@ -190,6 +190,23 @@ export class DashboardService {
     return { availableVersions, selectedVersion }
   }
 
+  // Maps each performer version to the SDK version in impl.image.sdkVersion.
+  // Only Quarkus performers set it. Moving tags take the newest run's value.
+  private sdkVersionsByVersion(runs: Run[]): Record<string, string> {
+    const newest = new Map<string, { at: number, sdkVersion: string }>()
+    for (const run of runs) {
+      const version = run.impl?.["version"]
+      const sdkVersion = (run.impl?.["image"] as Record<string, unknown> | undefined)?.["sdkVersion"]
+      if (typeof version !== "string" || typeof sdkVersion !== "string" || !sdkVersion) continue
+      const at = Date.parse(run.datetime)
+      const current = newest.get(version)
+      if (!current || at > current.at) newest.set(version, { at, sdkVersion })
+    }
+    const out: Record<string, string> = {}
+    newest.forEach((v, version) => { out[version] = v.sdkVersion })
+    return out
+  }
+
   /**
    * Builds the Simplified bar graph
    */
@@ -302,6 +319,7 @@ export class DashboardService {
       results: results,
       availableVersions,
       selectedVersion,
+      sdkVersions: this.sdkVersionsByVersion(matched),
       data: {
         runIds: runIds,
         labels: labels,

@@ -10,6 +10,7 @@ interface TabsSectionProps {
   selectedMetric: string
   onMetricChange: (metric: string) => void
   currentSdk: string
+  perfLanguage?: string
   clusterVersion: string
   excludeSnapshots: boolean
   excludeGerrit: boolean
@@ -33,6 +34,7 @@ export function TabsSection({
   selectedMetric,
   onMetricChange,
   currentSdk,
+  perfLanguage,
   clusterVersion,
   excludeSnapshots,
   excludeGerrit,
@@ -67,6 +69,7 @@ export function TabsSection({
         
         <OperationsSection
           currentSdk={currentSdk}
+          perfLanguage={perfLanguage}
           clusterVersion={clusterVersion}
           excludeSnapshots={excludeSnapshots}
           excludeGerrit={excludeGerrit}

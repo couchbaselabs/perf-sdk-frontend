@@ -36,6 +36,7 @@ export interface Run extends BaseEntity {
       language: string
       version: string
       sdk: string
+      image?: Record<string, unknown>
     }
     workload?: {
       name: string

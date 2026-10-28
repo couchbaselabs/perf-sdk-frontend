@@ -24,6 +24,8 @@ import {
 
 interface OperationsSectionProps {
   currentSdk: string;
+  // DB impl.language to query and show, when it differs from the SDK name (Quarkus runtimes)
+  perfLanguage?: string;
   clusterVersion: string;
   excludeSnapshots: boolean;
   excludeGerrit: boolean;
@@ -43,6 +45,7 @@ interface OperationsSectionProps {
 
 export default function OperationsSection({
   currentSdk,
+  perfLanguage,
   clusterVersion,
   excludeSnapshots,
   excludeGerrit,
@@ -60,6 +63,8 @@ export default function OperationsSection({
   toggleApiComparison,
 }: OperationsSectionProps) {
   const sdkInfo = getSdkVersionById(currentSdk)
+  const language = perfLanguage || sdkInfo?.name || 'Java'
+  const sdkName = perfLanguage || sdkInfo?.name
   const sdkApiComparisons = (SDK_API_COMPARISONS as Record<string, readonly { id: string; title: string; description: string }[]>)[currentSdk] ?? []
 
   return (
@@ -91,7 +96,7 @@ export default function OperationsSection({
           } as const
 
           const dashboardInput = createKVOperationInput(
-            sdkInfo?.name || 'Java',
+            language,
             operationMap[operation.id as keyof typeof operationMap] || 'get',
             excludeSnapshots,
             excludeGerrit,
@@ -103,7 +108,7 @@ export default function OperationsSection({
             <div key={operation.id} className="mb-6">
               <DashboardResults
                 input={dashboardInput}
-                title={`${operation.title} - ${sdkInfo?.name}`}
+                title={`${operation.title} - ${sdkName}`}
                 description={operation.description}
                 keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
@@ -135,7 +140,7 @@ export default function OperationsSection({
 
         {SCALING_OPERATIONS.filter((op) => visibleScaling.includes(op.id)).map((operation) => {
           const dashboardInput = createHorizontalScalingInput(
-            sdkInfo?.name || 'Java',
+            language,
             excludeSnapshots,
             excludeGerrit,
             selectedMetric,
@@ -146,7 +151,7 @@ export default function OperationsSection({
             <div key={operation.id} className="mb-6">
               <DashboardResults
                 input={dashboardInput}
-                title={`${operation.title} - ${sdkInfo?.name}`}
+                title={`${operation.title} - ${sdkName}`}
                 description={operation.description}
                 keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
@@ -183,7 +188,7 @@ export default function OperationsSection({
 
         {SYSTEM_METRICS.filter((op) => visibleMetrics.includes(op.id)).map((metric) => {
           const dashboardInput = createSystemMetricInput(
-            sdkInfo?.name || 'Java',
+            language,
             metric.metric,
             excludeSnapshots,
             excludeGerrit,
@@ -194,7 +199,7 @@ export default function OperationsSection({
             <div key={metric.id} className="mb-6">
               <DashboardResults
                 input={dashboardInput}
-                title={`${metric.title} - ${sdkInfo?.name}`}
+                title={`${metric.title} - ${sdkName}`}
                 description={metric.description}
                 keyProp={`${metric.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
@@ -227,7 +232,7 @@ export default function OperationsSection({
         {TRANSACTION_OPERATIONS.filter((op) => visibleTransactions.includes(op.id)).map((operation) => {
           const dashboardInput = operation.type === 'readonly'
             ? createTransactionReadOnlyInput(
-                sdkInfo?.name || 'Java',
+                language,
                 operation.threads,
                 excludeSnapshots,
                 excludeGerrit,
@@ -235,7 +240,7 @@ export default function OperationsSection({
                 selectedMetric
               )
             : createTransactionInput(
-                sdkInfo?.name || 'Java',
+                language,
                 operation.threads,
                 excludeSnapshots,
                 excludeGerrit,
@@ -247,7 +252,7 @@ export default function OperationsSection({
             <div key={operation.id} className="mb-6">
               <DashboardResults
                 input={dashboardInput}
-                title={`${operation.title} (${operation.threads} thread${operation.threads > 1 ? 's' : ''}) - ${sdkInfo?.name}`}
+                title={`${operation.title} (${operation.threads} thread${operation.threads > 1 ? 's' : ''}) - ${sdkName}`}
                 description={operation.description}
                 keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
@@ -284,7 +289,7 @@ export default function OperationsSection({
             case 'horizontalScalingReactive':
               // Vue uses createHorizontalScalingReactiveInput for reactive horizontal scaling
               dashboardInput = createHorizontalScalingReactiveInput(
-                sdkInfo?.name || 'Java',
+                language,
                 excludeSnapshots,
                 excludeGerrit,
                 clusterVersion
@@ -293,7 +298,7 @@ export default function OperationsSection({
             case 'kvGetsBlocking':
               // Vue uses createReactiveAPIInput with DEFAULT API for blocking
               dashboardInput = createReactiveAPIInput(
-                sdkInfo?.name || 'Java',
+                language,
                 'DEFAULT',
                 excludeSnapshots,
                 excludeGerrit,
@@ -303,7 +308,7 @@ export default function OperationsSection({
             case 'kvGetsReactive':
               // Vue uses createReactiveAPIInput with ASYNC API for reactive
               dashboardInput = createReactiveAPIInput(
-                sdkInfo?.name || 'Java',
+                language,
                 'ASYNC',
                 excludeSnapshots,
                 excludeGerrit,
@@ -313,7 +318,7 @@ export default function OperationsSection({
             default:
               // Fallback to KV operation for unknown operations
               dashboardInput = createKVOperationInput(
-                sdkInfo?.name || 'Java',
+                language,
                 'get',
                 excludeSnapshots,
                 excludeGerrit,
@@ -326,7 +331,7 @@ export default function OperationsSection({
             <div key={operation.id} className="mb-6">
               <DashboardResults
                 input={dashboardInput}
-                title={`${operation.title} - ${sdkInfo?.name}`}
+                title={`${operation.title} - ${sdkName}`}
                 description={operation.description}
                 keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
