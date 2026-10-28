@@ -658,6 +658,9 @@ export class DatabaseService {
         conds.push(`lower(${lang}) in ('.net','csharp','c#')`)
         conds.push(`upper(${lang}) in ('COLUMNAR_SDK_.NET','COLUMNAR_SDK_DOTNET')`)
       }
+      if (low === 'quarkus') {
+        conds.push(`lower(${lang}) in ('quarkus-jvm','quarkus-native')`)
+      }
       whereConds.push(`(${conds.join(' OR ')})`)
     }
 

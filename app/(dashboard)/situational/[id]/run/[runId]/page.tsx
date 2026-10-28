@@ -34,6 +34,7 @@ import { generateUuid } from "@/src/lib/core-ui-utilities"
  */
 function normalizeDetectedSdk(sdkValue: string): string {
   if (!sdkValue || sdkValue === 'unknown') return ''
+  if (sdkValue.toLowerCase().startsWith('quarkus')) return 'quarkus'
   const v = sdkValue.toUpperCase()
   if (v.startsWith('COLUMNAR_SDK_')) {
     const lang = v.replace('COLUMNAR_SDK_', '').toLowerCase()

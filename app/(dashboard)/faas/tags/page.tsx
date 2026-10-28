@@ -97,6 +97,7 @@ export default function FaasTagsPage() {
       'Scala': 'bg-yellow-100 text-yellow-700',
       'C++': 'bg-gray-100 text-gray-700',
       'Rust': 'bg-orange-200 text-orange-800',
+      'Quarkus': 'bg-blue-200 text-blue-900',
       'Unknown': 'bg-gray-100 text-gray-700'
     }
     return colors[sdk as keyof typeof colors] || 'bg-gray-100 text-gray-700'
