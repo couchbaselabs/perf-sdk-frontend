@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDatabaseService, getDashboardService } from '@/src/lib/database-connection-pool'
 import { logger } from '@/src/lib/utils/logger'
 import { buildDashboardInputForVersion } from '@/src/lib/dashboard/query-factory'
+import { OBSERVABILITY_PARAM, parseObservabilityMode } from '@/src/lib/dashboard/observability'
 
 /**
  * GET /api/runs/version/[version]
@@ -14,6 +15,7 @@ import { buildDashboardInputForVersion } from '@/src/lib/dashboard/query-factory
  * - sdk: The SDK language (e.g., 'Java', 'Python')
  * - metric: The metric to aggregate (default: 'duration_average_us')
  * - runIds: Comma-separated list of specific run IDs (optional)
+ * - observability: 'none' for the uninstrumented runs, else the tracing runs (optional)
  * 
  * Returns:
  * - runs: Array of run details
@@ -37,6 +39,7 @@ export async function GET(
     const systemMetric = searchParams.get('systemMetric')
     const transactionThreads = searchParams.get('transactionThreads')
     const reactiveAPI = searchParams.get('reactiveAPI')
+    const observability = parseObservabilityMode(searchParams.get(OBSERVABILITY_PARAM))
     
     const runIds = runIdsParam 
       ? Array.from(new Set(runIdsParam.split(',').map(s => s.trim()).filter(Boolean)))
@@ -56,7 +59,8 @@ export async function GET(
       horizontalScaling,
       systemMetric,
       transactionThreads,
-      reactiveAPI
+      reactiveAPI,
+      observability
     })
     
     const dashboardService = await getDashboardService()

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getClusterVersionById } from '@/src/lib/cluster-version-service'
 import { getQueryTypeFromInput } from '@/src/shared/charts/query-intent'
+import { OBSERVABILITY_PARAM, observabilityOf } from '@/src/lib/dashboard/observability'
 
 type UseBarChartParams = {
   title: string
@@ -124,6 +125,8 @@ export function usePerformanceBarChart(params: UseBarChartParams) {
         if (isSystemMetric && typeof queryType === 'object') params.set('systemMetric', (queryType as any).metric || 'processCpu')
         if (isTransactionGrouping && typeof queryType === 'object') params.set('transactionThreads', String((queryType as any).threads || payload.name))
         if (isReactiveAPI) params.set('reactiveAPI', 'ASYNC')
+        // So the drilldown queries the same runs the bar was drawn from.
+        if (observabilityOf(queryInput) === 'none') params.set(OBSERVABILITY_PARAM, 'none')
 
         router.push(`/versions/${encodeURIComponent(version)}/runs?${params.toString()}`)
         return
@@ -140,6 +143,7 @@ export function usePerformanceBarChart(params: UseBarChartParams) {
       if (isSystemMetric && typeof queryType === 'object') params.set('systemMetric', (queryType as any).metric || 'processCpu')
       if (isTransactionGrouping && typeof queryType === 'object') params.set('transactionThreads', String((queryType as any).threads))
       if (isReactiveAPI) params.set('reactiveAPI', 'ASYNC')
+      if (observabilityOf(queryInput) === 'none') params.set(OBSERVABILITY_PARAM, 'none')
       router.push(`/versions/${encodeURIComponent(version)}/runs?${params.toString()}`)
       return
     }

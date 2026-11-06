@@ -24,6 +24,11 @@ export const DEFAULT_VARS_WITHOUT_HORIZONTAL_SCALING = {
   // We usually don't want to include experiments. The value `null` here means that runs where the field "experimentName" is defined
   // should be excluded. The value that marks a field that should be excluded might change in the future
   "experimentName": null,
+
+  // Excludes runs fit-cli measured with no SDK instrumentation, which it records as
+  // `observability: "none"`. Every older run was measured with tracing on and has no such key.
+  // withObservability (observability.ts) switches a chart to the uninstrumented runs instead.
+  "observability": null,
 }
 
 // EXACT Vue dashboard vars - MUST MATCH Shared.vue defaultVars
@@ -301,7 +306,9 @@ export function createTransactionInput(
       },
       // CRITICAL: Vue uses horizontalScaling: threads instead of regular vars
       vars: {
-        "horizontalScaling": threads
+        "horizontalScaling": threads,
+        // These don't inherit the default vars, so they exclude uninstrumented runs themselves.
+        "observability": null
       }
     },
     graphType: "Simplified",
@@ -351,7 +358,8 @@ export function createTransactionReadOnlyInput(
         }]
       },
       vars: {
-        "horizontalScaling": threads
+        "horizontalScaling": threads,
+        "observability": null
       }
     },
     graphType: "Simplified",

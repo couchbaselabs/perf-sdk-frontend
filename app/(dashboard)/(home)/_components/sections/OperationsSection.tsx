@@ -21,12 +21,15 @@ import {
   createReactiveAPIInput,
   createHorizontalScalingReactiveInput
 } from "@/src/lib/dashboard/queries"
+import { withObservability, type ObservabilityMode } from "@/src/lib/dashboard/observability"
 
 interface OperationsSectionProps {
   currentSdk: string;
   // DB impl.language to query and show, when it differs from the SDK name (Quarkus runtimes)
   perfLanguage?: string;
   clusterVersion: string;
+  // Which runs every chart shows: instrumented with tracing (the standard charts) or not at all.
+  observability: ObservabilityMode;
   excludeSnapshots: boolean;
   excludeGerrit: boolean;
   selectedMetric: string;
@@ -47,6 +50,7 @@ export default function OperationsSection({
   currentSdk,
   perfLanguage,
   clusterVersion,
+  observability,
   excludeSnapshots,
   excludeGerrit,
   selectedMetric,
@@ -107,10 +111,10 @@ export default function OperationsSection({
           return (
             <div key={operation.id} className="mb-6">
               <DashboardResults
-                input={dashboardInput}
+                input={withObservability(dashboardInput, observability)}
                 title={`${operation.title} - ${sdkName}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${observability}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={operation.threads}
               />
@@ -150,10 +154,10 @@ export default function OperationsSection({
           return (
             <div key={operation.id} className="mb-6">
               <DashboardResults
-                input={dashboardInput}
+                input={withObservability(dashboardInput, observability)}
                 title={`${operation.title} - ${sdkName}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${observability}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={20}
               />
@@ -198,10 +202,10 @@ export default function OperationsSection({
           return (
             <div key={metric.id} className="mb-6">
               <DashboardResults
-                input={dashboardInput}
+                input={withObservability(dashboardInput, observability)}
                 title={`${metric.title} - ${sdkName}`}
                 description={metric.description}
-                keyProp={`${metric.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
+                keyProp={`${metric.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${observability}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={20}
               />
@@ -251,10 +255,10 @@ export default function OperationsSection({
           return (
             <div key={operation.id} className="mb-6">
               <DashboardResults
-                input={dashboardInput}
+                input={withObservability(dashboardInput, observability)}
                 title={`${operation.title} (${operation.threads} thread${operation.threads > 1 ? 's' : ''}) - ${sdkName}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${observability}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={operation.threads}
               />
@@ -330,10 +334,10 @@ export default function OperationsSection({
           return (
             <div key={operation.id} className="mb-6">
               <DashboardResults
-                input={dashboardInput}
+                input={withObservability(dashboardInput, observability)}
                 title={`${operation.title} - ${sdkName}`}
                 description={operation.description}
-                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
+                keyProp={`${operation.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${observability}-${reloadTrigger}`}
                 selectedMetric={selectedMetric}
                 threads={20}
               />
