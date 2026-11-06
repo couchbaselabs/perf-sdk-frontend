@@ -6,6 +6,7 @@ import {
   HorizontalAxisDynamic,
   MergingAlgorithm,
 } from '@/src/lib/dashboard/dashboard-query-types'
+import { COMMIT_GROUPING_SQL } from '@/src/lib/core-ui-utilities'
 
 export function mapMerging(merging: MergingAlgorithm): 'avg' | 'max' | 'min' | 'sum' {
   if (merging === (global as any).MergingAlgorithm?.AVERAGE || String(merging) === 'Average') return 'avg'
@@ -71,7 +72,7 @@ export function buildSimplifiedMetricQuery(
 
   return `WITH 
     r AS (SELECT * FROM runs WHERE id in ('${runIds.join("','")}')),
-    joined AS (SELECT params::jsonb->'impl'->>'version' AS groupBy, CAST(metrics.metrics::jsonb->>'${yAxis.metric}' AS FLOAT) AS metric FROM metrics JOIN r ON metrics.run_id = r.id)
+    joined AS (SELECT ${COMMIT_GROUPING_SQL} AS groupBy, CAST(metrics.metrics::jsonb->>'${yAxis.metric}' AS FLOAT) AS metric FROM metrics JOIN r ON metrics.run_id = r.id)
     SELECT groupBy AS grouping, ${mergingOp}(metric) AS value FROM joined GROUP BY groupBy;`
 }
 

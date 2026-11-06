@@ -86,7 +86,7 @@ export type VersionKind =
 
 export function classifyVersion(version: string | undefined | null): VersionKind {
   if (!version) return 'other'
-  const v = version.trim()
+  const v = baseVersion(version).trim()
   if (v === 'main' || v === 'master') return 'main'
   if (/^\d+\.\d+\.x$/.test(v)) return 'branch-snapshot'
   if (v.startsWith('refs/') || v.startsWith('refs-')) return 'gerrit'
@@ -96,11 +96,62 @@ export function classifyVersion(version: string | undefined | null): VersionKind
 
 /**
  * A version is a "moving" tag if its docker image is overwritten on every build
- * (main + branch snapshots). For these we only ever want to show the latest run.
+ * (main + branch snapshots). Version charts show one bar per recent commit of
+ * these (see commitGrouping); other charts show only the latest commit.
  */
 export function isMovingVersion(version: string | undefined | null): boolean {
   const kind = classifyVersion(version)
   return kind === 'main' || kind === 'branch-snapshot'
+}
+
+/**
+ * How many of a moving version's most recent commits get a bar on version charts.
+ * fit-cli's ingest keeps the last MOVING_COMMITS_KEPT (10) commits per branch,
+ * so this should not exceed that.
+ */
+export const MOVING_COMMITS_SHOWN = 10
+
+// Moving-version bars are labelled "<version>@<short commit>", e.g. "main@a1b2c3d".
+const COMMIT_SEPARATOR = '@'
+const SHORT_COMMIT_LENGTH = 7
+
+/** The version part of a bar label, i.e. without any "@<commit>" suffix. */
+export function baseVersion(grouping: string): string {
+  const at = grouping.indexOf(COMMIT_SEPARATOR)
+  return at < 0 ? grouping : grouping.slice(0, at)
+}
+
+/**
+ * The bar a run belongs to on a version chart: its version, plus its short
+ * commit for a moving version whose image recorded one. Must agree with
+ * COMMIT_GROUPING_SQL, which does the same grouping in the database.
+ */
+export function commitGrouping(version: string, revision: string | null | undefined): string {
+  return isMovingVersion(version) && revision
+    ? `${version}${COMMIT_SEPARATOR}${revision.slice(0, SHORT_COMMIT_LENGTH)}`
+    : version
+}
+
+/** SQL for commitGrouping over a runs row. `params` must resolve to runs.params. */
+export const COMMIT_GROUPING_SQL = `(CASE
+    WHEN (params->'impl'->>'version' IN ('main', 'master') OR params->'impl'->>'version' ~ '^[0-9]+[.][0-9]+[.]x$')
+         AND coalesce(params->'impl'->'image'->>'revision', '') <> ''
+    THEN params->'impl'->>'version' || '${COMMIT_SEPARATOR}' || left(params->'impl'->'image'->>'revision', ${SHORT_COMMIT_LENGTH})
+    ELSE params->'impl'->>'version'
+  END)`
+
+/**
+ * X-axis order for version bars: versionCompare on the version, then, for the
+ * commits of one moving version, oldest build first so the newest is rightmost.
+ * `builtAt` gives a bar's image build time, when known.
+ */
+export function compareVersionGroupings(a: string, b: string, builtAt: (grouping: string) => number | undefined): number {
+  const byVersion = versionCompare(baseVersion(a), baseVersion(b))
+  if (byVersion !== 0) return byVersion
+  const at = builtAt(a)
+  const bt = builtAt(b)
+  if (at !== undefined && bt !== undefined && at !== bt) return at - bt
+  return a.localeCompare(b)
 }
 
 // Ordering of version kinds along the bar-chart X-axis (left -> right):

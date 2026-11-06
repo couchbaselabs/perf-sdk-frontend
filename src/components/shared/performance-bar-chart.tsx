@@ -24,7 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/src/components/ui/alert"
 // cluster version mapping handled inside hook
 import { CustomTooltip, CustomLegend } from "@/src/shared/charts"
 import { parsePerformerImage, describeChangeLink } from "@/src/lib/performer-image"
-import { SNAPSHOT_BAR_COLORS } from "@/src/shared/charts/colors"
+import { SNAPSHOT_BAR_COLORS, snapshotBarColors } from "@/src/shared/charts/colors"
 import { classifyVersion } from "@/src/lib/core-ui-utilities"
 import { exportChartToCSV } from "@/src/lib/utils/exports"
 import { usePerformanceBarChart } from '@/src/shared/charts/use-performance-bar-chart'
@@ -32,16 +32,9 @@ import { usePerformanceBarChart } from '@/src/shared/charts/use-performance-bar-
 
 // Using shared CustomLegend component
 
-// Non-release bars are drawn in a distinct color: moving snapshot tags (main,
-// 3.11.x) at the end of the chart, and gerrit/PR builds inline. Returns
-// undefined for normal release versions.
-function snapshotBarColor(name: unknown): string | undefined {
-  const kind = classifyVersion(typeof name === "string" ? name : "")
-  if (kind === "main") return SNAPSHOT_BAR_COLORS.main
-  if (kind === "branch-snapshot") return SNAPSHOT_BAR_COLORS.branch
-  if (kind === "gerrit") return SNAPSHOT_BAR_COLORS.gerrit
-  return undefined
-}
+// Non-release bars are drawn in a distinct color (see snapshotBarColors): moving
+// snapshot tags (main, and each 3.11.x-style branch in its own color) at the end
+// of the chart, and gerrit/PR builds inline.
 
 interface PerformanceBarChartProps {
   title: string
@@ -106,6 +99,7 @@ export default function PerformanceBarChart({
 
   // data processing handled by hook: processedData
 
+  const snapshotColors = snapshotBarColors(Array.isArray(processedData) ? processedData.map((d) => d?.name) : [])
 
 
   // Show all bars to match Vue.js behavior - no artificial limits
@@ -342,7 +336,7 @@ export default function PerformanceBarChart({
                   activeBar={{ stroke: "rgb(16, 185, 129)", strokeWidth: 2 }}
                 >
                   {Array.isArray(processedData) && processedData.map((entry, index) => {
-                    const snapshotColor = snapshotBarColor(entry?.name)
+                    const snapshotColor = typeof entry?.name === "string" ? snapshotColors.byName.get(entry.name) : undefined
                     return (
                       <Cell
                         key={`cell-${index}`}
@@ -432,21 +426,22 @@ export default function PerformanceBarChart({
           })()}
           </div>
         </div>
-        {/* Legend for the special non-release bar colors actually present in the chart. */}
+        {/* Legend for the special non-release bar colors actually present in the chart:
+            each branch by name, then main, then PR/Gerrit builds. */}
         {Array.isArray(processedData) && (() => {
           const kinds = new Set<string>(
             processedData.map((d) => classifyVersion(typeof d?.name === "string" ? d.name : ""))
           )
           const items = [
-            { kind: "branch-snapshot", color: SNAPSHOT_BAR_COLORS.branch, label: "Branch snapshot" },
-            { kind: "main", color: SNAPSHOT_BAR_COLORS.main, label: "main" },
-            { kind: "gerrit", color: SNAPSHOT_BAR_COLORS.gerrit, label: "PR / Gerrit" },
-          ].filter((i) => kinds.has(i.kind))
+            ...snapshotColors.branches.map((b) => ({ key: `branch-${b.branch}`, color: b.color, label: b.branch })),
+            ...(kinds.has("main") ? [{ key: "main", color: SNAPSHOT_BAR_COLORS.main, label: "main" }] : []),
+            ...(kinds.has("gerrit") ? [{ key: "gerrit", color: SNAPSHOT_BAR_COLORS.gerrit, label: "PR / Gerrit" }] : []),
+          ]
           if (items.length === 0) return null
           return (
             <div className="flex flex-wrap gap-4 justify-center px-4 pb-2 -mt-6">
               {items.map((i) => (
-                <div key={i.kind} className="flex items-center gap-2">
+                <div key={i.key} className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: i.color }} />
                   <span className="text-xs text-muted-foreground">{i.label}</span>
                 </div>

@@ -4,6 +4,7 @@
  * This module provides centralized color management for all charts in the application.
  * It replaces scattered color managers with a single, consistent system.
  */
+import { baseVersion, classifyVersion, versionCompare } from '@/src/lib/core-ui-utilities'
 
 // Chart color constants
 const CHART_COLORS = [
@@ -24,11 +25,54 @@ const CHART_COLORS = [
 // Distinct colors for non-release version bars. branch-snapshot (e.g. 3.11.x) and
 // main are "moving" tags shown at the end of the chart; gerrit/PR bars are shown
 // inline (ordered by build date) and get their own color so they stand out.
+// Each branch gets its own color from BRANCH_BAR_COLORS (see snapshotBarColors).
 export const SNAPSHOT_BAR_COLORS = {
-  branch: '#F59E0B', // Amber
   main: '#8B5CF6',   // Purple
   gerrit: '#EC4899', // Pink
 } as const
+
+// One per branch snapshot in a chart. Kept clear of the release bars' green,
+// main's purple and gerrit's pink.
+export const BRANCH_BAR_COLORS = [
+  '#F59E0B', // Amber
+  '#3B82F6', // Blue
+  '#EF4444', // Red
+  '#06B6D4', // Cyan
+  '#64748B', // Slate
+  '#A16207', // Brown
+] as const
+
+/**
+ * The snapshot color of each non-release bar in a chart, keyed by bar name
+ * ("main@a1b2c3d", "3.12.x@a1b2c3d", "refs-..."). main is always purple. Each
+ * branch present gets a pool color in version order, shared by all of that
+ * branch's commit bars, so branches are distinct within the chart (the pool only
+ * wraps beyond six branches). Release bars are absent: they use the chart color.
+ * `branches` lists each branch with its color, for the legend.
+ */
+export function snapshotBarColors(names: readonly unknown[]): {
+  byName: Map<string, string>
+  branches: Array<{ branch: string; color: string }>
+} {
+  const labels = names.filter((n): n is string => typeof n === 'string')
+  const branchNames = Array.from(
+    new Set(labels.filter((n) => classifyVersion(n) === 'branch-snapshot').map(baseVersion)),
+  ).sort(versionCompare)
+  const branches = branchNames.map((branch, i) => ({ branch, color: BRANCH_BAR_COLORS[i % BRANCH_BAR_COLORS.length] }))
+  const branchColor = new Map(branches.map((b) => [b.branch, b.color]))
+
+  const byName = new Map<string, string>()
+  for (const name of labels) {
+    const kind = classifyVersion(name)
+    const color =
+      kind === 'main' ? SNAPSHOT_BAR_COLORS.main
+      : kind === 'gerrit' ? SNAPSHOT_BAR_COLORS.gerrit
+      : kind === 'branch-snapshot' ? branchColor.get(baseVersion(name))
+      : undefined
+    if (color) byName.set(name, color)
+  }
+  return { byName, branches }
+}
 
 // Semantic colors for common metric types
 const SEMANTIC_COLORS = {

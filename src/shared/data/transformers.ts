@@ -202,6 +202,8 @@ export const DataTransformers = {
             runIds: runIdsArray,
             runCount: runIdsArray.length,
             image: result.image ?? null,
+            // The bar's most recent run, as the tooltip's "Last run".
+            ...(result.lastRun ? { datetime: result.lastRun } : {}),
             clusterName: '7.1.1',
             clusterColor: 'rgb(16, 185, 129)',
             sdkName: sdkLanguage,

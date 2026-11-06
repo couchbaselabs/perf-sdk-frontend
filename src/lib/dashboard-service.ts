@@ -35,8 +35,19 @@ import {
   AnnotationsRunEvents,
   YAxis
 } from './dashboard/dashboard-query-types';
-import { versionCompare, ShadeProvider, classifyVersion, isMovingVersion, isMoreRecentVersion } from './core-ui-utilities';
+import {
+  versionCompare,
+  ShadeProvider,
+  classifyVersion,
+  isMovingVersion,
+  isMoreRecentVersion,
+  commitGrouping,
+  compareVersionGroupings,
+  COMMIT_GROUPING_SQL,
+  MOVING_COMMITS_SHOWN,
+} from './core-ui-utilities';
 import { v4 as uuidv4 } from 'uuid';
+import { parsePerformerImage } from './performer-image';
 
 // Import consolidated utilities
 import { HorizontalAxisDynamicUtil } from './dashboard/axis';
@@ -119,27 +130,52 @@ export class DashboardService {
     return latest
   }
 
+  // When a run's performer image was built (impl.image.created, which the performer
+  // image conventions provide for ordering snapshots), falling back to the run's
+  // datetime. Orders a moving tag's commits: a long run of an older commit can
+  // finish after a short run of a newer one.
+  private static builtAt(run: Run): number {
+    const created = Date.parse(parsePerformerImage(run.impl["image"])?.created ?? '')
+    return Number.isNaN(created) ? Date.parse(run.datetime) : created
+  }
+
   // Moving tags (main, 3.11.x) overwrite their docker image on every build, so
-  // runs accumulate under the same version. Keep only the newest run per logical
-  // data point. The data point is language+version on version-grouped charts, but
+  // runs accumulate under the same version, across many commits
+  // (impl.image.revision). Keep the newest `commitsShown` commits per logical data
+  // point, by image build time, with all their runs: repeat samples of one build,
+  // averaged like a release's runs. fit-cli's ingest keeps the last few commits,
+  // a few runs each, and deletes the rest. Runs with no revision can't be told
+  // apart, so they count as one commit, represented by its newest run alone.
+  // The data point is language+version on version-grouped charts, but
   // also includes the grouping value (e.g. horizontalScaling) elsewhere so a
   // scaling chart keeps one run per scaling factor rather than collapsing to one.
-  private collapseMovingRuns(runs: Run[], groupingField: string): Run[] {
-    const latestMoving = new Map<string, Run>()
+  private collapseMovingRuns(runs: Run[], groupingField: string, commitsShown: number): Run[] {
+    // data point -> commit (undefined when unknown) -> that commit's runs
+    const byDataPoint = new Map<string, Map<string | undefined, Run[]>>()
     for (const run of runs) {
       if (!isMovingVersion(run.impl["version"] as string)) continue
       const key = this.movingRunKey(run, groupingField)
-      const existing = latestMoving.get(key)
-      if (!existing || Date.parse(run.datetime) > Date.parse(existing.datetime)) {
-        latestMoving.set(key, run)
-      }
+      const commits = byDataPoint.get(key) ?? new Map<string | undefined, Run[]>()
+      const revision = parsePerformerImage(run.impl["image"])?.revision ?? undefined
+      commits.set(revision, [...(commits.get(revision) ?? []), run])
+      byDataPoint.set(key, commits)
     }
-    if (latestMoving.size === 0) return runs
+    if (byDataPoint.size === 0) return runs
 
-    return runs.filter(run => {
-      if (!isMovingVersion(run.impl["version"] as string)) return true
-      return latestMoving.get(this.movingRunKey(run, groupingField)) === run
+    const newestFirst = (a: Run, b: Run) =>
+      DashboardService.builtAt(b) - DashboardService.builtAt(a) || Date.parse(b.datetime) - Date.parse(a.datetime)
+    const kept = new Set<Run>()
+    byDataPoint.forEach(commits => {
+      const ranked = Array.from(commits.entries())
+        .map(([revision, commitRuns]) => ({ revision, runs: [...commitRuns].sort(newestFirst) }))
+        .sort((a, b) => newestFirst(a.runs[0], b.runs[0]))
+      for (const commit of ranked.slice(0, commitsShown)) {
+        const keep = commit.revision === undefined ? commit.runs.slice(0, 1) : commit.runs
+        keep.forEach(run => kept.add(run))
+      }
     })
+
+    return runs.filter(run => !isMovingVersion(run.impl["version"] as string) || kept.has(run))
   }
 
   private movingRunKey(run: Run, groupingField: string): string {
@@ -168,7 +204,12 @@ export class DashboardService {
       return true
     })
 
-    return this.collapseMovingRuns(filtered, this.groupingField(input))
+    // Only a version chart splits a moving tag into one bar per commit (see
+    // COMMIT_GROUPING_SQL); any other chart would average its commits together,
+    // so there it keeps just the latest commit.
+    const groupingField = this.groupingField(input)
+    const commitsShown = groupingField === 'impl.version' ? MOVING_COMMITS_SHOWN : 1
+    return this.collapseMovingRuns(filtered, groupingField, commitsShown)
   }
 
   // The versions a LATEST chart could display, newest first, alongside the one
@@ -191,7 +232,8 @@ export class DashboardService {
   }
 
   // Maps each performer version to the SDK version in impl.image.sdkVersion.
-  // Only Quarkus performers set it. Moving tags take the newest run's value.
+  // Only Quarkus performers set it. Moving tags take the newest run's value, and
+  // each of their per-commit bar labels ("main@a1b2c3d") gets its own commit's.
   private sdkVersionsByVersion(runs: Run[]): Record<string, string> {
     const newest = new Map<string, { at: number, sdkVersion: string }>()
     for (const run of runs) {
@@ -199,8 +241,11 @@ export class DashboardService {
       const sdkVersion = (run.impl?.["image"] as Record<string, unknown> | undefined)?.["sdkVersion"]
       if (typeof version !== "string" || typeof sdkVersion !== "string" || !sdkVersion) continue
       const at = Date.parse(run.datetime)
-      const current = newest.get(version)
-      if (!current || at > current.at) newest.set(version, { at, sdkVersion })
+      const grouping = commitGrouping(version, parsePerformerImage(run.impl["image"])?.revision)
+      for (const key of new Set([version, grouping])) {
+        const current = newest.get(key)
+        if (!current || at > current.at) newest.set(key, { at, sdkVersion })
+      }
     }
     const out: Record<string, string> = {}
     newest.forEach((v, version) => { out[version] = v.sdkVersion })
@@ -243,9 +288,12 @@ export class DashboardService {
         runs = this.filterRuns(initial, input)
         logger.info(`Matched ${initial.length} runs, filtered to ${runs.length}`)
 
+        // A version chart gives each kept commit of a moving tag its own bar.
+        const groupBy = ha.databaseField === 'impl.version' ? COMMIT_GROUPING_SQL : dbRep1
+
         const runIdsArray = runs.map((v) => v.id);
         if (runIdsArray.length > 0) {
-          results = await this.database.getSimplifiedGraph(dbRep1, runIdsArray, input, va);
+          results = await this.database.getSimplifiedGraph(groupBy, runIdsArray, input, va);
         }
       } else if (yAxis.type == 'metric') {
         const va = yAxis as VerticalAxisMetric;
@@ -271,33 +319,58 @@ export class DashboardService {
     }
 
     // Enforce the canonical X-axis order for version groupings:
-    // releases (semver) -> gerrit -> on-demand -> branch snapshot -> main.
+    // releases (semver) -> gerrit -> on-demand -> branch snapshot -> main, with
+    // each moving tag's commits oldest-built first.
     // Other groupings (e.g. horizontalScaling) are left untouched.
     const isVersionGrouping =
       input.hAxis.type == 'dynamic' &&
       (input.hAxis as HorizontalAxisDynamic).resultType == ResultType.VERSION_SEMVER;
 
-    if (isVersionGrouping) {
-      results.sort((a, b) => versionCompare(a.grouping, b.grouping));
+    // Per bar ("3.12.0", "main@a1b2c3d"): the image of its newest-built run, and
+    // when that was built.
+    const newestByGrouping = new Map<string, Run>();
+    for (const run of runs!) {
+      const version = run.impl?.["version"];
+      if (typeof version !== "string") continue;
+      const grouping = commitGrouping(version, parsePerformerImage(run.impl["image"])?.revision);
+      const current = newestByGrouping.get(grouping);
+      if (!current || DashboardService.builtAt(run) > DashboardService.builtAt(current)) {
+        newestByGrouping.set(grouping, run);
+      }
     }
 
-    // Attach performer-image metadata (params.impl.image) per grouping, using
-    // the first matching run's image. Left undefined when no run carries it.
-    if (runs!.length > 0) {
-      const imageByVersion = new Map<string, Record<string, unknown>>();
-      for (const run of runs!) {
-        const version = run.impl?.["version"];
-        const image = run.impl?.["image"];
-        if (typeof version === "string" && image && typeof image === "object" && !imageByVersion.has(version)) {
-          imageByVersion.set(version, image as Record<string, unknown>);
-        }
-      }
-      if (imageByVersion.size > 0) {
-        results.forEach((b) => {
-          b.image = imageByVersion.get(b.grouping) ?? null;
-        });
-      }
+    if (isVersionGrouping) {
+      const builtAt = (grouping: string) => {
+        const run = newestByGrouping.get(grouping);
+        return run ? DashboardService.builtAt(run) : undefined;
+      };
+      results.sort((a, b) => compareVersionGroupings(a.grouping, b.grouping, builtAt));
     }
+
+    // Attach performer-image metadata (params.impl.image) per grouping. Left
+    // undefined when no run carries it.
+    if (Array.from(newestByGrouping.values()).some((run) => run.impl?.["image"])) {
+      results.forEach((b) => {
+        const image = newestByGrouping.get(b.grouping)?.impl?.["image"];
+        b.image = image && typeof image === "object" ? (image as Record<string, unknown>) : null;
+      });
+    }
+
+    // When each bar's most recent run happened: over its own runs where the query
+    // returned them, else (metric charts) over the runs of its version grouping.
+    const runById = new Map(runs!.map((run) => [run.id, run]));
+    results.forEach((b) => {
+      const barRuns = Array.isArray(b.runIds) && b.runIds.length > 0
+        ? b.runIds.map((id) => runById.get(id)).filter((run): run is Run => run !== undefined)
+        : runs!.filter((run) =>
+            typeof run.impl?.["version"] === "string" &&
+            commitGrouping(run.impl["version"] as string, parsePerformerImage(run.impl["image"])?.revision) === b.grouping);
+      const latest = barRuns.reduce<Run | undefined>(
+        (newest, run) => (!newest || Date.parse(run.datetime) > Date.parse(newest.datetime) ? run : newest),
+        undefined,
+      );
+      b.lastRun = latest?.datetime ?? null;
+    });
 
     results.forEach((b) => {
       labels.push(b.grouping);
