@@ -28,6 +28,7 @@ import { sortVersions, calculateMetricValue, aggregateHomeChartData } from '@/sr
 import { HeaderSection } from './sections/HeaderSection'
 import { FiltersSection } from './sections/FiltersSection'
 import { TabsSection } from './sections/TabsSection'
+import type { ObservabilityMode } from '@/src/lib/dashboard/observability'
 
 interface HomeContentProps {
   initialData: {
@@ -61,6 +62,8 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   })
 
   const [quarkusRuntime, setQuarkusRuntime] = useState<QuarkusRuntime>("jvm")
+  // Tracing is how the history was measured, so it is what the charts show unless asked otherwise.
+  const [observability, setObservability] = useState<ObservabilityMode>("tracing")
   const perfLanguage = currentSdk === "quarkus" ? QUARKUS_PERF_LANGUAGES[quarkusRuntime] : undefined
 
   // Derived from queries
@@ -289,6 +292,21 @@ export default function HomeContent({ initialData }: HomeContentProps) {
           </div>
         )}
 
+        <div className="flex items-center gap-3 mb-6">
+          <span className="text-sm font-medium">SDK instrumentation</span>
+          <Tabs value={observability} onValueChange={(value) => setObservability(value as ObservabilityMode)}>
+            <TabsList className="bg-white dark:bg-slate-800">
+              <TabsTrigger value="tracing">Tracing</TabsTrigger>
+              <TabsTrigger value="none">None</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <span className="text-xs text-muted-foreground">
+            {observability === "tracing"
+              ? "Runs with OpenTelemetry tracing on (sampled at 0.01%), as all older runs were measured."
+              : "Runs with no SDK instrumentation. Only newer fit-cli runs measure this."}
+          </span>
+        </div>
+
         {/* Use the new FiltersSection */}
         <FiltersSection
           selectedClusterVersion={selectedClusterVersion}
@@ -307,6 +325,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
           onMetricChange={setSelectedMetric}
           currentSdk={currentSdk}
           perfLanguage={perfLanguage}
+          observability={observability}
           clusterVersion={activeClusterVersion}
           excludeSnapshots={excludeSnapshots}
           excludeGerrit={excludeGerrit}

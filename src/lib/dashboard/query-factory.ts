@@ -7,6 +7,7 @@ import {
   createReactiveAPIInput
 } from '@/src/lib/dashboard/queries'
 import type { DashboardInput } from '@/src/lib/dashboard/queries'
+import { withObservability, type ObservabilityMode } from '@/src/lib/dashboard/observability'
 import type { Input } from '@/src/lib/dashboard/dashboard-query-types'
 
 export type VersionQueryParams = {
@@ -16,9 +17,16 @@ export type VersionQueryParams = {
   systemMetric?: string | null
   transactionThreads?: string | null
   reactiveAPI?: string | null
+  observability?: ObservabilityMode
 }
 
+// The dashboard input for a drilldown, selecting the same observability mode's runs as the
+// chart it came from.
 export function buildDashboardInputForVersion(params: VersionQueryParams): Input {
+  return withObservability(baseInputForVersion(params) as unknown as DashboardInput, params.observability ?? 'tracing') as unknown as Input
+}
+
+function baseInputForVersion(params: VersionQueryParams): Input {
   const { sdk, metric, horizontalScaling, systemMetric, transactionThreads, reactiveAPI } = params
 
   if (horizontalScaling) {
