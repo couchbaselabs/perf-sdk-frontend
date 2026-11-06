@@ -139,6 +139,11 @@ export const CustomTooltip: React.FC<TooltipProps> = ({
                 {item.runCount} run{item.runCount !== 1 ? "s" : ""}
               </p>
             )}
+            {item.datetime && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Last run {formatBuiltDate(item.datetime)}
+              </p>
+            )}
           </div>
         )
       })}

@@ -93,6 +93,8 @@ export class Result {
   runIds: string[] | undefined;
   // Performer-image metadata (params.impl.image) for this grouping, if any.
   image?: Record<string, unknown> | null;
+  // When the most recent of this grouping's runs happened (runs.datetime), if known.
+  lastRun?: string | null;
 
   constructor(grouping: string, value: number, runIds?: string[]) {
     this.grouping = grouping;
