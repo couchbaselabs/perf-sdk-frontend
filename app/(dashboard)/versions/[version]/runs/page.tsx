@@ -24,6 +24,7 @@ import VersionRunsHeader from "@/src/components/shared/version-runs/version-runs
 import VersionRunsTable from "@/src/components/shared/version-runs/version-runs-table"
 import { apiClient } from "@/src/lib/api-client-unified"
 import { useRefreshHandler, useSortHandler } from "@/src/shared/hooks/use-common-handlers"
+import { OBSERVABILITY_PARAM } from "@/src/lib/dashboard/observability"
 
 // Available metrics for dropdown imported from centralized constants
 
@@ -42,6 +43,7 @@ export default function VersionRunsPage({ params }: { params: { version: string 
   const systemMetric = searchParams.get("systemMetric")
   const transactionThreads = searchParams.get("transactionThreads")
   const reactiveAPI = searchParams.get("reactiveAPI")
+  const observability = searchParams.get(OBSERVABILITY_PARAM)
 
   // CRITICAL FIX: Determine correct metric unit based on query type AND selected metric
   const getMetricInfo = () => {
@@ -92,8 +94,9 @@ export default function VersionRunsPage({ params }: { params: { version: string 
     if (systemMetric) params.set('systemMetric', systemMetric)
     if (transactionThreads) params.set('transactionThreads', transactionThreads)
     if (reactiveAPI) params.set('reactiveAPI', reactiveAPI)
+    if (observability) params.set(OBSERVABILITY_PARAM, observability)
     return params.toString()
-  }, [sdk, metric, runIdsParam, horizontalScaling, systemMetric, transactionThreads, reactiveAPI])
+  }, [sdk, metric, runIdsParam, horizontalScaling, systemMetric, transactionThreads, reactiveAPI, observability])
 
   // Load runs via React Query using the unified API (cached; ensures chart/table
   // consistency). Returns both the run summaries and the aggregated dashboard data.

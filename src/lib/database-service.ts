@@ -209,6 +209,11 @@ export class DatabaseService {
       groupBy: groupBy
     })
     
+    // findAndRemoveExcluded deletes the null "must be absent" entries as it records them, so it
+    // works on a copy: callers can pass a builder's shared default vars (DEFAULT_QUERY_VARS), and
+    // deleting from those would stop every later query from excluding experiment and
+    // uninstrumented runs.
+    compare = structuredClone(compare)
     let excludedFields = this.findAndRemoveExcluded(compare);
 
     const st = `SELECT

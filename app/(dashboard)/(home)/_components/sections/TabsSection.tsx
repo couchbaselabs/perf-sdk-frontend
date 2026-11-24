@@ -3,6 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
 import { MetricSelectorSection } from "./MetricSelectorSection"
 import OperationsSection from "./OperationsSection"
+import type { ObservabilityMode } from "@/src/lib/dashboard/observability"
 
 interface TabsSectionProps {
   activeTab: string
@@ -12,6 +13,7 @@ interface TabsSectionProps {
   currentSdk: string
   perfLanguage?: string
   clusterVersion: string
+  observability: ObservabilityMode
   excludeSnapshots: boolean
   excludeGerrit: boolean
   reloadTrigger: number
@@ -36,6 +38,7 @@ export function TabsSection({
   currentSdk,
   perfLanguage,
   clusterVersion,
+  observability,
   excludeSnapshots,
   excludeGerrit,
   reloadTrigger,
@@ -70,6 +73,7 @@ export function TabsSection({
         <OperationsSection
           currentSdk={currentSdk}
           perfLanguage={perfLanguage}
+          observability={observability}
           clusterVersion={clusterVersion}
           excludeSnapshots={excludeSnapshots}
           excludeGerrit={excludeGerrit}
