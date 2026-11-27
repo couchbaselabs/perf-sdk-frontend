@@ -3,7 +3,11 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getClusterVersionById } from '@/src/lib/cluster-version-service'
-import { getQueryTypeFromInput } from '@/src/shared/charts/query-intent'
+import {
+  applyQueryTypeSearchParams,
+  getQueryTypeFromInput,
+  isNonVersionGroupingQueryType,
+} from '@/src/shared/charts/query-intent'
 
 type UseBarChartParams = {
   title: string
@@ -13,6 +17,21 @@ type UseBarChartParams = {
   clusterVersions?: string[]
   multiClusterMode?: boolean
   sdkVersion?: string
+}
+
+export function resolveBarClusterVersion(
+  payload: { clusterVersion?: unknown } | null | undefined,
+  queryInput: { databaseCompare?: { cluster?: { version?: unknown } | null } | null } | null | undefined
+): string | undefined {
+  const fromPayload = typeof payload?.clusterVersion === 'string' ? payload.clusterVersion.trim() : ''
+  if (fromPayload) {
+    return fromPayload
+  }
+  const fromQuery =
+    typeof queryInput?.databaseCompare?.cluster?.version === 'string'
+      ? queryInput.databaseCompare.cluster.version.trim()
+      : ''
+  return fromQuery || undefined
 }
 
 export function usePerformanceBarChart(params: UseBarChartParams) {
@@ -79,11 +98,8 @@ export function usePerformanceBarChart(params: UseBarChartParams) {
     if (!dataPoint) return
     const payload = (dataPoint as any)?.payload || dataPoint
 
-    const isHorizontalScaling = queryType === 'horizontalScaling'
-    const isSystemMetric = typeof queryType === 'object' && (queryType as any).type === 'systemMetric'
-    const isTransactionGrouping = typeof queryType === 'object' && (queryType as any).type === 'transaction'
-    const isReactiveAPI = queryType === 'reactiveAPI'
-    const isNonVersionGrouping = isHorizontalScaling || isSystemMetric || isTransactionGrouping || isReactiveAPI
+    const isNonVersionGrouping = isNonVersionGroupingQueryType(queryType)
+    const selectedCluster = resolveBarClusterVersion(payload, queryInput)
 
     if (Array.isArray(payload?.runIds) && payload.runIds.length > 0) {
       const uniqueRunIds = Array.from(new Set(payload.runIds.filter((id: string) => id && id.trim())))
@@ -118,12 +134,12 @@ export function usePerformanceBarChart(params: UseBarChartParams) {
         params.set('metric', metric)
         if (sdkVersion) params.set('sdk', sdkVersion)
         params.set('runIds', uniqueRunIds.join(','))
-        if (payload.clusterVersion) params.set('cluster', payload.clusterVersion)
-
-        if (isHorizontalScaling) params.set('horizontalScaling', payload.name)
-        if (isSystemMetric && typeof queryType === 'object') params.set('systemMetric', (queryType as any).metric || 'processCpu')
-        if (isTransactionGrouping && typeof queryType === 'object') params.set('transactionThreads', String((queryType as any).threads || payload.name))
-        if (isReactiveAPI) params.set('reactiveAPI', 'ASYNC')
+        if (selectedCluster) params.set('cluster', selectedCluster)
+        applyQueryTypeSearchParams(
+          params,
+          queryType,
+          payload.name != null ? String(payload.name) : undefined
+        )
 
         router.push(`/versions/${encodeURIComponent(version)}/runs?${params.toString()}`)
         return
@@ -135,11 +151,8 @@ export function usePerformanceBarChart(params: UseBarChartParams) {
       const params = new URLSearchParams()
       params.set('metric', metric)
       if (sdkVersion) params.set('sdk', sdkVersion)
-      if (payload.clusterVersion) params.set('cluster', payload.clusterVersion)
-      if (isHorizontalScaling) params.set('horizontalScaling', payload.horizontalScaling || '20')
-      if (isSystemMetric && typeof queryType === 'object') params.set('systemMetric', (queryType as any).metric || 'processCpu')
-      if (isTransactionGrouping && typeof queryType === 'object') params.set('transactionThreads', String((queryType as any).threads))
-      if (isReactiveAPI) params.set('reactiveAPI', 'ASYNC')
+      if (selectedCluster) params.set('cluster', selectedCluster)
+      applyQueryTypeSearchParams(params, queryType, String(payload.horizontalScaling || '20'))
       router.push(`/versions/${encodeURIComponent(version)}/runs?${params.toString()}`)
       return
     }

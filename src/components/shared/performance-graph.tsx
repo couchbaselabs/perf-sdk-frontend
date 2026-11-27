@@ -26,7 +26,12 @@ import {
 // Import shared chart utilities
 import { formatDuration, CustomLegend, CustomTooltip, formatTimeOffset } from "@/src/shared/charts"
 import { mergeBucketsAndMetrics } from "@/src/shared/charts/data-merge"
-import { usePerformanceData } from '@/src/shared/hooks/use-performance-data'
+import {
+  buildDefaultActiveMetrics,
+  normalizeChartDataPoints,
+  reconcileActiveMetrics,
+  usePerformanceData,
+} from '@/src/shared/hooks/use-performance-data'
 
 // Use unified color management
 import { ChartColorManager } from '@/src/shared/charts/colors'
@@ -34,12 +39,25 @@ import { ChartColorManager } from '@/src/shared/charts/colors'
 // Create color manager instance
 const colorManager = new ChartColorManager()
 
+interface PerformanceMetricItem {
+  id: string
+  name: string
+  color: string
+  unit: string
+  axis: "left" | "right"
+  optional?: boolean
+  isSystemMetric?: boolean
+}
+
 // Define metric categories with simplified color assignment
-const metricCategories = {
+const metricCategories: Record<string, PerformanceMetricItem[]> = {
   durations: [
     { id: "duration_average_us", name: "Average Duration", color: colorManager.getColor('duration'), unit: "μs", axis: "left" },
     { id: "duration_min_us", name: "Min Duration", color: colorManager.next(), unit: "μs", axis: "left" },
     { id: "duration_max_us", name: "Max Duration", color: colorManager.next(), unit: "μs", axis: "left" },
+    { id: "duration_p50_us", name: "P50 Duration", color: "#0284C7", unit: "μs", axis: "left", optional: true },
+    { id: "duration_p95_us", name: "P95 Duration", color: "#7C3AED", unit: "μs", axis: "left", optional: true },
+    { id: "duration_p99_us", name: "P99 Duration", color: "#DB2777", unit: "μs", axis: "left", optional: true },
   ],
   throughput: [
     { id: "operations_total", name: "Total Operations", color: colorManager.getColor('operations'), unit: "ops", axis: "right" },
@@ -47,30 +65,37 @@ const metricCategories = {
     { id: "operations_failed", name: "Failed Operations", color: colorManager.getColor('errors'), unit: "ops", axis: "right" },
   ],
   metrics: [
-    { id: "memDirectMaxMB", name: "Direct Memory Max", color: colorManager.getColor('memory'), unit: "MB", axis: "right" },
-    { id: "memDirectUsedMB", name: "Direct Memory Used", color: colorManager.next(), unit: "MB", axis: "right" },
-    { id: "memHeapMaxMB", name: "Heap Memory Max", color: colorManager.next(), unit: "MB", axis: "right" },
-    { id: "memHeapUsedMB", name: "Heap Memory Used", color: colorManager.next(), unit: "MB", axis: "right" },
-    { id: "freeSwapSizeMB", name: "Free Swap Size", color: colorManager.next(), unit: "MB", axis: "right" },
-    { id: "processCpu", name: "Process CPU", color: colorManager.getColor('cpu'), unit: "%", axis: "right" },
-    { id: "systemCpu", name: "System CPU", color: colorManager.next(), unit: "%", axis: "right" },
-    { id: "threadCount", name: "Thread Count", color: colorManager.next(), unit: "", axis: "right" },
-    { id: "gc0Count", name: "GC Count", color: colorManager.next(), unit: "", axis: "right" },
-    { id: "gc0AccTimeMs", name: "GC Accumulated Time", color: colorManager.next(), unit: "ms", axis: "right" },
+    { id: "memDirectMaxMB", name: "Direct Memory Max", color: colorManager.getColor('memory'), unit: "MB", axis: "right", isSystemMetric: true },
+    { id: "memDirectUsedMB", name: "Direct Memory Used", color: colorManager.next(), unit: "MB", axis: "right", isSystemMetric: true },
+    { id: "memHeapMaxMB", name: "Heap Memory Max", color: colorManager.next(), unit: "MB", axis: "right", isSystemMetric: true },
+    { id: "memHeapUsedMB", name: "Heap Memory Used", color: colorManager.next(), unit: "MB", axis: "right", isSystemMetric: true },
+    { id: "memRssUsedMB", name: "RSS Memory Used", color: "#0EA5E9", unit: "MB", axis: "right", optional: true, isSystemMetric: true },
+    { id: "memVmsMB", name: "VMS Memory", color: "#6366F1", unit: "MB", axis: "right", optional: true, isSystemMetric: true },
+    { id: "freeSwapSizeMB", name: "Free Swap Size", color: colorManager.next(), unit: "MB", axis: "right", isSystemMetric: true },
+    { id: "processCpu", name: "Process CPU (Host)", color: colorManager.getColor('cpu'), unit: "%", axis: "right", isSystemMetric: true },
+    { id: "processCpuTotal", name: "Process CPU (Cumulative)", color: "#65A30D", unit: "%", axis: "right", optional: true, isSystemMetric: true },
+    { id: "processCpuUser", name: "Process CPU (User)", color: "#16A34A", unit: "%", axis: "right", optional: true, isSystemMetric: true },
+    { id: "processCpuSys", name: "Process CPU (Kernel)", color: "#0D9488", unit: "%", axis: "right", optional: true, isSystemMetric: true },
+    { id: "maxThreadCpu", name: "Busiest Thread CPU", color: "#EA580C", unit: "%", axis: "right", optional: true, isSystemMetric: true },
+    { id: "maxCoreCpu", name: "Hottest Core CPU", color: "#D97706", unit: "%", axis: "right", optional: true, isSystemMetric: true },
+    { id: "systemCpu", name: "System CPU", color: colorManager.next(), unit: "%", axis: "right", isSystemMetric: true },
+    { id: "systemCpuSteal", name: "System CPU Steal", color: "#E11D48", unit: "%", axis: "right", optional: true, isSystemMetric: true },
+    { id: "systemCpuIoWait", name: "System CPU I/O Wait", color: "#7C3AED", unit: "%", axis: "right", optional: true, isSystemMetric: true },
+    { id: "threadCount", name: "Thread Count", color: colorManager.next(), unit: "", axis: "right", isSystemMetric: true },
+    { id: "gc0Count", name: "GC Count", color: colorManager.next(), unit: "", axis: "right", isSystemMetric: true },
+    { id: "gc0AccTimeMs", name: "GC Accumulated Time", color: colorManager.next(), unit: "ms", axis: "right", isSystemMetric: true },
     { id: "errors", name: "Errors", color: colorManager.getColor('errors'), unit: "", axis: "right" },
   ],
 }
 
-// Get all metrics from categories
-const getAllMetrics = () => {
-  return Object.values(metricCategories).flat()
-}
+const ALL_GRAPH_METRICS: PerformanceMetricItem[] = Object.values(metricCategories).flat()
 
 interface PerformanceGraphProps {
   runId: string
   title: string
   description?: string
   showAllMetrics?: boolean
+  initialMetric?: string
   height?: number
   data?: any
   events?: Array<{ timeOffsetSecs: number | null; datetime: string; params: { type: string; description?: string; displayOnGraph?: boolean } }>
@@ -82,23 +107,33 @@ export default function PerformanceGraph({
   title,
   description,
   showAllMetrics = false,
+  initialMetric,
   height = 400,
   data: initialData,
   events = [],
   graphId,
 }: PerformanceGraphProps) {
   const { data: queryData, isLoading, isFetching, error, refetch } = usePerformanceData(runId)
-  const [chartData, setChartData] = useState<any[]>(initialData || queryData || [])
+  const [chartData, setChartData] = useState<any[]>(() =>
+    normalizeChartDataPoints(initialData ?? queryData)
+  )
 
-  const allMetrics = getAllMetrics()
+  const allMetrics = ALL_GRAPH_METRICS
 
-  // Check which metrics have data available
+  // Scalar numeric series present in chartData.
   const metricsWithData = useMemo(() => {
     const availableMetrics = new Set<string>()
-    if (chartData && chartData.length > 0) {
+    if (Array.isArray(chartData) && chartData.length > 0) {
       chartData.forEach(point => {
         Object.keys(point).forEach(key => {
-          if (point[key] !== undefined && point[key] !== null && key !== 'time' && key !== 'datetime' && key !== 'timeLabel') {
+          if (key === 'time' || key === 'datetime' || key === 'timeLabel') {
+            return
+          }
+          const val = point[key]
+          const isFiniteScalar =
+            (typeof val === 'number' && Number.isFinite(val)) ||
+            (typeof val === 'string' && val.trim() !== '' && Number.isFinite(Number(val)))
+          if (isFiniteScalar) {
             availableMetrics.add(key)
           }
         })
@@ -107,19 +142,43 @@ export default function PerformanceGraph({
     return availableMetrics
   }, [chartData])
 
+  // Optional metrics appear in the legend only when present in chartData.
+  const visibleMetricCategories = useMemo(
+    () =>
+      Object.entries(metricCategories).map(
+        ([categoryKey, metrics]) =>
+          [categoryKey, metrics.filter((m) => !m.optional || metricsWithData.has(m.id))] as const
+      ),
+    [metricsWithData]
+  )
+
+  const visibleAllMetrics = useMemo(
+    () => visibleMetricCategories.flatMap(([, metrics]) => metrics),
+    [visibleMetricCategories]
+  )
+
+  const availableMetricCount = useMemo(
+    () => visibleAllMetrics.filter((m) => metricsWithData.has(m.id)).length,
+    [visibleAllMetrics, metricsWithData]
+  )
+
   // ---------------------------------------------------------------------------
   // Simplified metric visibility state
   //   • activeMetrics  – list of metric ids currently displayed
   //   • axisOverrides  – user-chosen axis overrides (defaults come from metric definition)
   // ---------------------------------------------------------------------------
 
-  const defaultActive = useMemo(() => (
-    showAllMetrics
-      ? allMetrics.map((m) => m.id)
-      : ["duration_average_us", "operations_total", "operations_failed"]
-  ), [showAllMetrics])
+  const defaultActive = useMemo(
+    () => buildDefaultActiveMetrics({ allMetrics, showAllMetrics, initialMetric }),
+    [allMetrics, showAllMetrics, initialMetric]
+  )
 
   const [activeMetrics, setActiveMetrics] = useState<string[]>(defaultActive)
+  const selectionKey = `${runId}|${title}|${showAllMetrics}|${initialMetric ?? ""}`
+  const selectionStateRef = useRef<{ key: string; userOverrides: Record<string, boolean> }>({
+    key: selectionKey,
+    userOverrides: {},
+  })
 
   const [axisOverrides, setAxisOverrides] = useState<Record<string, "left" | "right">>({})
 
@@ -133,6 +192,7 @@ export default function PerformanceGraph({
   const [zoomLevel, setZoomLevel] = useState(100)
   const [chartType, setChartType] = useState<"line" | "area">("line")
   const [selectedTimeRange, setSelectedTimeRange] = useState<[number, number] | null>(null)
+  const hasCustomRangeRef = useRef(false)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStartX, setDragStartX] = useState<number | null>(null)
   const [dragCurrentX, setDragCurrentX] = useState<number | null>(null)
@@ -164,7 +224,7 @@ export default function PerformanceGraph({
 
   // Compute full range from data + events
   const fullRange = useMemo<[number, number] | null>(() => {
-    if (!chartData || chartData.length === 0) return null
+    if (!Array.isArray(chartData) || chartData.length === 0) return null
     const dataMin = Number(chartData[0]?.time ?? 0)
     const dataMax = Number(chartData[chartData.length - 1]?.time ?? chartData.length - 1)
     const eventTimes = (events || [])
@@ -178,10 +238,23 @@ export default function PerformanceGraph({
   const rangesEqual = (a: [number, number] | null, b: [number, number] | null) =>
     !!a && !!b && a[0] === b[0] && a[1] === b[1]
 
-  // Initialize selectedTimeRange to fullRange once data/events resolve
+  // Initialize selectedTimeRange to fullRange once data/events resolve, and expand
+  // untouched full-range views when late events or refreshed samples widen fullRange.
   useEffect(() => {
-    if (fullRange && selectedTimeRange === null) setSelectedTimeRange(fullRange)
-  }, [fullRange])
+    if (!fullRange) {
+      hasCustomRangeRef.current = false
+      if (selectedTimeRange !== null) {
+        setSelectedTimeRange(null)
+      }
+      return
+    }
+    if (
+      selectedTimeRange === null ||
+      (!hasCustomRangeRef.current && zoomLevel === 100 && !rangesEqual(selectedTimeRange, fullRange))
+    ) {
+      setSelectedTimeRange(fullRange)
+    }
+  }, [fullRange, selectedTimeRange, zoomLevel])
 
   // Apply zoom changes only when zoomLevel or dataset changes; do NOT react to
   // selectedTimeRange updates triggered by drag-selection, otherwise we would
@@ -189,9 +262,8 @@ export default function PerformanceGraph({
   useEffect(() => {
     if (!fullRange) return
 
-    // If zoom is at 100% (show full) and user already defined a custom range,
-    // skip automatic override so drag-selection is preserved.
-    if (zoomLevel === 100 && selectedTimeRange !== null) return
+    // Full-range synchronization and custom drag selections at 100% zoom are owned by the effect above.
+    if (zoomLevel === 100) return
 
     const [fullMin, fullMax] = fullRange
     const fullLen = Math.max(1, fullMax - fullMin)
@@ -232,45 +304,54 @@ export default function PerformanceGraph({
 
   // Load real data from database
   useEffect(() => {
-    if (initialData) {
-      setChartData(initialData)
-    } else if (queryData && queryData.length) {
-      setChartData(queryData)
+    if (initialData !== undefined) {
+      setChartData(normalizeChartDataPoints(initialData))
+    } else if (queryData) {
+      const normalized = normalizeChartDataPoints(queryData)
+      setChartData((prev) => (normalized.length === 0 && prev.length === 0 ? prev : normalized))
     }
   }, [initialData, queryData])
 
-  // Ensure at least one duration metric is visible when data arrives and disable metrics with no data
+  // Apply defaults, URL initialMetric, and explicit manual legend overrides as data updates.
   useEffect(() => {
-    if (chartData && chartData.length) {
-      const hasDuration = chartData.some((p: any) => typeof p.duration_average_us === 'number' && p.duration_average_us > 0)
-
-      // Update activeMetrics based on data availability
-      setActiveMetrics((prev) => {
-        const updated = [...prev]
-
-        // Ensure at least one duration metric is visible if available
-        if (hasDuration && !updated.includes("duration_average_us")) {
-          updated.push("duration_average_us")
-        }
-
-        // Disable any active metrics that have no data
-        updated.forEach(metricId => {
-          if (updated.includes(metricId) && !metricsWithData.has(metricId)) {
-            const index = updated.indexOf(metricId)
-            updated.splice(index, 1)
-          }
-        })
-
-        return updated
-      })
+    const isNewSelection = selectionStateRef.current.key !== selectionKey
+    if (isNewSelection) {
+      selectionStateRef.current = { key: selectionKey, userOverrides: {} }
     }
-  }, [chartData, metricsWithData]) // Update when data or available metrics change
+
+    if (!Array.isArray(chartData) || chartData.length === 0) {
+      if (isNewSelection) {
+        setActiveMetrics(defaultActive)
+      }
+      return
+    }
+
+    const hasPositiveDuration = chartData.some(
+      (p: Record<string, unknown>) => typeof p.duration_average_us === 'number' && p.duration_average_us > 0
+    )
+
+    const nextActive = reconcileActiveMetrics({
+      userOverrides: selectionStateRef.current.userOverrides,
+      visibleMetricIds: visibleAllMetrics.map((m) => m.id),
+      metricsWithData,
+      hasPositiveDuration,
+      showAllMetrics,
+      initialMetric,
+      allMetrics,
+    })
+
+    setActiveMetrics((prev) =>
+      nextActive.length === prev.length && nextActive.every((id, idx) => id === prev[idx])
+        ? prev
+        : nextActive
+    )
+  }, [chartData, metricsWithData, showAllMetrics, visibleAllMetrics, selectionKey, defaultActive, initialMetric, allMetrics])
 
   const loadRealData = useCallback(() => { refetch() }, [refetch])
 
   // Helper: snap a numeric time to the closest actual bucket time present in chartData
   const snapTime = useCallback((val: number) => {
-    if (!chartData || chartData.length === 0) return val
+    if (!Array.isArray(chartData) || chartData.length === 0) return val
     let best = chartData[0].time as number
     let bestDiff = Math.abs(best - val)
     for (const p of chartData) {
@@ -304,7 +385,11 @@ export default function PerformanceGraph({
     )
   }
 
-  if (error) {
+  const hasChartData = Boolean(
+    Array.isArray(chartData) && chartData.length > 0 && availableMetricCount > 0
+  )
+
+  if (error && !hasChartData) {
     return (
       <Card className="mb-6 border shadow-sm">
         <CardHeader className="pb-2">
@@ -334,7 +419,7 @@ export default function PerformanceGraph({
     )
   }
 
-  if (!chartData || chartData.length === 0) {
+  if (!hasChartData) {
     return (
       <Card className="mb-6 border shadow-sm">
         <CardHeader className="pb-2">
@@ -358,8 +443,15 @@ export default function PerformanceGraph({
       console.warn(`Cannot toggle metric ${metricId}: no data available`)
       return
     }
+    const nextEnabled = !activeMetrics.includes(metricId)
+    selectionStateRef.current.userOverrides = {
+      ...selectionStateRef.current.userOverrides,
+      [metricId]: nextEnabled,
+    }
     setActiveMetrics((prev) =>
-      prev.includes(metricId) ? prev.filter((id) => id !== metricId) : [...prev, metricId],
+      nextEnabled
+        ? (prev.includes(metricId) ? prev : [...prev, metricId])
+        : prev.filter((id) => id !== metricId)
     )
   }
 
@@ -384,6 +476,7 @@ export default function PerformanceGraph({
 
   // Reset zoom helper
   const resetZoom = () => {
+    hasCustomRangeRef.current = false
     if (fullRange) {
       setSelectedTimeRange(fullRange)
       setZoomLevel(100)
@@ -393,6 +486,7 @@ export default function PerformanceGraph({
 
   // Handle time range selection
   const handleTimeRangeChange = (range: [number, number]) => {
+    hasCustomRangeRef.current = true
     setSelectedTimeRange(range)
   }
 
@@ -425,8 +519,9 @@ export default function PerformanceGraph({
     return [Math.min(0, p1), p99 * 1.05]
   }
 
-  const leftMetricIds = activeMetrics.filter((id) => getAxis(id) === "left")
-  const rightMetricIds = activeMetrics.filter((id) => getAxis(id) === "right")
+  const renderedActiveMetrics = activeMetrics.filter((id) => metricsWithData.has(id))
+  const leftMetricIds = renderedActiveMetrics.filter((id) => getAxis(id) === "left")
+  const rightMetricIds = renderedActiveMetrics.filter((id) => getAxis(id) === "right")
   const leftDomain  = clipExtremes ? computeWinsorizedDomain(leftMetricIds)  : ["auto", "auto"] as [string, string]
   const rightDomain = clipExtremes ? computeWinsorizedDomain(rightMetricIds) : ["auto", "auto"] as [string, string]
 
@@ -441,12 +536,12 @@ export default function PerformanceGraph({
   const tooltipLabelFormatter = (label: string) => `Time: ${label}`
 
   // Count metrics on each axis
-  const leftAxisMetrics = activeMetrics.filter((id) => getAxis(id) === "left").length
-  const rightAxisMetrics = activeMetrics.filter((id) => getAxis(id) === "right").length
+  const leftAxisMetrics = leftMetricIds.length
+  const rightAxisMetrics = rightMetricIds.length
 
   // Compute dynamic Y-axis labels based on which metrics are active on each axis
   const computeAxisLabel = (side: "left" | "right"): string => {
-    const metricsOnAxis = activeMetrics
+    const metricsOnAxis = renderedActiveMetrics
       .filter((id) => getAxis(id) === side)
       .map((id) => allMetrics.find((m) => m.id === id))
       .filter(Boolean)
@@ -519,6 +614,19 @@ export default function PerformanceGraph({
           <CardTitle className="text-lg font-medium">{title}</CardTitle>
           {description && <CardDescription className="text-sm text-muted-foreground mt-1">{description}</CardDescription>}
         </div>
+
+        {error && (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-900 dark:text-amber-200"
+          >
+            <span>Refresh failed ({error}). Showing last loaded chart data.</span>
+            <Button type="button" variant="outline" size="sm" onClick={loadRealData} disabled={isFetching}>
+              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
+              Retry
+            </Button>
+          </div>
+        )}
 
         {/* Row 2: tip callout & controls */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -649,6 +757,7 @@ export default function PerformanceGraph({
                 const snappedStart = snapTime(timeStart)
                 const snappedEnd = snapTime(timeEnd)
                 if (snappedEnd - snappedStart >= 1) {
+                  hasCustomRangeRef.current = true
                   setSelectedTimeRange([snappedStart, snappedEnd])
                 }
                 console.log('Drag selection', { timeStart: snappedStart, timeEnd: snappedEnd, domain })
@@ -672,7 +781,7 @@ export default function PerformanceGraph({
                     />
                     <YAxis
                       yAxisId="left"
-                      label={{ value: leftAxisLabel, angle: -90, position: "insideLeft" }}
+                      label={{ value: leftAxisLabel, angle: -90, position: "insideLeft", style: { textAnchor: "middle" } }}
                       domain={leftDomain}
                       allowDataOverflow={clipExtremes}
                       tick={{ fontSize: 11 }}
@@ -682,7 +791,7 @@ export default function PerformanceGraph({
                     <YAxis
                       yAxisId="right"
                       orientation="right"
-                      label={{ value: rightAxisLabel, angle: -90, position: "insideRight" }}
+                      label={{ value: rightAxisLabel, angle: -90, position: "insideRight", style: { textAnchor: "middle" } }}
                       domain={rightDomain}
                       allowDataOverflow={clipExtremes}
                       tick={{ fontSize: 11 }}
@@ -704,18 +813,8 @@ export default function PerformanceGraph({
                     {/* Zoom brush removed to avoid numeric/lexicographic issues causing capping */}
 
                     {/* Render all active metrics */}
-                    {allMetrics
-                      .filter((metric) => {
-                        const isActive = activeMetrics.includes(metric.id)
-                        if (isActive) {
-                          // Check if data exists for this metric
-                          const hasData = chartData.some(point => point[metric.id] !== undefined && point[metric.id] !== null)
-                          if (!hasData) {
-                            console.warn(`Metric ${metric.id} is active but no data found in chartData`)
-                          }
-                        }
-                        return isActive
-                      })
+                    {visibleAllMetrics
+                      .filter((metric) => activeMetrics.includes(metric.id) && metricsWithData.has(metric.id))
                       .map((metric) => (
                         <Line
                           key={metric.id}
@@ -734,7 +833,7 @@ export default function PerformanceGraph({
                     {events?.filter(e => typeof e?.timeOffsetSecs === 'number' && Number.isFinite(e.timeOffsetSecs)).map((e, i) => (
                       <ReferenceLine
                         key={`evt-${i}`}
-                        yAxisId="left"
+                        yAxisId={leftAxisMetrics > 0 ? "left" : "right"}
                         x={Number(e.timeOffsetSecs)}
                         stroke={(e.params?.description || e.params?.type || 'Event').includes('resolves') ? '#111827' : '#ef4444'}
                         strokeWidth={3}
@@ -759,7 +858,7 @@ export default function PerformanceGraph({
                     />
                     <YAxis
                       yAxisId="left"
-                      label={{ value: leftAxisLabel, angle: -90, position: "insideLeft" }}
+                      label={{ value: leftAxisLabel, angle: -90, position: "insideLeft", style: { textAnchor: "middle" } }}
                       domain={leftDomain}
                       allowDataOverflow={clipExtremes}
                       tick={{ fontSize: 11 }}
@@ -769,7 +868,7 @@ export default function PerformanceGraph({
                     <YAxis
                       yAxisId="right"
                       orientation="right"
-                      label={{ value: rightAxisLabel, angle: -90, position: "insideRight" }}
+                      label={{ value: rightAxisLabel, angle: -90, position: "insideRight", style: { textAnchor: "middle" } }}
                       domain={rightDomain}
                       allowDataOverflow={clipExtremes}
                       tick={{ fontSize: 11 }}
@@ -791,18 +890,8 @@ export default function PerformanceGraph({
                     {/* Zoom brush removed to avoid numeric/lexicographic issues causing capping */}
 
                     {/* Render all active metrics as areas */}
-                    {allMetrics
-                      .filter((metric) => {
-                        const isActive = activeMetrics.includes(metric.id)
-                        if (isActive) {
-                          // Check if data exists for this metric
-                          const hasData = chartData.some(point => point[metric.id] !== undefined && point[metric.id] !== null)
-                          if (!hasData) {
-                            console.warn(`Metric ${metric.id} is active but no data found in chartData`)
-                          }
-                        }
-                        return isActive
-                      })
+                    {visibleAllMetrics
+                      .filter((metric) => activeMetrics.includes(metric.id) && metricsWithData.has(metric.id))
                       .map((metric) => (
                         <Area
                           key={metric.id}
@@ -822,7 +911,7 @@ export default function PerformanceGraph({
                     {events?.filter(e => typeof e?.timeOffsetSecs === 'number' && Number.isFinite(e.timeOffsetSecs)).map((e, i) => (
                       <ReferenceLine
                         key={`evt-${i}`}
-                        yAxisId="left"
+                        yAxisId={leftAxisMetrics > 0 ? "left" : "right"}
                         x={Number(e.timeOffsetSecs)}
                         stroke={(e.params?.description || e.params?.type || 'Event').includes('resolves') ? '#111827' : '#ef4444'}
                         strokeWidth={3}
@@ -869,20 +958,20 @@ export default function PerformanceGraph({
                       <div className="flex justify-between">
                         <span>Available:</span>
                         <span className="font-medium text-green-600 dark:text-green-400">
-                          {metricsWithData.size} metrics
+                          {availableMetricCount} metrics
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span>Missing:</span>
                         <span className="font-medium text-red-600 dark:text-red-400">
-                          {allMetrics.length - metricsWithData.size} metrics
+                          {visibleAllMetrics.length - availableMetricCount} metrics
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {Object.entries(metricCategories).map(([categoryKey, metrics]) => (
+                {visibleMetricCategories.map(([categoryKey, metrics]) => (
                   <div key={categoryKey} className="space-y-2">
                     <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {categoryKey}

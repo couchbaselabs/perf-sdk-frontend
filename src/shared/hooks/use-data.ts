@@ -144,9 +144,14 @@ export function useSituationalRunDetail(situationalId: string, runId: string) {
     queryKey: ['situational', situationalId, 'run', runId],
     queryFn: async ({ signal }): Promise<any> => {
       const res = await fetch(`/api/situational/${situationalId}/run/${runId}`, { signal })
-      const fallback = { runDetails: { runs: [] }, events: [], errorsSummary: [] }
-      const payload = res.ok ? await res.json() : { success: false, data: fallback }
-      return payload?.data || fallback
+      if (!res.ok) {
+        throw new Error(`Failed to load situational run details (${res.status})`)
+      }
+      const payload = await res.json()
+      if (payload?.success === false) {
+        throw new Error(payload?.error || 'Failed to load situational run details')
+      }
+      return payload?.data ?? { runDetails: { runs: [] }, events: [], errorsSummary: [] }
     },
     enabled: !!situationalId && !!runId,
   })

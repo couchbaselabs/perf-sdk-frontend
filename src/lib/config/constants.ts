@@ -39,12 +39,113 @@ export const SYSTEM_METRICS = [
   {
     id: "processCpu",
     title: "Process CPU",
-    description: "Measures the average process CPU used by the performer+SDK, in %.",
+    description: "Measures the average whole-machine CPU share (0–100%, matching Java OperatingSystemMXBean.getProcessCpuLoad() * 100) used by the performer+SDK.",
     metric: "processCpu",
     unit: "%",
     subtitle: "All these tests are doing KV gets in 20 threads."
   }
 ] as const
+
+export interface SdkSystemMetric {
+  id: string
+  title: string
+  description: string
+  metric: string
+  unit: string
+  subtitle: string
+  defaultVisible?: boolean
+}
+
+export const SDK_SYSTEM_METRICS = {
+  cpp: [
+    {
+      id: "cppProcessCpuTotal",
+      title: "Process CPU (Cumulative)",
+      description: "Process CPU time over wall-clock time (100% = 1 busy core). Independent of host core count.",
+      metric: "processCpuTotal",
+      unit: "%",
+      subtitle: "All these tests are doing KV gets in 20 threads.",
+      defaultVisible: true,
+    },
+    {
+      id: "cppProcessCpuUser",
+      title: "Process CPU (User)",
+      description: "User-space CPU time over wall-clock time (100% = 1 busy core).",
+      metric: "processCpuUser",
+      unit: "%",
+      subtitle: "All these tests are doing KV gets in 20 threads.",
+      defaultVisible: false,
+    },
+    {
+      id: "cppProcessCpuSys",
+      title: "Process CPU (Kernel)",
+      description: "Kernel-space CPU time over wall-clock time (100% = 1 busy core).",
+      metric: "processCpuSys",
+      unit: "%",
+      subtitle: "All these tests are doing KV gets in 20 threads.",
+      defaultVisible: false,
+    },
+    {
+      id: "cppMaxThreadCpu",
+      title: "Busiest Thread CPU",
+      description: "CPU share of the single busiest thread (0–100% of 1 core).",
+      metric: "maxThreadCpu",
+      unit: "%",
+      subtitle: "All these tests are doing KV gets in 20 threads.",
+      defaultVisible: true,
+    },
+    {
+      id: "cppMaxCoreCpu",
+      title: "Hottest Host Core CPU",
+      description: "CPU share of the busiest logical core on the host (0–100% of 1 core).",
+      metric: "maxCoreCpu",
+      unit: "%",
+      subtitle: "All these tests are doing KV gets in 20 threads.",
+      defaultVisible: false,
+    },
+    {
+      id: "cppMemRssUsedMB",
+      title: "RSS Memory",
+      description: "Maximum resident set size (MiB) of the C++ performer process.",
+      metric: "memRssUsedMB",
+      unit: "MB",
+      subtitle: "All these tests are doing KV gets in 20 threads.",
+      defaultVisible: true,
+    },
+  ],
+} as const satisfies Record<string, readonly SdkSystemMetric[]>
+
+const SYSTEM_METRIC_INFO: Record<string, { label: string; unit: string }> = {
+  processCpu: { label: "Process CPU", unit: "%" },
+  processCpuTotal: { label: "Process CPU (Cumulative)", unit: "%" },
+  processCpuUser: { label: "Process CPU (User)", unit: "%" },
+  processCpuSys: { label: "Process CPU (Kernel)", unit: "%" },
+  maxThreadCpu: { label: "Busiest Thread CPU", unit: "%" },
+  maxCoreCpu: { label: "Hottest Host Core CPU", unit: "%" },
+  systemCpu: { label: "System CPU", unit: "%" },
+  systemCpuSteal: { label: "System CPU Steal", unit: "%" },
+  systemCpuIoWait: { label: "System CPU I/O Wait", unit: "%" },
+  logicalCpuCount: { label: "Logical CPUs", unit: "" },
+  memHeapUsedMB: { label: "Heap Memory Used", unit: "MB" },
+  memHeapMaxMB: { label: "Heap Memory Max", unit: "MB" },
+  memDirectUsedMB: { label: "Direct Memory Used", unit: "MB" },
+  memDirectMaxMB: { label: "Direct Memory Max", unit: "MB" },
+  memRssUsedMB: { label: "RSS Memory Used", unit: "MB" },
+  memVmsMB: { label: "VMS Memory", unit: "MB" },
+  freeSwapSizeMB: { label: "Free Swap Size", unit: "MB" },
+  threadCount: { label: "Thread Count", unit: "" },
+  gc0AccTimeMs: { label: "GC Accumulated Time", unit: "ms" },
+  gc0Count: { label: "GC Collection Count", unit: "" },
+}
+
+export function getSystemMetricInfo(
+  metricKey: string | null | undefined
+): { label: string; unit: string } | null {
+  if (!metricKey || !Object.prototype.hasOwnProperty.call(SYSTEM_METRIC_INFO, metricKey)) {
+    return null
+  }
+  return SYSTEM_METRIC_INFO[metricKey]
+}
 
 export const TRANSACTION_OPERATIONS = [
   {
@@ -129,16 +230,27 @@ export const AVAILABLE_METRICS = [
 // Language mappings
 export const LANGUAGE_MAP: Record<string, string> = {
   'Java': 'Java',
+  'java': 'Java',
   'Python': 'Python',
+  'python': 'Python',
   'Go': 'Go',
+  'go': 'Go',
   'C++': 'C++',
+  'cpp': 'C++',
   '.NET': '.NET',
+  'dotnet': '.NET',
   'Node.js': 'Node',
   'Node': 'Node',
+  'node': 'Node',
+  'nodejs': 'Node',
   'Kotlin': 'Kotlin',
+  'kotlin': 'Kotlin',
   'Ruby': 'Ruby',
+  'ruby': 'Ruby',
   'Scala': 'Scala',
-  'Rust': 'Rust'
+  'scala': 'Scala',
+  'Rust': 'Rust',
+  'rust': 'Rust',
 } as const
 
 // Type exports for better type safety

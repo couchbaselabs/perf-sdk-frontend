@@ -15,6 +15,7 @@ import {
   CORE_OPERATIONS,
   SCALING_OPERATIONS,
   SYSTEM_METRICS,
+  SDK_SYSTEM_METRICS,
   TRANSACTION_OPERATIONS,
   SDK_API_COMPARISONS,
   ALL_OPERATIONS,
@@ -49,7 +50,13 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   const [selectedClusterVersion, setSelectedClusterVersion] = useState<string>(DEFAULT_CLUSTERS[0])
   const [visibleOperations, setVisibleOperations] = useState<string[]>(CORE_OPERATIONS.slice(0, 3).map((op) => op.id))
   const [visibleScaling, setVisibleScaling] = useState<string[]>(SCALING_OPERATIONS.map((op) => op.id))
-  const [visibleMetrics, setVisibleMetrics] = useState<string[]>(SYSTEM_METRICS.map((op) => op.id))
+  const [visibleMetrics, setVisibleMetrics] = useState<string[]>([
+    ...SYSTEM_METRICS.map((op) => op.id),
+    ...(Object.values(SDK_SYSTEM_METRICS) as readonly (typeof SDK_SYSTEM_METRICS[keyof typeof SDK_SYSTEM_METRICS])[])
+      .flat()
+      .filter((op) => op.defaultVisible !== false)
+      .map((op) => op.id),
+  ])
   const [visibleTransactions, setVisibleTransactions] = useState<string[]>(TRANSACTION_OPERATIONS.map((op) => op.id))
   const [visibleApiComparisons, setVisibleApiComparisons] = useState<string[]>(
     (Object.values(SDK_API_COMPARISONS) as readonly (typeof SDK_API_COMPARISONS[keyof typeof SDK_API_COMPARISONS])[]).flat().map((op) => op.id)

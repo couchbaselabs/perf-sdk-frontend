@@ -15,7 +15,18 @@ import {
 } from "./dashboard/dashboard-query-types";
 import { versionCompare } from "./core-ui-utilities";
 import type { DatabaseIngesterRun } from "@/src/types/database";
-import { buildSimplifiedGraphQuery, buildSimplifiedMetricQuery, buildRunsWithBucketsQuery, buildRunsWithMetricsQuery } from '@/src/lib/dashboard/graph-builders'
+import {
+  buildSafeJsonbFloatSql,
+  buildSimplifiedGraphQuery,
+  buildSimplifiedMetricQuery,
+  buildRunsWithBucketsQuery,
+  buildRunsWithMetricsQuery,
+  mapMerging,
+  NUMERIC_JSON_VALUE_PATTERN,
+  SQL_IDENTIFIER_PATTERN,
+  UUID_PATTERN,
+  VALID_BUCKET_METRIC_COLUMNS,
+} from '@/src/lib/dashboard/graph-builders'
 import { logger } from '@/src/lib/utils/logger'
 
 export class Run {
@@ -210,6 +221,7 @@ export class DatabaseService {
     })
     
     let excludedFields = this.findAndRemoveExcluded(compare);
+    const compareJson = JSON.stringify(compare);
 
     const st = `SELECT
                 params as params,
@@ -221,16 +233,13 @@ export class DatabaseService {
                 id as run_id,
                 datetime
               FROM runs
-              where (params) @>
-                        ('${JSON.stringify(
-                          compare, null, 2
-                        )}'::jsonb #- '${groupBy}')`;
+              where (params) @> ($1::jsonb #- $2::text[])`;
     
     logger.debug(`getRuns SQL:`, st)
     
-    const label = "getRuns: " + st
+    const label = `getRuns: ${compareJson}|${groupBy}`
     logger.time(label);
-    const rows = await this.pool.query(st);
+    const rows = await this.pool.query(st, [compareJson, groupBy]);
     logger.timeEnd(label)
     
     let runs = rows.rows.map((x: any) => {
@@ -259,15 +268,19 @@ export class DatabaseService {
   }
 
   async getRunsById(runIds: Array<string>): Promise<Array<Run>> {
+    const validRunIds = runIds.filter((id) => UUID_PATTERN.test(id));
+    if (validRunIds.length === 0) {
+      return [];
+    }
     const st = `SELECT
                         params as params,
                         id as run_id,
                         datetime
                       FROM runs
-                WHERE id in ('${runIds.join("','")}')`;
-    const label = "getRunsById: " + st
+                WHERE id = ANY($1::uuid[])`;
+    const label = `getRunsById: ${validRunIds.join(',')}`
     logger.time(label);
-    const result = await this.pool.query(st);
+    const result = await this.pool.query(st, [validRunIds]);
     logger.timeEnd(label)
 
     return result.rows.map((x: any) => {
@@ -454,6 +467,9 @@ export class DatabaseService {
     runIds: Array<string>,
     input: Input,
     yAxis: VerticalAxisBucketsColumn): Promise<Array<Result>> {
+    if (runIds.length === 0) {
+      return [];
+    }
     const st = buildSimplifiedGraphQuery(groupBy1, runIds, input, yAxis)
     
     const label = "getSimplifiedGraph: " + st
@@ -468,13 +484,16 @@ export class DatabaseService {
                                     hAxis: HorizontalAxisDynamic,
                                     yAxis: VerticalAxisMetric,
                                     input: Input): Promise<Array<Result>> {
+    if (runIds.length === 0) {
+      return [];
+    }
     const st = buildSimplifiedMetricQuery(runIds, hAxis, yAxis, input)
     const label = "getSimplifiedGraphForMetric: " + st
     logger.time(label);
     const result = await this.pool.query(st);
     logger.timeEnd(label);
 
-    return DatabaseService.sort(result.rows.map((x: any) => new Result(x.grouping, x.value)), input);
+    return DatabaseService.sort(result.rows.map((x: any) => new Result(x.grouping, x.value, x.run_ids)), input);
   }
 
   private static sort(results: Result[], input: Input): Result[] {
@@ -519,12 +538,22 @@ export class DatabaseService {
     includeDataColumn: string,
     includeMetrics: boolean,
     includeErrors: boolean): Promise<Array<RunBucketPair>> {
-    const st = buildRunsWithBucketsQuery(runIds, input, includeDataColumn, includeMetrics, includeErrors)
+    if (runIds.length === 0) {
+      return [];
+    }
+    const validRunIds = runIds.filter((id) => UUID_PATTERN.test(id));
+    if (validRunIds.length === 0) {
+      throw new Error('No valid UUID run IDs provided');
+    }
+    const trimmingSecs = Number.isFinite(Number(input.trimmingSeconds))
+      ? Math.max(0, Math.floor(Number(input.trimmingSeconds)))
+      : 0;
+    const st = buildRunsWithBucketsQuery(validRunIds, input, includeDataColumn, includeMetrics, includeErrors)
 
     const label = "getRunsWithBuckets: " + st
     logger.time(label);
     try {
-      const result = await this.pool.query(st, [runIds, input.trimmingSeconds]);
+      const result = await this.pool.query(st, [validRunIds, trimmingSecs]);
       logger.timeEnd(label);
 
       return result.rows.map((x: any) => {
@@ -549,10 +578,17 @@ export class DatabaseService {
     input: Input,
     metricName: string
   ): Promise<Array<RunMetricPair>> {
+    if (runIds.length === 0) {
+      return [];
+    }
+    const validRunIds = runIds.filter((id) => UUID_PATTERN.test(id))
+    if (validRunIds.length === 0) {
+      throw new Error('No valid UUID run IDs provided')
+    }
     const st = buildRunsWithMetricsQuery(input, metricName)
 
     try {
-      const result = await this.pool.query(st, [runIds]);
+      const result = await this.pool.query(st, [validRunIds]);
       return result.rows.map((x: any) => {
         return new RunMetricPair(
           x.run_id,
@@ -596,11 +632,17 @@ export class DatabaseService {
 
     return result.rows.map((x: any) => {
       const dtMs = new Date(x.datetime).getTime()
-      const base = (typeof firstBucketTime === 'number' && Number.isFinite(firstBucketTime)) ? firstBucketTime : NaN
-      let offsetSecs = (Number.isFinite(dtMs) && Number.isFinite(base)) ? ((dtMs - base) / 1000) : 0
-      // Allow negative offsets (events before first bucket); round to nearest second
-      if (!Number.isFinite(offsetSecs)) offsetSecs = 0
-      else offsetSecs = Math.round(offsetSecs)
+      let base = NaN
+      if (typeof firstBucketTime === 'number') {
+        base = firstBucketTime
+      } else if (firstBucketTime instanceof Date) {
+        base = firstBucketTime.getTime()
+      } else if (typeof firstBucketTime === 'string' && /^\d{4}-\d{2}-\d{2}/.test(firstBucketTime.trim())) {
+        base = Date.parse(firstBucketTime.trim())
+      }
+      const offsetSecs = (Number.isFinite(dtMs) && Number.isFinite(base))
+        ? Math.round((dtMs - base) / 1000)
+        : null
       return new RunEvent(x.datetime, offsetSecs, x.params)
     })
   }
@@ -816,6 +858,10 @@ export class DatabaseService {
 
   // Calculate metrics for specific run IDs with trimming (consistent with chart logic)
   async getRunMetrics(runIds: string[], trimmingSeconds: number = 20): Promise<Record<string, any>> {
+    const validRunIds = runIds.filter((id) => UUID_PATTERN.test(id));
+    if (validRunIds.length === 0) {
+      return {};
+    }
     const query = `
       SELECT 
         run_id,
@@ -830,13 +876,13 @@ export class DatabaseService {
         SUM(operations_failed) as operations_failed,
         AVG(operations_total / NULLIF(time_offset_secs, 0)) as throughput
       FROM buckets
-      WHERE run_id IN ('${runIds.join("','")}')
-        AND time_offset_secs >= ${trimmingSeconds}
+      WHERE run_id = ANY($1::uuid[])
+        AND time_offset_secs >= $2
       GROUP BY run_id;
     `;
 
     try {
-      const result = await this.pool.query(query);
+      const result = await this.pool.query(query, [validRunIds, trimmingSeconds]);
       const metrics: Record<string, any> = {};
       
       result.rows.forEach((row: any) => {
@@ -865,8 +911,160 @@ export class DatabaseService {
     }
   }
 
+  async getCohortAggregatedValue(runIds: string[], input: Input): Promise<number | null> {
+    const validRunIds = runIds.filter((id) => UUID_PATTERN.test(id));
+    if (validRunIds.length === 0 || !Array.isArray(input.yAxes) || input.yAxes.length === 0) {
+      return null;
+    }
+    const yAxis = input.yAxes[0];
+    const aggFn = mapMerging(input.mergingType as unknown as MergingAlgorithm).toUpperCase();
+    const trimSecs = Number.isFinite(Number(input.trimmingSeconds))
+      ? Math.max(0, Math.floor(Number(input.trimmingSeconds)))
+      : 0;
+
+    try {
+      if (yAxis.type === 'metric') {
+        const metricName = (yAxis as VerticalAxisMetric).metric;
+        if (!SQL_IDENTIFIER_PATTERN.test(metricName)) {
+          throw new Error(`Invalid metric name: ${metricName}`);
+        }
+        const safeMetricFloatSql = buildSafeJsonbFloatSql('metrics.metrics::jsonb->>$2', '$3');
+        const result = await this.pool.query(
+          `SELECT ${aggFn}(${safeMetricFloatSql}) AS value
+           FROM metrics
+           WHERE run_id = ANY($1::uuid[])
+             AND metrics.metrics::jsonb ? $2
+             AND (metrics.metrics::jsonb->>$2) ~ $3
+             AND ($4::bigint <= 0 OR metrics.time_offset_secs >= $4::bigint)`,
+          [validRunIds, metricName, NUMERIC_JSON_VALUE_PATTERN, trimSecs]
+        );
+        const raw = result.rows[0]?.value;
+        if (raw === null || raw === undefined) return null;
+        const parsed = Number(raw);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+
+      if (yAxis.type === 'buckets') {
+        const columnName = (yAxis as VerticalAxisBucketsColumn).column;
+        if (!VALID_BUCKET_METRIC_COLUMNS.has(columnName)) {
+          throw new Error(`Invalid bucket metric column: ${columnName}`);
+        }
+        const result = await this.pool.query(
+          `SELECT AVG(sub.value) AS value
+           FROM (
+             SELECT run_id, ${aggFn}(buckets.${columnName}) AS value
+             FROM buckets
+             WHERE run_id = ANY($1::uuid[])
+               AND buckets.time_offset_secs >= $2::bigint
+             GROUP BY run_id
+           ) AS sub`,
+          [validRunIds, trimSecs]
+        );
+        const raw = result.rows[0]?.value;
+        if (raw === null || raw === undefined) return null;
+        const parsed = Number(raw);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('Error calculating cohort aggregated value:', error);
+      throw error;
+    }
+  }
+
+  async getRunBucketMetricValues(
+    runIds: string[],
+    columnName: string,
+    mergingType: string,
+    trimmingSeconds: number = 20
+  ): Promise<Record<string, number>> {
+    const validRunIds = runIds.filter((id) => UUID_PATTERN.test(id));
+    if (validRunIds.length === 0) {
+      return {};
+    }
+    if (!VALID_BUCKET_METRIC_COLUMNS.has(columnName)) {
+      throw new Error(`Invalid bucket metric column: ${columnName}`);
+    }
+    const aggFn = mapMerging(mergingType as unknown as MergingAlgorithm).toUpperCase();
+    const trimSecs = Number.isFinite(Number(trimmingSeconds))
+      ? Math.max(0, Math.floor(Number(trimmingSeconds)))
+      : 0;
+    const query = `
+      SELECT run_id::text AS run_id, ${aggFn}(buckets.${columnName}) AS value
+      FROM buckets
+      WHERE run_id = ANY($1::uuid[])
+        AND buckets.time_offset_secs >= $2::bigint
+      GROUP BY run_id;
+    `;
+    try {
+      const result = await this.pool.query(query, [validRunIds, trimSecs]);
+      const values: Record<string, number> = {};
+      for (const row of result.rows) {
+        if (row.value !== null && row.value !== undefined) {
+          const parsed = Number(row.value);
+          if (Number.isFinite(parsed)) {
+            values[row.run_id] = parsed;
+          }
+        }
+      }
+      return values;
+    } catch (error) {
+      logger.error('Error calculating per-run bucket metric values:', error);
+      throw error;
+    }
+  }
+
+  async getRunSystemMetricValues(
+    runIds: string[],
+    metricName: string,
+    mergingType: string,
+    trimmingSeconds: number = 0
+  ): Promise<Record<string, number>> {
+    const validRunIds = runIds.filter((id) => UUID_PATTERN.test(id));
+    if (validRunIds.length === 0 || !/^[A-Za-z0-9_]+$/.test(metricName)) {
+      return {};
+    }
+    const aggFn = mapMerging(mergingType as unknown as MergingAlgorithm).toUpperCase();
+    const trimSecs = Number.isFinite(Number(trimmingSeconds)) ? Math.max(0, Math.floor(Number(trimmingSeconds))) : 0;
+    const safeMetricFloatSql = buildSafeJsonbFloatSql('metrics.metrics::jsonb->>$2', '$3');
+    const query = `
+      SELECT run_id::text AS run_id, ${aggFn}(${safeMetricFloatSql}) AS value
+      FROM metrics
+      WHERE run_id = ANY($1::uuid[])
+        AND metrics.metrics::jsonb ? $2
+        AND (metrics.metrics::jsonb->>$2) ~ $3
+        AND ($4::bigint <= 0 OR metrics.time_offset_secs >= $4::bigint)
+      GROUP BY run_id;
+    `;
+    try {
+      const result = await this.pool.query(query, [
+        validRunIds,
+        metricName,
+        NUMERIC_JSON_VALUE_PATTERN,
+        trimSecs,
+      ]);
+      const values: Record<string, number> = {};
+      for (const row of result.rows) {
+        if (row.value !== null && row.value !== undefined) {
+          const parsed = Number(row.value);
+          if (Number.isFinite(parsed)) {
+            values[row.run_id] = parsed;
+          }
+        }
+      }
+      return values;
+    } catch (error) {
+      logger.error('Error calculating per-run system metric values:', error);
+      throw error;
+    }
+  }
+
   // Get bucket data for a specific run ID (for performance graphs)
   async getBucketsByRunId(runId: string): Promise<any[]> {
+    if (!UUID_PATTERN.test(runId)) {
+      return [];
+    }
     const query = `
       SELECT 
         time as datetime,
@@ -875,6 +1073,9 @@ export class DatabaseService {
         duration_average_us,
         duration_min_us,
         duration_max_us,
+        duration_p50_us,
+        duration_p95_us,
+        duration_p99_us,
         operations_total,
         operations_success,
         operations_failed,
@@ -889,33 +1090,46 @@ export class DatabaseService {
       return result.rows;
     } catch (error) {
       logger.error('Error fetching buckets for run:', error);
-      return [];
+      throw error;
     }
   }
 
   async getFirstBucketTime(runId: string): Promise<number | undefined> {
+    if (!UUID_PATTERN.test(runId)) {
+      return undefined
+    }
     try {
       const result = await this.pool.query(
-        `SELECT MIN(time) as first_time FROM buckets WHERE run_id = $1`,
+        `SELECT COALESCE(
+           (SELECT MIN(time - (COALESCE(time_offset_secs, 0) * INTERVAL '1 second')) FROM buckets WHERE run_id = $1),
+           (SELECT MIN(initiated - (time_offset_secs * INTERVAL '1 second'))
+            FROM metrics
+            WHERE run_id = $1 AND time_offset_secs IS NOT NULL),
+           (SELECT MIN(initiated) FROM metrics WHERE run_id = $1)
+         ) as first_time`,
         [runId]
       )
       const val = result.rows[0]?.first_time
       return val != null ? new Date(val).getTime() : undefined
     } catch (error) {
       logger.error('Error fetching first bucket time:', error)
-      return undefined
+      throw error
     }
   }
 
   // Get metrics data for a specific run ID (for performance graphs)
   async getMetricsByRunId(runId: string): Promise<any[]> {
+    if (!UUID_PATTERN.test(runId)) {
+      return [];
+    }
     const query = `
       SELECT 
         time_offset_secs,
+        initiated,
         metrics::jsonb as metrics_data
       FROM metrics
       WHERE run_id = $1
-      ORDER BY time_offset_secs ASC;
+      ORDER BY time_offset_secs ASC NULLS LAST, initiated ASC;
     `;
 
     try {
@@ -931,6 +1145,10 @@ export class DatabaseService {
           // Flatten all metrics properties to the top level
           Object.assign(flattened, row.metrics_data);
         }
+
+        if (row.initiated !== undefined && row.initiated !== null) {
+          flattened.initiated = row.initiated;
+        }
         
         return flattened;
       });
@@ -938,17 +1156,17 @@ export class DatabaseService {
       return flattenedRows;
     } catch (error) {
       logger.error('Error fetching metrics for run:', error);
-      return [];
+      throw error;
     }
   }
 }
 
 export class RunEvent {
   readonly datetime: string;
-  readonly timeOffsetSecs: number;
+  readonly timeOffsetSecs: number | null;
   readonly params: Record<string, unknown>;
 
-  constructor(datetime: string, timeOffsetSecs: number, params: Record<string, unknown>) {
+  constructor(datetime: string, timeOffsetSecs: number | null, params: Record<string, unknown>) {
     this.datetime = datetime;
     this.timeOffsetSecs = timeOffsetSecs;
     this.params = params;

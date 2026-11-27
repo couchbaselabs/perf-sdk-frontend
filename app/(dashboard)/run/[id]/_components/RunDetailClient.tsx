@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/src/
 import { Popover, PopoverContent, PopoverTrigger } from "@/src/components/ui/popover"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/src/components/ui/table"
 import PerformanceGraph from "@/src/components/shared/performance-graph"
+import PerCoreCpuChart from "@/src/components/shared/per-core-cpu-chart"
 import ObservabilityBox from "@/src/components/shared/observability-box"
 import JsonViewer from "@/src/components/shared/json-viewer"
 import { formatDate } from "@/src/lib/utils/formatting"
@@ -28,7 +29,7 @@ interface RunDetailClientProps {
 
 export default function RunDetailClient({ runData, runMetrics, runBuckets }: RunDetailClientProps) {
   const searchParams = useSearchParams()
-  const metric = searchParams.get("metric") || "duration_average_us"
+  const rawMetric = searchParams.get("metric")
   const sdk = searchParams.get("sdk") || "kotlin"
 
   const [activeTab, setActiveTab] = useState("overview")
@@ -216,10 +217,13 @@ export default function RunDetailClient({ runData, runMetrics, runBuckets }: Run
               runId={runData.id}
               title="Performance Metrics"
               showAllMetrics={false}
+              initialMetric={rawMetric || undefined}
               graphId="runGraph"
             />
           </CardContent>
         </Card>
+
+        <PerCoreCpuChart runId={runData.id} metrics={runMetrics} buckets={runBuckets} />
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

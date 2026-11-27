@@ -5,7 +5,6 @@ import { Skeleton } from "@/src/components/ui/skeleton"
 import { Button } from "@/src/components/ui/button"
 import { Badge } from "@/src/components/ui/badge"
 import { RefreshCw, ChevronDown, ExternalLink, Info, Download, BarChart3 } from "lucide-react"
-import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/src/components/ui/card"
 import {
   BarChart,
@@ -500,10 +499,13 @@ export default function PerformanceBarChart({
                   ))
                 : // Standard view details
                   processedData.map((item, i) => (
-                    <Link
-                      href={`/versions/${encodeURIComponent(item.name)}/runs?metric=${encodeURIComponent(metric)}&sdk=${encodeURIComponent(sdkVersion || "")}${item.runIds?.length ? `&runIds=${encodeURIComponent(item.runIds.join(","))}` : ""}`}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleBarClick(item)
+                      }}
                       key={i}
-                      className="flex flex-col items-center p-3 rounded-md border hover:bg-slate-50 transition-colors"
+                      className="flex flex-col items-center p-3 rounded-md border hover:bg-slate-50 transition-colors cursor-pointer text-center"
                       style={{ borderColor: multiClusterMode ? item.clusterColor.replace("0.7", "0.3") : undefined }}
                     >
                       <span className="text-sm font-medium">{formatVersion ? formatVersion(item.name) : item.name}</span>
@@ -516,7 +518,7 @@ export default function PerformanceBarChart({
                           <span className="text-muted-foreground">{item.clusterName}</span>
                         </div>
                       )}
-                    </Link>
+                    </button>
                   ))}
             </div>
           </div>

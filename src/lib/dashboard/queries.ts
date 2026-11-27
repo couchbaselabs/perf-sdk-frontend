@@ -179,10 +179,19 @@ export function createSystemMetricInput(
   let mergingType: string
   switch (metric) {
     case "processCpu":
-      mergingType = "Average"  // Vue uses Average for processCpu
+    case "systemCpu":
+    case "systemCpuSteal":
+    case "systemCpuIoWait":
+    case "processCpuTotal":
+    case "processCpuUser":
+    case "processCpuSys":
+    case "maxThreadCpu":
+    case "maxCoreCpu":
+      mergingType = "Average"
       break
     case "memHeapUsedMB":
-    case "memRssUsedMB": 
+    case "memRssUsedMB":
+    case "memVmsMB":
     case "threadCount":
       mergingType = "Maximum"  // Vue uses Maximum for memory and thread metrics
       break
@@ -210,7 +219,8 @@ export function createSystemMetricInput(
     graphType: "Simplified",
     multipleResultsHandling: "Merged", 
     mergingType: mergingType,  // Now uses correct mergingType per metric
-    trimmingSeconds: 20,
+    // Aggregate full-run samples; historical metrics rows may have NULL time_offset_secs.
+    trimmingSeconds: 0,
     excludeSnapshots,
     excludeGerrit,
     filterRuns: "All"
@@ -370,7 +380,8 @@ export function createReactiveAPIInput(
   apiType: 'DEFAULT' | 'ASYNC',
   excludeSnapshots: boolean = false,
   excludeGerrit: boolean = true,
-  clusterVersion?: string
+  clusterVersion?: string,
+  metricColumn: string = "duration_average_us"
 ): DashboardInput {
   const actualLanguage = LANGUAGE_MAP[language] || language
 
@@ -382,7 +393,7 @@ export function createReactiveAPIInput(
     },
     yAxes: [{
       type: "buckets",
-      column: "duration_average_us",
+      column: metricColumn,
       yAxisID: "y"
     }],
     databaseCompare: {
@@ -406,7 +417,8 @@ export function createHorizontalScalingReactiveInput(
   language: string,
   excludeSnapshots: boolean = false,
   excludeGerrit: boolean = true,
-  clusterVersion?: string
+  clusterVersion?: string,
+  metricColumn: string = "duration_average_us"
 ): DashboardInput {
   const actualLanguage = LANGUAGE_MAP[language] || language
   
@@ -421,7 +433,7 @@ export function createHorizontalScalingReactiveInput(
     },
     yAxes: [{
       type: "buckets",
-      column: "duration_average_us",
+      column: metricColumn,
       yAxisID: "y"
     }],
     databaseCompare: {

@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/ta
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/src/components/ui/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/src/components/ui/popover"
 import PerformanceGraph from "@/src/components/shared/performance-graph"
+import PerCoreCpuChart from "@/src/components/shared/per-core-cpu-chart"
 import { MetricCardsSkeleton } from "@/src/components/shared/skeletons/PageSkeletons"
 import ObservabilityBox from "@/src/components/shared/observability-box"
 import JsonViewer from "@/src/components/shared/json-viewer"
@@ -62,7 +63,12 @@ export default function SituationalRunDetailPage({
   const [copiedLink, setCopiedLink] = useState(false)
 
   // Fetch run detail via React Query (cached; replaces useEffect + cache:'no-store').
-  const { data, isLoading } = useSituationalRunDetail(resolvedParams.id, resolvedParams.runId)
+  const {
+    data,
+    isLoading,
+    error: detailError,
+    refetch: refetchDetail,
+  } = useSituationalRunDetail(resolvedParams.id, resolvedParams.runId)
 
   // Transform the API payload into the shape the page renders (matches Vue structure).
   const runData = useMemo<any>(() => {
@@ -295,7 +301,7 @@ export default function SituationalRunDetailPage({
             <h1 className="text-3xl font-bold tracking-tight">Run Details</h1>
             <div className="flex items-center gap-2 mt-1 text-muted-foreground">
               <span className="font-mono">{runData.id}</span>
-              {!isLoading && (
+              {!isLoading && Boolean(data) && (
                 <>
                   <VersionBadge value={`v${runData.version}`} />
                   <div className="flex items-center gap-1">
@@ -308,11 +314,37 @@ export default function SituationalRunDetailPage({
           </div>
         </div>
 
+        {detailError && Boolean(data) && (
+          <div
+            role="alert"
+            className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+          >
+            <span>
+              Refresh failed ({detailError instanceof Error ? detailError.message : String(detailError)}). Showing last loaded run details.
+            </span>
+            <Button type="button" variant="outline" size="sm" onClick={() => { void refetchDetail() }}>
+              Retry
+            </Button>
+          </div>
+        )}
+
         {/* Key metrics summary */}
         {isLoading ? (
           <div className="mb-6">
             <MetricCardsSkeleton count={4} />
           </div>
+        ) : detailError && !data ? (
+          <Card className="mb-6">
+            <CardContent className="py-8 flex flex-col items-center gap-3">
+              <ErrorDisplay
+                message="Failed to load situational run details."
+                details={detailError instanceof Error ? detailError.message : String(detailError)}
+              />
+              <Button variant="outline" size="sm" onClick={() => { void refetchDetail() }}>
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
         <div className={`grid grid-cols-1 gap-4 mb-6 ${runData.environment === 'Unknown' ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
           <Card>
@@ -487,8 +519,10 @@ export default function SituationalRunDetailPage({
           graphId="runGraph"
         />
 
+        <PerCoreCpuChart runId={runData.id} />
+
         {/* Tabs for additional information (depend on the awaited run metadata) */}
-        {!isLoading && (
+        {!isLoading && Boolean(data) && (
         <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-6">
           <TabsList className="w-full grid grid-cols-3 h-12 p-0 bg-slate-50 rounded-md">
             <TabsTrigger

@@ -22,12 +22,13 @@ interface VersionRunsTableProps {
   runs: RunRow[]
   metricLabel: string
   metricUnit: string
+  currentMetric?: string
   sortColumn: string
   sortDirection: 'asc' | 'desc'
   onSort: (col: string) => void
 }
 
-export default function VersionRunsTable({ runs, metricLabel, metricUnit, sortColumn, sortDirection, onSort }: VersionRunsTableProps) {
+export default function VersionRunsTable({ runs, metricLabel, metricUnit, currentMetric, sortColumn, sortDirection, onSort }: VersionRunsTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -98,7 +99,13 @@ export default function VersionRunsTable({ runs, metricLabel, metricUnit, sortCo
               </TableCell>
               <TableCell className="text-right">
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/run/${run.id}`}>
+                  <Link
+                    href={
+                      currentMetric
+                        ? `/run/${encodeURIComponent(run.id)}?metric=${encodeURIComponent(currentMetric)}`
+                        : `/run/${encodeURIComponent(run.id)}`
+                    }
+                  >
                     View Details
                     <ExternalLink className="ml-1 h-3.5 w-3.5" />
                   </Link>

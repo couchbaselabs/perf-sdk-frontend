@@ -99,17 +99,5 @@
       "next lint --max-warnings=0 --file",
       "bash -lc 'tsc -p tsconfig.json --noEmit'"
     ]
-  },
-  "jest": {
-    "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": [
-      "<rootDir>/jest.setup.js"
-    ],
-    "testMatch": [
-      "<rootDir>/tests/**/*.test.{js,ts,tsx}"
-    ],
-    "moduleNameMapping": {
-      "^@/(.*)$": "<rootDir>/$1"
-    }
   }
 }

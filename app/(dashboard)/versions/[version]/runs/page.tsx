@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/src/components/ui/dropdown-menu"
 import { Skeleton } from "@/src/components/ui/skeleton"
 import { RunSummary } from "@/src/types"
-import { AVAILABLE_METRICS } from "@/src/lib/config/constants"
+import { AVAILABLE_METRICS, getSystemMetricInfo } from "@/src/lib/config/constants"
 import { formatPerfVersionLabel } from "@/src/lib/sdk-version-service"
 
 // Extended RunSummary to include metric value for table display
@@ -39,14 +39,34 @@ export default function VersionRunsPage({ params }: { params: { version: string 
   
   // CRITICAL FIX: Extract query type parameters
   const horizontalScaling = searchParams.get("horizontalScaling")
-  const systemMetric = searchParams.get("systemMetric")
+  const rawSystemMetric = searchParams.get("systemMetric")
+  const resolvedSystemMetric =
+    rawSystemMetric && getSystemMetricInfo(rawSystemMetric)
+      ? rawSystemMetric
+      : !metric.includes('duration_') && !metric.includes('operations_') && getSystemMetricInfo(metric)
+        ? metric
+        : null
   const transactionThreads = searchParams.get("transactionThreads")
+  const transactionReadonly = searchParams.get("transactionReadonly")
   const reactiveAPI = searchParams.get("reactiveAPI")
+  const kvOperation = searchParams.get("kvOperation")
+
+  const dropdownMetrics = useMemo(() => {
+    if (!resolvedSystemMetric) {
+      return AVAILABLE_METRICS
+    }
+    const sysInfo = getSystemMetricInfo(resolvedSystemMetric)
+    if (!sysInfo || AVAILABLE_METRICS.some((m) => m.id === resolvedSystemMetric)) {
+      return AVAILABLE_METRICS
+    }
+    const labelWithUnit = sysInfo.unit ? `${sysInfo.label} (${sysInfo.unit})` : sysInfo.label
+    return [{ id: resolvedSystemMetric, label: labelWithUnit, unit: sysInfo.unit }, ...AVAILABLE_METRICS]
+  }, [resolvedSystemMetric])
 
   // CRITICAL FIX: Determine correct metric unit based on query type AND selected metric
   const getMetricInfo = () => {
     // For system metric queries, check what specific metric is selected
-    if (systemMetric) {
+    if (resolvedSystemMetric) {
       // Check if user selected a duration metric within system metric context
       const durationMetric = AVAILABLE_METRICS.find(m => m.id === metric)
       if (durationMetric) {
@@ -54,17 +74,9 @@ export default function VersionRunsPage({ params }: { params: { version: string 
       }
       
       // Otherwise use the system metric type
-      switch (systemMetric) {
-        case 'processCpu':
-        case 'systemCpu':
-          return { label: `${systemMetric === 'processCpu' ? 'Process' : 'System'} CPU`, unit: '%' }
-        case 'memHeapUsedMB':
-        case 'memHeapMaxMB':
-        case 'memDirectUsedMB':
-        case 'memDirectMaxMB':
-          return { label: 'Memory', unit: 'MB' }
-        case 'threadCount':
-          return { label: 'Thread Count', unit: '' }
+      const systemInfo = getSystemMetricInfo(resolvedSystemMetric)
+      if (systemInfo) {
+        return systemInfo
       }
     }
     
@@ -86,14 +98,17 @@ export default function VersionRunsPage({ params }: { params: { version: string 
     const params = new URLSearchParams()
     params.set('sdk', sdk)
     params.set('metric', metric)
+    if (clusterVersion) params.set('cluster', clusterVersion)
     if (runIdsParam) params.set('runIds', runIdsParam)
     // CRITICAL FIX: Pass query type context to API
     if (horizontalScaling) params.set('horizontalScaling', horizontalScaling)
-    if (systemMetric) params.set('systemMetric', systemMetric)
+    if (resolvedSystemMetric) params.set('systemMetric', resolvedSystemMetric)
     if (transactionThreads) params.set('transactionThreads', transactionThreads)
+    if (transactionReadonly) params.set('transactionReadonly', transactionReadonly)
     if (reactiveAPI) params.set('reactiveAPI', reactiveAPI)
+    if (kvOperation) params.set('kvOperation', kvOperation)
     return params.toString()
-  }, [sdk, metric, runIdsParam, horizontalScaling, systemMetric, transactionThreads, reactiveAPI])
+  }, [sdk, metric, clusterVersion, runIdsParam, horizontalScaling, resolvedSystemMetric, transactionThreads, transactionReadonly, reactiveAPI, kvOperation])
 
   // Load runs via React Query using the unified API (cached; ensures chart/table
   // consistency). Returns both the run summaries and the aggregated dashboard data.
@@ -199,17 +214,20 @@ export default function VersionRunsPage({ params }: { params: { version: string 
           clusterVersion={clusterVersion || undefined}
           sdk={sdk || undefined}
           metricInfo={metricInfo}
-          availableMetrics={AVAILABLE_METRICS}
+          availableMetrics={dropdownMetrics}
           currentMetric={metric}
           onSelectMetric={(metricId) => {
             const params = new URLSearchParams(searchParams.toString())
             params.set('metric', metricId)
+            if (resolvedSystemMetric && !params.get('systemMetric')) {
+              params.set('systemMetric', resolvedSystemMetric)
+            }
             router.push(`/versions/${resolvedParams.version}/runs?${params.toString()}`)
           }}
           onRefresh={handleRefresh}
           dashboardAggregatedValue={dashboardData?.aggregatedValue}
           horizontalScaling={horizontalScaling}
-          systemMetric={systemMetric}
+          systemMetric={resolvedSystemMetric}
           transactionThreads={transactionThreads}
           reactiveAPI={reactiveAPI}
         />
@@ -219,7 +237,7 @@ export default function VersionRunsPage({ params }: { params: { version: string 
             <CardTitle>Run Details</CardTitle>
             <p className="text-sm text-muted-foreground">
               Individual run metadata
-              {dashboardData?.aggregatedValue && (
+              {typeof dashboardData?.aggregatedValue === 'number' && (
                 <span className="block mt-1 text-blue-600 font-medium">
                   These runs aggregate to: {dashboardData.aggregatedValue.toFixed(2)} {metricInfo.unit}
                 </span>
@@ -240,6 +258,7 @@ export default function VersionRunsPage({ params }: { params: { version: string 
                 runs={sortedRuns as any}
                 metricLabel={metricInfo.label}
                 metricUnit={metricInfo.unit}
+                currentMetric={metric}
                 sortColumn={sortColumn}
                 sortDirection={sortDirection}
                 onSort={handleSort as any}

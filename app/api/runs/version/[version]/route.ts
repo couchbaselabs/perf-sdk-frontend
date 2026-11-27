@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDatabaseService, getDashboardService } from '@/src/lib/database-connection-pool'
+import { getSystemMetricInfo } from '@/src/lib/config/constants'
+import { extractChartAggregatedValue, UUID_PATTERN } from '@/src/lib/dashboard/graph-builders'
 import { logger } from '@/src/lib/utils/logger'
 import { buildDashboardInputForVersion } from '@/src/lib/dashboard/query-factory'
 
@@ -30,57 +32,60 @@ export async function GET(
     const version = decodeURIComponent(params.version)
     const sdk = searchParams.get('sdk') || 'Java'
     const metric = searchParams.get('metric') || 'duration_average_us'
+    const cluster = searchParams.get('cluster')
     const runIdsParam = searchParams.get('runIds')
     
     // CRITICAL FIX: Detect query type from URL parameters 
     const horizontalScaling = searchParams.get('horizontalScaling')
-    const systemMetric = searchParams.get('systemMetric')
+    const rawSystemMetric = searchParams.get('systemMetric')
+    const systemMetric =
+      rawSystemMetric && getSystemMetricInfo(rawSystemMetric)
+        ? rawSystemMetric
+        : !metric.includes('duration_') && !metric.includes('operations_') && getSystemMetricInfo(metric)
+          ? metric
+          : null
     const transactionThreads = searchParams.get('transactionThreads')
+    const transactionReadonly = searchParams.get('transactionReadonly')
     const reactiveAPI = searchParams.get('reactiveAPI')
+    const kvOperation = searchParams.get('kvOperation')
     
-    const runIds = runIdsParam 
-      ? Array.from(new Set(runIdsParam.split(',').map(s => s.trim()).filter(Boolean)))
+    const hasExplicitRunIds = runIdsParam !== null && runIdsParam.trim() !== ''
+    const runIds = hasExplicitRunIds
+      ? Array.from(new Set(runIdsParam.split(',').map(s => s.trim()).filter(s => UUID_PATTERN.test(s))))
       : undefined
 
     logger.info(`Getting runs for version`, {
       version,
       sdk,
       metric,
-      runIds: runIds?.length || 'all',
+      runIds: hasExplicitRunIds ? (runIds?.length ?? 0) : 'all',
       queryType: horizontalScaling ? 'horizontalScaling' : systemMetric ? 'systemMetric' : transactionThreads ? 'transaction' : reactiveAPI ? 'reactiveAPI' : 'kvOperation'
     })
 
     const baseInput = buildDashboardInputForVersion({
       sdk,
       metric,
+      cluster,
       horizontalScaling,
       systemMetric,
       transactionThreads,
-      reactiveAPI
+      transactionReadonly,
+      reactiveAPI,
+      kvOperation,
     })
     
-    const dashboardService = await getDashboardService()
-
-    // Helper to extract aggregated value for a label from chart data
-    const extractAggregatedValue = (chartData: any, label: string): number | null => {
-      const labels: string[] = chartData?.data?.labels || []
-      const dataset = chartData?.data?.datasets?.[0]?.data || []
-      const index = labels.findIndex(l => l === label)
-      if (index >= 0 && typeof dataset[index] === 'number') {
-        return dataset[index] as number
-      }
-      return null
-    }
+    const databaseService = await getDatabaseService()
 
     // CRITICAL FIX: When specific runIds are provided, fetch them directly from database
-    let chartResult: any
+    let chartResult: any = null
     let selectedRuns: any[]
     
-    if (runIds && runIds.length > 0) {
+    if (hasExplicitRunIds && (!runIds || runIds.length === 0)) {
+      selectedRuns = []
+    } else if (runIds && runIds.length > 0) {
       logger.debug(`Specific runIds requested - fetching directly from database`, { runIds })
       
       // Get runs directly from database instead of relying on dashboard query
-      const databaseService = await getDatabaseService()
       const dbRuns = await databaseService.getRunsById(runIds)
       
       // Transform database runs to match expected format
@@ -93,11 +98,9 @@ export async function GET(
         workload: run.params?.workload || {}
       }))
       
-      // Still run dashboard query for aggregated value calculation
-      chartResult = await dashboardService.genGraph(baseInput)
-      
       logger.info(`Found ${selectedRuns.length} runs directly from database`)
     } else {
+      const dashboardService = await getDashboardService()
       // Constrain by version for version-specific view
       const versionInput = {
         ...baseInput,
@@ -112,46 +115,40 @@ export async function GET(
       chartResult = await dashboardService.genGraph(versionInput)
       
       const allRuns: any[] = Array.isArray(chartResult?.runs) ? chartResult.runs : []
-      selectedRuns = allRuns
+      selectedRuns = horizontalScaling
+        ? allRuns.filter((run: any) => String(run?.params?.vars?.horizontalScaling ?? '') === horizontalScaling)
+        : allRuns
     }
-
-    const aggregatedValue = extractAggregatedValue(chartResult, version)
 
     // Get individual run metrics from the database service with the same trimming as chart
-    // (databaseService already initialized above for runIds case)
-    let databaseService = await getDatabaseService()
     const runIdsArray = selectedRuns.map((run: any) => run.id)
+    const chartGroupingLabel = horizontalScaling || version
+    const aggregatedValue = hasExplicitRunIds
+      ? await databaseService.getCohortAggregatedValue(runIdsArray, baseInput)
+      : extractChartAggregatedValue(chartResult, chartGroupingLabel)
     const trimmingSeconds = baseInput.trimmingSeconds
-    const individualMetrics = await databaseService.getRunMetrics(runIdsArray, trimmingSeconds)
-    
-    // Helper function to get the metric value based on the selected metric
-    const getMetricValue = (runId: string, metricName: string): number | null => {
-      const runMetric = individualMetrics[runId]
-      if (!runMetric) return null
-      
-      switch (metricName) {
-        case 'duration_average_us':
-          return runMetric.latency.avg
-        case 'duration_min_us':
-          return runMetric.latency.min
-        case 'duration_max_us':
-          return runMetric.latency.max
-        case 'duration_p50_us':
-          return runMetric.latency.p50
-        case 'duration_p95_us':
-          return runMetric.latency.p95
-        case 'duration_p99_us':
-          return runMetric.latency.p99
-        case 'operations_total':
-          return runMetric.operations.total
-        case 'operations_success':
-          return runMetric.operations.success
-        case 'operations_failed':
-          return runMetric.operations.failed
-        default:
-          return runMetric.latency.avg // fallback to average
-      }
-    }
+    const isSystemMetricSelection =
+      Boolean(systemMetric) && !metric.includes('duration_') && !metric.includes('operations_')
+    const targetSystemMetric = isSystemMetricSelection ? (systemMetric as string) : null
+    const primaryAxis = baseInput.yAxes?.[0] as { type?: string; column?: string } | undefined
+    const bucketColumn =
+      primaryAxis?.type === 'buckets' && typeof primaryAxis.column === 'string'
+        ? primaryAxis.column
+        : 'duration_average_us'
+
+    const perRunMetricValues = targetSystemMetric
+      ? await databaseService.getRunSystemMetricValues(
+          runIdsArray,
+          targetSystemMetric,
+          String(baseInput.mergingType),
+          trimmingSeconds
+        )
+      : await databaseService.getRunBucketMetricValues(
+          runIdsArray,
+          bucketColumn,
+          String(baseInput.mergingType),
+          trimmingSeconds
+        )
 
     // Transform runs to the expected format for the table
     const formattedRuns = selectedRuns.map((run: any) => ({
@@ -164,7 +161,7 @@ export async function GET(
       sdk: run.impl?.language || sdk,
       clusterVersion: run.cluster?.version || '',
       workload: run.workload?.operations?.[0]?.op || '',
-      metricValue: getMetricValue(run.id, metric) // Add the metric value for this run
+      metricValue: perRunMetricValues[run.id] ?? null
     }))
 
     // Debug: Verify consistency between chart aggregation and individual values

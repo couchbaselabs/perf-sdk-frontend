@@ -3,19 +3,21 @@ import { getDatabaseService } from '@/src/lib/database-connection-pool'
 import { logger } from '@/src/lib/utils/logger'
 
 async function getRunMetrics(id: string) {
-  const database = await getDatabaseService()
-
   if (!id) {
     return NextResponse.json({ error: 'Run ID is required' }, { status: 400 })
   }
 
-  logger.info(`Getting metrics for run`, { id })
+  try {
+    const database = await getDatabaseService()
+    logger.info(`Getting metrics for run`, { id })
 
-  const metrics = await database.getMetricsByRunId(id)
-  
-  // Metrics endpoint can return empty data without it being an error
-  // (some runs might not have detailed metrics)
-  return NextResponse.json({ success: true, data: metrics })
+    const metrics = await database.getMetricsByRunId(id)
+
+    return NextResponse.json({ success: true, data: metrics })
+  } catch (error) {
+    logger.error('Error in /api/runs/[id]/metrics', error)
+    return NextResponse.json({ error: 'Failed to fetch metrics for run' }, { status: 500 })
+  }
 }
 
 export async function GET(request: NextRequest, context: { params: { id: string } }) {

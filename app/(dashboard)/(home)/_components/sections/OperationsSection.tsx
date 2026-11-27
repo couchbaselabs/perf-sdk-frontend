@@ -1,7 +1,8 @@
 "use client"
 
 import React from "react"
-import { Badge } from "@/src/components/ui/badge"
+import { Badge, badgeVariants } from "@/src/components/ui/badge"
+import { cn } from "@/src/lib/core-ui-utilities"
 import { BarChart4 } from "lucide-react"
 import DashboardResults from "@/src/components/shared/dashboard-results"
 import { getSdkVersionById } from "@/src/lib/sdk-version-service"
@@ -9,6 +10,8 @@ import {
   CORE_OPERATIONS,
   SCALING_OPERATIONS,
   SYSTEM_METRICS,
+  SDK_SYSTEM_METRICS,
+  type SdkSystemMetric,
   TRANSACTION_OPERATIONS,
   SDK_API_COMPARISONS
 } from "@/src/lib/config/constants"
@@ -66,6 +69,12 @@ export default function OperationsSection({
   const language = perfLanguage || sdkInfo?.name || 'Java'
   const sdkName = perfLanguage || sdkInfo?.name
   const sdkApiComparisons = (SDK_API_COMPARISONS as Record<string, readonly { id: string; title: string; description: string }[]>)[currentSdk] ?? []
+  const sdkSystemMetrics = (SDK_SYSTEM_METRICS as Record<string, readonly SdkSystemMetric[]>)[currentSdk] ?? []
+  const hasVisibleMetrics =
+    SYSTEM_METRICS.some((m) => visibleMetrics.includes(m.id)) ||
+    sdkSystemMetrics.some((m) => visibleMetrics.includes(m.id))
+  const hasVisibleApiComparisons =
+    sdkApiComparisons.some((op) => visibleApiComparisons.includes(op.id))
 
   return (
     <>
@@ -174,16 +183,23 @@ export default function OperationsSection({
             <BarChart4 className="h-4 w-4 mr-1 text-muted-foreground" />
             <span className="text-sm font-medium">System Metrics:</span>
           </div>
-          {SYSTEM_METRICS.map((metric) => (
-            <Badge
-              key={metric.id}
-              variant={visibleMetrics.includes(metric.id) ? "default" : "outline"}
-              className="cursor-pointer"
-              onClick={() => toggleMetric(metric.id)}
-            >
-              {metric.title}
-            </Badge>
-          ))}
+          {SYSTEM_METRICS.map((metric) => {
+            const isSelected = visibleMetrics.includes(metric.id)
+            return (
+              <button
+                key={metric.id}
+                type="button"
+                aria-pressed={isSelected}
+                className={cn(
+                  badgeVariants({ variant: isSelected ? "default" : "outline" }),
+                  "cursor-pointer"
+                )}
+                onClick={() => toggleMetric(metric.id)}
+              >
+                {metric.title}
+              </button>
+            )
+          })}
         </div>
 
         {SYSTEM_METRICS.filter((op) => visibleMetrics.includes(op.id)).map((metric) => {
@@ -202,12 +218,63 @@ export default function OperationsSection({
                 title={`${metric.title} - ${sdkName}`}
                 description={metric.description}
                 keyProp={`${metric.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
-                selectedMetric={selectedMetric}
+                selectedMetric={metric.metric}
                 threads={20}
               />
             </div>
           )
         })}
+
+        {sdkSystemMetrics.length > 0 && (
+          <>
+            <div className="flex flex-wrap gap-2 mb-4 mt-2">
+              <div className="flex items-center mr-2">
+                <BarChart4 className="h-4 w-4 mr-1 text-muted-foreground" />
+                <span className="text-sm font-medium">{sdkName} Extended Metrics:</span>
+              </div>
+              {sdkSystemMetrics.map((metric) => {
+                const isSelected = visibleMetrics.includes(metric.id)
+                return (
+                  <button
+                    key={metric.id}
+                    type="button"
+                    aria-pressed={isSelected}
+                    className={cn(
+                      badgeVariants({ variant: isSelected ? "default" : "outline" }),
+                      "cursor-pointer"
+                    )}
+                    onClick={() => toggleMetric(metric.id)}
+                  >
+                    {metric.title}
+                  </button>
+                )
+              })}
+            </div>
+
+            {sdkSystemMetrics.filter((op) => visibleMetrics.includes(op.id)).map((metric) => {
+              const dashboardInput = createSystemMetricInput(
+                language,
+                metric.metric,
+                excludeSnapshots,
+                excludeGerrit,
+                clusterVersion
+              )
+
+              return (
+                <div key={metric.id} className="mb-6">
+                  <DashboardResults
+                    input={dashboardInput}
+                    title={`${metric.title} - ${sdkName}`}
+                    description={metric.description}
+                    keyProp={`${metric.id}-${currentSdk}-${excludeSnapshots}-${excludeGerrit}-${clusterVersion}-${reloadTrigger}`}
+                    selectedMetric={metric.metric}
+                    threads={20}
+                  />
+                </div>
+              )
+            })}
+          </>
+        )}
       </div>
 
       {/* Transactions Section */}
@@ -292,7 +359,8 @@ export default function OperationsSection({
                 language,
                 excludeSnapshots,
                 excludeGerrit,
-                clusterVersion
+                clusterVersion,
+                selectedMetric
               )
               break
             case 'kvGetsBlocking':
@@ -302,7 +370,8 @@ export default function OperationsSection({
                 'DEFAULT',
                 excludeSnapshots,
                 excludeGerrit,
-                clusterVersion
+                clusterVersion,
+                selectedMetric
               )
               break
             case 'kvGetsReactive':
@@ -312,7 +381,8 @@ export default function OperationsSection({
                 'ASYNC',
                 excludeSnapshots,
                 excludeGerrit,
-                clusterVersion
+                clusterVersion,
+                selectedMetric
               )
               break
             default:
@@ -342,8 +412,8 @@ export default function OperationsSection({
         })}
       </div>}
 
-      {visibleOperations.length === 0 && visibleScaling.length === 0 && visibleMetrics.length === 0 &&
-        visibleTransactions.length === 0 && (sdkApiComparisons.length === 0 || visibleApiComparisons.length === 0) && (
+      {visibleOperations.length === 0 && visibleScaling.length === 0 && !hasVisibleMetrics &&
+        visibleTransactions.length === 0 && !hasVisibleApiComparisons && (
           <div className="bg-white rounded-lg border shadow-sm p-6 mb-8 text-center">
             <p className="text-muted-foreground">Select at least one chart type to display</p>
           </div>

@@ -464,7 +464,6 @@ export class DashboardService {
     let datasets: any[] = [];
     const annotations = {};
     const sp = new ShadeProvider()
-    let firstBucketTime: number | undefined = undefined
 
     if (input.hAxis.type == 'dynamic') {
       const ha = input.hAxis as HorizontalAxisDynamic;
@@ -485,8 +484,6 @@ export class DashboardService {
         if (yAxis.type == 'buckets') {
           const va = yAxis as VerticalAxisBucketsColumn;
           promiseArray.push(this.getVerticalAxisBucketsColumn(runsPlus, input, va, sp).then(ds => {
-            firstBucketTime = (ds[0] as any)?.data[0]?.nested?.datetime
-            logger.info("Found first bucket time", { firstBucketTime })
             ds.forEach(d => datasets.push(d))
           }))
         } else if (yAxis.type == "metric") {
@@ -507,12 +504,16 @@ export class DashboardService {
         if (ann.type == 'run-events') {
           // Fetch events for all runs in parallel: one round-trip per run otherwise serializes against AWS latency.
           const eventsPerRun = await Promise.all(
-            runs.map((run) => this.database.getEvents(run.id, firstBucketTime, true))
+            runs.map(async (run) => {
+              const firstBucketTime = await this.database.getFirstBucketTime(run.id)
+              return this.database.getEvents(run.id, firstBucketTime, true)
+            })
           )
           for (const events of eventsPerRun) {
             for (let i = 0; i < events.length; i++){
               const event = events[i];
               const x = event.timeOffsetSecs;
+              if (x === null) continue;
 
               (annotations as any)[uuidv4()] = {
                 type: "line",
@@ -794,7 +795,8 @@ export class DashboardService {
   }
 
   public async genSituationalRunRunEvents(input: SituationalRunAndRunQuery): Promise<RunEvent[]> {
-    return await this.database.getEvents(input.runId, undefined, false)
+    const firstBucketTime = await this.database.getFirstBucketTime(input.runId)
+    return await this.database.getEvents(input.runId, firstBucketTime, false)
   }
 
   public async genSituationalRunRunErrorsSummary(input: SituationalRunAndRunQuery): Promise<ErrorSummary[]> {

@@ -208,14 +208,8 @@ async function handleSpecificRunDetails(request: NextRequest, situationalRunId: 
   // Get the run details first
   const runDetails = await dashboardService.genSituationalRunRun(query)
 
-  // Get buckets to determine first bucket time for correct event timing
-  const buckets = await databaseService.getBucketsByRunId(runId)
-  // The first bucket time should be the datetime of the first bucket data point
-  let firstBucketTime: number | undefined = undefined
-  if (buckets.length > 0 && buckets[0].datetime) {
-    firstBucketTime = new Date(buckets[0].datetime).getTime()
-    logger.debug('First bucket time computed', { datetime: buckets[0].datetime, firstBucketTime })
-  }
+  // Resolve time origin from buckets, falling back to metrics on bucketless runs.
+  const firstBucketTime = await databaseService.getFirstBucketTime(runId)
 
   // Fetch only displayOnGraph events for graph markers
   const [rawEvents, errorsSummary] = await Promise.all([

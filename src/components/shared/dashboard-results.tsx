@@ -17,7 +17,7 @@ import { DataTransformers } from '@/src/shared/data/transformers'
 import PerformanceGraph from "@/src/components/shared/performance-graph"
 import { DashboardInput } from '@/src/lib/dashboard-service'
 import { apiClient } from '@/src/lib/api-client-unified'
-import { AVAILABLE_METRICS } from '@/src/lib/config/constants'
+import { AVAILABLE_METRICS, getSystemMetricInfo } from '@/src/lib/config/constants'
 import { formatDate } from '@/src/lib/utils/formatting'
 import { formatPerfVersionLabel } from '@/src/lib/sdk-version-service'
 
@@ -244,31 +244,11 @@ export default function DashboardResults({ input, title, description, keyProp, s
       const yAxis = input.yAxes[0]
       // System metrics use yAxis.metric (type: "metric"), bucket metrics use yAxis.column (type: "buckets")
       const metricKey = yAxis.column || yAxis.metric
+      const systemInfo = getSystemMetricInfo(metricKey)
+      if (systemInfo) {
+        return systemInfo
+      }
       switch (metricKey) {
-        case 'processCpu':
-          return { label: "Process CPU", unit: "%" }
-        case 'systemCpu':
-          return { label: "System CPU", unit: "%" }
-        case 'memHeapUsedMB':
-          return { label: "Heap Memory Used", unit: "MB" }
-        case 'memHeapMaxMB':
-          return { label: "Heap Memory Max", unit: "MB" }
-        case 'memDirectUsedMB':
-          return { label: "Direct Memory Used", unit: "MB" }
-        case 'memDirectMaxMB':
-          return { label: "Direct Memory Max", unit: "MB" }
-        case 'memRssUsedMB':
-          return { label: "RSS Memory Used", unit: "MB" }
-        case 'memVmsMB':
-          return { label: "VMS Memory", unit: "MB" }
-        case 'freeSwapSizeMB':
-          return { label: "Free Swap Size", unit: "MB" }
-        case 'threadCount':
-          return { label: "Thread Count", unit: "" }
-        case 'gc0AccTimeMs':
-          return { label: "GC Accumulated Time", unit: "ms" }
-        case 'gc0Count':
-          return { label: "GC Collection Count", unit: "" }
         case 'operations_total':
           return { label: "Total Operations", unit: "ops" }
         case 'operations_success':

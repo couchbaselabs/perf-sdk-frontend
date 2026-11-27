@@ -190,6 +190,9 @@ export const DataTransformers = {
    */
   toBarChartFromDashboard: (chartData: any, sdkLanguage: string = 'Java'): ChartDataPoint[] => {
     if (!chartData) return []
+    const parseBarValue = (v: unknown): number =>
+      v === null || v === undefined || v === '' ? NaN : Number(v)
+
     if (chartData?.results && Array.isArray(chartData.results)) {
       return chartData.results
         .map((result: any) => {
@@ -198,7 +201,7 @@ export const DataTransformers = {
             : (result.runIds ? [result.runIds] : [])
           return {
             name: result.grouping,
-            value: Number(result.value) || 0,
+            value: parseBarValue(result.value),
             runIds: runIdsArray,
             runCount: runIdsArray.length,
             image: result.image ?? null,
@@ -210,7 +213,7 @@ export const DataTransformers = {
             sdkColor: 'rgb(16, 185, 129)',
           }
         })
-        .filter((item: any) => !isNaN(item.value) && item.name)
+        .filter((item: any) => Number.isFinite(item.value) && item.name)
     }
 
     if (chartData?.data?.labels && chartData?.data?.datasets?.[0]?.data) {
@@ -225,7 +228,7 @@ export const DataTransformers = {
             : (associatedRunIds ? [associatedRunIds] : [])
           return {
             name: label,
-            value: Number(data[index]) || 0,
+            value: parseBarValue(data[index]),
             runIds: runIdsArray,
             runCount: runIdsArray.length,
             clusterName: '7.1.1',
@@ -234,7 +237,7 @@ export const DataTransformers = {
             sdkColor: 'rgb(16, 185, 129)'
           }
         })
-        .filter((item: any) => !isNaN(item.value))
+        .filter((item: any) => Number.isFinite(item.value))
     }
 
     return []
